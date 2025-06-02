@@ -21,6 +21,7 @@ export const TARGET_TYPES = {
     FILE: 'file',
     FOLDER: 'folder',
     CASIER: 'casier',
+    ARMOIRE: 'armoire',
     ENTREPRISE: 'entreprise'
 };
 
