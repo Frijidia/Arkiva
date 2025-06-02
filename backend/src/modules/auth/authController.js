@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import './authModels.js';
 import { enable2FA as enable2FAService, verify2FACode, send2FACode } from './twoFactorService.js';
+import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
 
 // Vérifier si c'est le premier utilisateur
 const isFirstUser = async () => {
@@ -99,6 +100,15 @@ export const login = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
+        // Logger la connexion
+        await logAction(
+            user.user_id,
+            ACTIONS.LOGIN,
+            TARGET_TYPES.USER,
+            user.user_id,
+            { ip: req.ip }
+        );
+
         res.json({ token, user });
     } catch (error) {
         console.error(error);
@@ -110,6 +120,15 @@ export const login = async (req, res) => {
 // Déconnexion
 export const logout = async (req, res) => {
     try {
+        // Logger la déconnexion
+        await logAction(
+            req.user.userId,
+            ACTIONS.LOGOUT,
+            TARGET_TYPES.USER,
+            req.user.userId,
+            { ip: req.ip }
+        );
+
         res.json({ message: 'Déconnexion réussie' });
     } catch (error) {
         console.error(error);
@@ -122,7 +141,22 @@ export const logout = async (req, res) => {
 export const getMe = async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT user_id, email, username, role, two_factor_enabled FROM users WHERE user_id = $1',
+            `SELECT 
+                user_id,
+                entreprise_id,
+                email,
+                password,
+                username,
+                role,
+                armoire_limit,
+                two_factor_enabled,
+                two_factor_secret,
+                two_factor_method,
+                two_factor_code,
+                two_factor_code_expires,
+                created_at
+             FROM users 
+             WHERE user_id = $1`,
             [req.user.user_id]
         );
         
@@ -171,6 +205,15 @@ export const updateUserRole = async (req, res) => {
             return res.status(404).json({ message: 'Utilisateur non trouvé' });
         }
 
+        // Logger le changement de rôle
+        await logAction(
+            req.user.userId,
+            ACTIONS.CHANGE_ROLE,
+            TARGET_TYPES.USER,
+            id,
+            { new_role: role }
+        );
+
         res.json(result.rows[0]);
     } catch (error) {
         console.error(error);
@@ -182,7 +225,7 @@ export const updateUserRole = async (req, res) => {
 // Activer la 2FA
 export const enable2FA = async (req, res) => {
     const { method } = req.body;
-    const userId = req.user.user_id;
+    const userId = req.user.userId;
 
     if (!['email', 'otp'].includes(method)) {
         return res.status(400).json({ message: 'Méthode 2FA invalide' });
@@ -190,6 +233,16 @@ export const enable2FA = async (req, res) => {
 
     try {
         const result = await enable2FAService(userId, method);
+        
+        // Logger l'activation de la 2FA
+        await logAction(
+            userId,
+            ACTIONS.ENABLE_2FA,
+            TARGET_TYPES.USER,
+            userId,
+            { method }
+        );
+
         res.json({ 
             message: '2FA activée avec succès', 
             method,

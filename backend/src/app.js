@@ -19,7 +19,9 @@ import dossierRoutes from './modules/dosiers/dosierRoute.js';
 import fichierRoutes from './modules/fichiers/fichierRoutes.js';
 import uploadRoutes from './modules/upload/uploadRoutes.js';
 import tagRoutes from './modules/tags/tagRoutes.js'
+
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
+import auditRoutes from './modules/audit/auditRoutes.js'
 const app = express();
 
 app.use(cors());
@@ -40,10 +42,11 @@ app.use('/api/armoire', armoireRoutes);
 app.use('/api/casier', cassierRoutes);
 app.use('/api/dosier', dossierRoutes);
 app.use('/api/fichier', fichierRoutes);
-app.use('/api/upload', uploadRoutes)
-app.use('/api/tag', tagRoutes)
-app.use('/api/entreprise', entrepriseRoutes)
+app.use('/api/upload', uploadRoutes);
+app.use('/api/tag', tagRoutes);
 
+app.use('/api/entreprise', entrepriseRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

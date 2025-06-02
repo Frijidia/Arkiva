@@ -1,25 +1,53 @@
 import pool from '../../config/database.js';
 import './entrepriseModels.js';  // Import pour la création de la table
 import bcrypt from 'bcrypt';
+import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
 
 // Créer une nouvelle entreprise
 export const create = async (req, res) => {
-    const { nom, email, telephone, adresse, logo_url, plan_abonnement } = req.body;
+    const { nom, email, telephone, adresse, logo_url, plan_abonnement, armoire_limit } = req.body;
+    const adminId = req.user.user_id;
     
     try {
-        const result = await pool.query(
+        // Commencer une transaction
+        await pool.query('BEGIN');
+
+        // Créer l'entreprise
+        const entrepriseResult = await pool.query(
             `INSERT INTO entreprises 
-             (nom, email, telephone, adresse, logo_url, plan_abonnement) 
-             VALUES ($1, $2, $3, $4, $5, $6) 
+             (nom, email, telephone, adresse, logo_url, plan_abonnement, armoire_limit) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [nom, email, telephone, adresse, logo_url, plan_abonnement]
+            [nom, email, telephone, adresse, logo_url, plan_abonnement, armoire_limit || 2]
         );
+
+        const entreprise = entrepriseResult.rows[0];
+
+        // Mettre à jour l'entreprise_id de l'admin
+        await pool.query(
+            'UPDATE users SET entreprise_id = $1 WHERE user_id = $2',
+            [entreprise.entreprise_id, adminId]
+        );
+
+        // Logger l'action
+        await logAction(
+            adminId,
+            ACTIONS.CREATE,
+            TARGET_TYPES.ENTERPRISE,
+            entreprise.entreprise_id,
+            { nom, email, armoire_limit: entreprise.armoire_limit }
+        );
+
+        // Valider la transaction
+        await pool.query('COMMIT');
         
         res.status(201).json({
             message: 'Entreprise créée avec succès',
-            entreprise: result.rows[0]
+            entreprise
         });
     } catch (error) {
+        // Annuler la transaction en cas d'erreur
+        await pool.query('ROLLBACK');
         console.error('Erreur lors de la création de l\'entreprise:', error);
         if (error.code === '23505') {
             res.status(400).json({ message: 'Une entreprise avec cet email existe déjà' });
@@ -32,6 +60,18 @@ export const create = async (req, res) => {
 // Obtenir une entreprise par son ID
 export const getById = async (req, res) => {
     try {
+        // Vérifier si l'utilisateur est admin de cette entreprise
+        const userCheck = await pool.query(
+            'SELECT * FROM users WHERE user_id = $1 AND role = $2 AND entreprise_id = $3',
+            [req.user.user_id, 'admin', req.params.id]
+        );
+
+        if (!userCheck.rows[0]) {
+            return res.status(403).json({ 
+                message: 'Vous n\'avez pas les droits pour voir les informations de cette entreprise' 
+            });
+        }
+
         const result = await pool.query(
             'SELECT * FROM entreprises WHERE entreprise_id = $1',
             [req.params.id]
@@ -152,13 +192,15 @@ export const addUser = async (req, res) => {
     const entrepriseId = req.params.id;
 
     try {
-        // Vérifier si l'utilisateur qui fait la requête est admin de cette entreprise
-        const adminCheck = await pool.query(
-            'SELECT * FROM users WHERE user_id = $1 AND role = $2 AND entreprise_id = $3',
-            [req.user.userId, 'admin', entrepriseId]
-        );
+        // Vérifier si l'utilisateur qui fait la requête est admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ 
+                message: 'Seuls les administrateurs peuvent ajouter des utilisateurs' 
+            });
+        }
 
-        if (!adminCheck.rows[0]) {
+        // Vérifier si l'admin appartient à cette entreprise
+        if (req.user.entreprise_id !== parseInt(entrepriseId)) {
             return res.status(403).json({ 
                 message: 'Vous n\'avez pas les droits pour ajouter des utilisateurs à cette entreprise' 
             });
@@ -186,6 +228,15 @@ export const addUser = async (req, res) => {
              VALUES ($1, $2, $3, $4, $5) 
              RETURNING user_id, email, username, role`,
             [email, hashedPassword, username, role, entrepriseId]
+        );
+
+        // Logger l'action
+        await logAction(
+            req.user.user_id,
+            ACTIONS.ADD_USER,
+            TARGET_TYPES.ENTERPRISE,
+            entrepriseId,
+            { email, username, role }
         );
 
         res.status(201).json({

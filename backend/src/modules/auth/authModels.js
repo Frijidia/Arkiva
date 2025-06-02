@@ -9,7 +9,6 @@ const createUsersTable = `
     password TEXT NOT NULL,
     username VARCHAR(100),
     role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('admin', 'contributeur', 'lecteur', 'user')),
-    armoire_limit INTEGER DEFAULT 2,
     two_factor_enabled BOOLEAN DEFAULT FALSE,
     two_factor_secret TEXT,
     two_factor_method VARCHAR(10) CHECK (two_factor_method IN ('email', 'otp', NULL)),
