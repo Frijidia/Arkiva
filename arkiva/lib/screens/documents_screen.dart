@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arkiva/models/casier.dart';
 import 'package:arkiva/models/document.dart';
+import 'package:arkiva/services/animation_service.dart';
 
 class DocumentsScreen extends StatefulWidget {
   final Casier casier;
@@ -15,46 +16,155 @@ class DocumentsScreen extends StatefulWidget {
 }
 
 class _DocumentsScreenState extends State<DocumentsScreen> {
-  late List<Document> _documents;
+  List<Document> _documents = [];
+  List<Document> _filteredDocuments = [];
   bool _isLoading = false;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _documents = widget.casier.documents;
+    _chargerDocuments();
   }
 
-  List<Document> get _filteredDocuments {
-    if (_searchQuery.isEmpty) {
-      return _documents;
+  Future<void> _chargerDocuments() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // TODO: Charger les documents depuis le backend
+      // Pour l'instant, on utilise des données de test
+      await Future.delayed(const Duration(seconds: 1));
+      setState(() {
+        _documents = [
+          Document(
+            id: '1',
+            nom: 'Document 1',
+            description: 'Description du document 1',
+            type: 'pdf',
+            chemin: '/chemin/vers/document1.pdf',
+            taille: 1024,
+            dateCreation: DateTime.now(),
+            dateModification: DateTime.now(),
+            tags: ['important', 'contrat'],
+          ),
+          Document(
+            id: '2',
+            nom: 'Document 2',
+            description: 'Description du document 2',
+            type: 'jpg',
+            chemin: '/chemin/vers/document2.jpg',
+            taille: 2048,
+            dateCreation: DateTime.now(),
+            dateModification: DateTime.now(),
+            tags: ['photo', 'personnel'],
+          ),
+        ];
+        _filteredDocuments = _documents;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du chargement: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-    return _documents.where((doc) {
-      return doc.nom.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (doc.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          doc.tags.any((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()));
-    }).toList();
+  }
+
+  void _filtrerDocuments(String query) {
+    setState(() {
+      _searchQuery = query;
+      if (query.isEmpty) {
+        _filteredDocuments = _documents;
+      } else {
+        _filteredDocuments = _documents.where((doc) {
+          return doc.nom.toLowerCase().contains(query.toLowerCase()) ||
+              (doc.description?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
+              doc.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+        }).toList();
+      }
+    });
   }
 
   Future<void> _ajouterDocument() async {
-    // TODO: Implémenter l'ajout de document
-    // Pour l'instant, on ajoute un document de test
-    setState(() {
-      _documents.add(
-        Document(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          nom: 'Document test',
-          chemin: '/test/document.pdf',
-          type: 'pdf',
-          taille: 1024,
-          dateCreation: DateTime.now(),
-          dateModification: DateTime.now(),
-          casierId: widget.casier.id,
-          description: 'Description du document test',
-          tags: ['test', 'exemple'],
+    final TextEditingController nomController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nouveau document'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nomController,
+              decoration: const InputDecoration(
+                labelText: 'Nom du document',
+                hintText: 'Ex: Rapport',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Description du document',
+              ),
+              maxLines: 3,
+            ),
+          ],
         ),
-      );
-    });
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nomController.text.isNotEmpty) {
+                Navigator.pop(context, {
+                  'nom': nomController.text,
+                  'description': descriptionController.text,
+                });
+              }
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      // TODO: Envoyer le document au backend et gérer le fichier
+      setState(() {
+        _documents.add(
+          Document(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            nom: result['nom']!,
+            description: result['description']!,
+            type: 'inconnu', // Type par défaut
+            chemin: '', // Chemin par défaut
+            taille: 0, // Taille par défaut
+            dateCreation: DateTime.now(),
+            dateModification: DateTime.now(),
+            tags: [], // Tags par défaut
+            estChiffre: false, // Chiffrement par défaut
+          ),
+        );
+        _filtrerDocuments(_searchQuery); // Rafraîchir la liste après ajout
+      });
+    }
   }
 
   Future<void> _supprimerDocument(Document document) async {
@@ -62,17 +172,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Supprimer le document'),
-        content: Text('Voulez-vous vraiment supprimer "${document.nom}" ?'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer ce document ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
             child: const Text('Supprimer'),
           ),
         ],
@@ -80,10 +187,29 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     );
 
     if (confirm == true) {
-      // TODO: Supprimer le document dans le backend
       setState(() {
-        _documents.removeWhere((d) => d.id == document.id);
+        _documents.remove(document);
+        _filtrerDocuments(_searchQuery);
       });
+    }
+  }
+
+  IconData _getIconForDocumentType(String type) {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart;
+      default:
+        return Icons.insert_drive_file;
     }
   }
 
@@ -98,7 +224,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             onPressed: () {
               showSearch(
                 context: context,
-                delegate: DocumentSearchDelegate(_documents),
+                delegate: DocumentSearchDelegate(_documents, _filtrerDocuments, _getIconForDocumentType),
               );
             },
           ),
@@ -106,13 +232,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _documents.isEmpty
+          : _filteredDocuments.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
-                        Icons.description,
+                        Icons.folder_open,
                         size: 64,
                         color: Colors.grey,
                       ),
@@ -229,21 +355,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              if (document.tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: document.tags.map((tag) {
-                    return Chip(
-                      label: Text(tag),
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      labelStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -255,12 +366,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       fontSize: 12,
                     ),
                   ),
-                  Text(
-                    'Modifié le ${document.dateModification.day}/${document.dateModification.month}/${document.dateModification.year}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
+                  Wrap(
+                    spacing: 4,
+                    children: document.tags.map((tag) {
+                      return Chip(
+                        label: Text(
+                          tag,
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
@@ -270,28 +387,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       ),
     );
   }
-
-  IconData _getIconForDocumentType(String type) {
-    switch (type.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return Icons.image;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
 }
 
-class DocumentSearchDelegate extends SearchDelegate {
+class DocumentSearchDelegate extends SearchDelegate<Document?> {
   final List<Document> documents;
+  final Function(String) onSearch;
+  final IconData Function(String) getIconForDocumentType;
 
-  DocumentSearchDelegate(this.documents);
+  DocumentSearchDelegate(this.documents, this.onSearch, this.getIconForDocumentType);
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -300,6 +403,7 @@ class DocumentSearchDelegate extends SearchDelegate {
         icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';
+          // onSearch(''); // Removed redundant call
         },
       ),
     ];
@@ -317,15 +421,6 @@ class DocumentSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return _buildSearchResults();
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return _buildSearchResults();
-  }
-
-  Widget _buildSearchResults() {
     final results = documents.where((doc) {
       return doc.nom.toLowerCase().contains(query.toLowerCase()) ||
           (doc.description?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
@@ -337,33 +432,44 @@ class DocumentSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final document = results[index];
         return ListTile(
-          leading: Icon(_getIconForDocumentType(document.type)),
+          leading: Icon(getIconForDocumentType(document.type)),
           title: Text(document.nom),
-          subtitle: document.description != null
+          subtitle: document.description != null && document.description!.isNotEmpty
               ? Text(document.description!)
               : null,
           onTap: () {
-            // TODO: Ouvrir le document
             close(context, document);
+            // TODO: Ouvrir le document sélectionné
           },
         );
       },
     );
   }
 
-  IconData _getIconForDocumentType(String type) {
-    switch (type.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return Icons.image;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      default:
-        return Icons.insert_drive_file;
-    }
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final results = documents.where((doc) {
+      return doc.nom.toLowerCase().contains(query.toLowerCase()) ||
+          (doc.description?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
+          doc.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+    }).toList();
+
+    return ListView.builder(
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final document = results[index];
+        return ListTile(
+          leading: Icon(getIconForDocumentType(document.type)),
+          title: Text(document.nom),
+          subtitle: document.description != null && document.description!.isNotEmpty
+              ? Text(document.description!)
+              : null,
+          onTap: () {
+            query = document.nom;
+            showResults(context);
+          },
+        );
+      },
+    );
   }
 } 
