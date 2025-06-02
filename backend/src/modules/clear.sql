@@ -9,7 +9,8 @@ TRUNCATE TABLE
     fichier_tags,
     fichiers,
     tags,
-    users
+    users,
+    journal_activite
 CASCADE;
 
 -- Réinitialiser les séquences
@@ -20,5 +21,6 @@ ALTER SEQUENCE entreprises_entreprise_id_seq RESTART WITH 1;
 ALTER SEQUENCE fichiers_fichier_id_seq RESTART WITH 1;
 ALTER SEQUENCE tags_tag_id_seq RESTART WITH 1;
 ALTER SEQUENCE users_user_id_seq RESTART WITH 1;
+ALTER SEQUENCE journal_activite_id_seq RESTART WITH 1;
 
 COMMIT;

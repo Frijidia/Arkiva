@@ -1,5 +1,5 @@
-import { getUserLogs, getTargetLogs, getEntrepriseLogs } from './auditService.js';
 import "./auditModels.js"
+import { getUserLogs, getTargetLogs, getEntrepriseLogs } from './auditService.js';
 // Obtenir les logs d'un utilisateur
 export const getUserActivity = async (req, res) => {
     try {
