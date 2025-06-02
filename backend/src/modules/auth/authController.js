@@ -3,39 +3,71 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/database.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { enable2FA as enable2FAService, verify2FACode } from './twoFactorService.js';
+import './authModels.js';
+import { enable2FA as enable2FAService, verify2FACode, send2FACode } from './twoFactorService.js';
 
+// Vérifier si c'est le premier utilisateur
+const isFirstUser = async () => {
+    const result = await pool.query('SELECT COUNT(*) FROM users');
+    return parseInt(result.rows[0].count) === 0;
+};
 
 // Inscription
 export const register = async (req, res) => {
     const { email, password, username } = req.body;
-    let { role } = req.body;
 
-    if (!role) {
-        role = 'user';
-    }
     try {
-        const hash = await bcrypt.hash(password, 10); 
+        // Vérifier si l'email existe déjà
+        const existingUser = await pool.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
 
+        if (existingUser.rows.length > 0) {
+            return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+        }
+
+        // Hasher le mot de passe
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Vérifier si c'est le premier utilisateur
+        const firstUser = await isFirstUser();
+        const role = firstUser ? 'admin' : 'user';
+
+        // Créer l'utilisateur
         const result = await pool.query(
             `INSERT INTO users (email, password, username, role) 
              VALUES ($1, $2, $3, $4) 
              RETURNING user_id, email, username, role`,
-            [email, hash, username, role]
+            [email, hashedPassword, username, role]
         );
 
-        const user = result.rows[0];
-
+        // Générer le token
         const token = jwt.sign(
-            { userId: user.user_id, email: user.email },
+            { 
+                userId: result.rows[0].user_id,
+                email: result.rows[0].email,
+                role: result.rows[0].role
+            },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn: '24h' }
         );
 
-        res.status(201).json({ token, user });
+        res.status(201).json({
+            message: firstUser ? 
+                'Compte administrateur créé avec succès' : 
+                'Compte créé avec succès',
+            user: {
+                id: result.rows[0].user_id,
+                email: result.rows[0].email,
+                username: result.rows[0].username,
+                role: result.rows[0].role
+            },
+            token
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Erreur du serveur' });
+        console.error('Erreur lors de l\'inscription:', error);
+        res.status(500).json({ message: 'Erreur lors de l\'inscription' });
     }
 };
 

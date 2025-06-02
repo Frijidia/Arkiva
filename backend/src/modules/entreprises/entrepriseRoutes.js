@@ -6,7 +6,8 @@ import {
     update,
     remove,
     list,
-    getStats
+    getStats,
+    addUser
 } from './entrepriseController.js';
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.use(verifyToken);
 router.post('/', checkRole(['admin']), create);
 router.put('/:id', checkRole(['admin']), update);
 router.delete('/:id', checkRole(['admin']), remove);
+router.post('/:id/users', checkRole(['admin']), addUser);
 
 // Routes accessibles aux administrateurs et contributeurs
 router.get('/', checkRole(['admin', 'contributeur']), list);
