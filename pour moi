@@ -1,0 +1,47 @@
+Gestion des Armoires et Casiers 🗄️
+Créer l'écran de gestion des armoires avec la structure "Armoire N"
+Implémenter la création et gestion des casiers (C1 à C10)
+Ajouter une interface visuelle en grille (2x5) pour les casiers
+Permettre la navigation entre les armoires
+
+Système d'Authentification 🔐
+Créer les écrans de connexion et d'inscription
+Implémenter les 3 rôles (Admin, Contributeur, Lecteur)
+Ajouter l'authentification par email
+Mettre en place la validation des comptes
+
+Gestion des Documents 📄
+Créer l'interface de visualisation des documents
+Implémenter le système de tags et métadonnées
+Ajouter la prévisualisation des fichiers
+Permettre le partage de documents
+
+Système de Recherche 🔍
+Développer la recherche plein texte
+Ajouter les filtres (armoire, casier, tags)
+Implémenter la recherche avancée
+Créer l'historique des recherches
+
+Gestion des Abonnements 💰
+Créer l'interface de gestion des abonnements
+Implémenter le système de paiement (MTN, Moov, Celtiis)
+Ajouter la gestion des renouvellements
+Mettre en place les notifications de fin d'abonnement
+Amélioration du Scan 📱
+Implémenter la détection automatique des bords
+Ajouter l'amélioration de la qualité d'image
+Permettre la fusion de pages en PDF
+Optimiser la compression des images
+
+Sécurité et Conformité 🛡️
+Implémenter le chiffrement des fichiers
+Ajouter la journalisation des actions
+Mettre en place les sauvegardes automatiques
+Assurer la conformité avec le Code du numérique béninois
+
+Interface Utilisateur 🎨
+Améliorer l'expérience mobile
+Ajouter des animations fluides
+Implémenter le mode sombre
+Optimiser l'accessibilité
+Par quelle fonctionnalité souhaitez-vous commencer ? Je suggère de commencer par la gestion des armoires et casiers, car c'est la base de l'organisation des documents dans l'application.
