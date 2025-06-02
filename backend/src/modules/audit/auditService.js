@@ -20,7 +20,7 @@ export const TARGET_TYPES = {
     USER: 'user',
     FILE: 'file',
     FOLDER: 'folder',
-    CABINET: 'cabinet',
+    CASIER: 'casier',
     ENTREPRISE: 'entreprise'
 };
 
