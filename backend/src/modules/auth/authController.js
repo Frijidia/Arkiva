@@ -110,8 +110,6 @@ export const login = async (req, res) => {
 // Déconnexion
 export const logout = async (req, res) => {
     try {
-        // On peut ajouter le token à une liste noire si nécessaire
-        // Pour l'instant, on renvoie juste un succès
         res.json({ message: 'Déconnexion réussie' });
     } catch (error) {
         console.error(error);
