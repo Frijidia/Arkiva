@@ -1,4 +1,4 @@
-import { getUserLogs, getTargetLogs, getEnterpriseLogs } from './auditService.js';
+import { getUserLogs, getTargetLogs, getEntrepriseLogs } from './auditService.js';
 import "./auditModels.js"
 // Obtenir les logs d'un utilisateur
 export const getUserActivity = async (req, res) => {
@@ -26,10 +26,10 @@ export const getTargetActivity = async (req, res) => {
 };
 
 // Obtenir les logs d'une entreprise
-export const getEnterpriseActivity = async (req, res) => {
+export const getEntrepriseActivity = async (req, res) => {
     try {
         const { limit = 50, offset = 0 } = req.query;
-        const logs = await getEnterpriseLogs(req.params.entrepriseId, parseInt(limit), parseInt(offset));
+        const logs = await getEntrepriseLogs(req.params.entrepriseId, parseInt(limit), parseInt(offset));
         res.json(logs);
     } catch (error) {
         console.error('Erreur lors de la récupération des logs:', error);

@@ -21,7 +21,7 @@ export const TARGET_TYPES = {
     FILE: 'file',
     FOLDER: 'folder',
     CABINET: 'cabinet',
-    ENTERPRISE: 'enterprise'
+    ENTREPRISE: 'entreprise'
 };
 
 // Enregistrer une action dans le journal
@@ -78,7 +78,7 @@ export const getTargetLogs = async (targetType, targetId, limit = 50, offset = 0
 };
 
 // Obtenir les logs d'une entreprise
-export const getEnterpriseLogs = async (entrepriseId, limit = 50, offset = 0) => {
+export const getEntrepriseLogs = async (entrepriseId, limit = 50, offset = 0) => {
     try {
         const result = await pool.query(
             `SELECT ja.*, u.email as user_email, u.username 

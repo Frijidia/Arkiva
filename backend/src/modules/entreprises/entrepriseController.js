@@ -33,7 +33,7 @@ export const create = async (req, res) => {
         await logAction(
             adminId,
             ACTIONS.CREATE,
-            TARGET_TYPES.ENTERPRISE,
+            TARGET_TYPES.ENTREPRISE,
             entreprise.entreprise_id,
             { nom, email, armoire_limit: entreprise.armoire_limit }
         );
@@ -234,7 +234,7 @@ export const addUser = async (req, res) => {
         await logAction(
             req.user.user_id,
             ACTIONS.ADD_USER,
-            TARGET_TYPES.ENTERPRISE,
+            TARGET_TYPES.ENTREPRISE,
             entrepriseId,
             { email, username, role }
         );
