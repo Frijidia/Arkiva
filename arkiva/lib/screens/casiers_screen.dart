@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:arkiva/models/armoire.dart';
 import 'package:arkiva/models/casier.dart';
 import 'package:arkiva/screens/documents_screen.dart';
+import 'package:arkiva/screens/upload_screen.dart';
+import 'package:arkiva/screens/scan_screen.dart';
 
 class CasiersScreen extends StatefulWidget {
   final Armoire armoire;
@@ -23,6 +25,11 @@ class _CasiersScreenState extends State<CasiersScreen> {
   void initState() {
     super.initState();
     _casiers = widget.armoire.casiers;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _renommerCasier(Casier casier) async {
@@ -96,101 +103,119 @@ class _CasiersScreenState extends State<CasiersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.armoire.nom),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: Text('Armoire 1 - RH'),
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.upload_file),
             onPressed: () {
-              // TODO: Implémenter la recherche dans les casiers
+              print('Téléverser button pressed');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.document_scanner),
+            onPressed: () {
+              print('Scanner button pressed');
             },
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.0,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: _casiers.length,
-              itemBuilder: (context, index) {
-                return _buildCasierCard(_casiers[index]);
-              },
-            ),
+          : _casiers.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.folder_open,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Aucun casier dans cette armoire',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Créez votre premier casier',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          print('Create casier button pressed');
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Créer un casier'),
+                      ),
+                    ],
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 1.1,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: _casiers.length,
+                  itemBuilder: (context, index) {
+                    return _buildSimpleCasierCard(_casiers[index], index + 1);
+                  },
+                ),
     );
   }
 
-  Widget _buildCasierCard(Casier casier) {
+  Widget _buildSimpleCasierCard(Casier casier, int casierNumber) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DocumentsScreen(casier: casier),
-            ),
-          );
+          print('Tapped on Casier C$casierNumber: ${casier.nom}');
         },
         onLongPress: () => _renommerCasier(casier),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.folder_open, size: 32),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      casier.nom,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              if (casier.description != null && casier.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  casier.description!,
-                  style: const TextStyle(color: Colors.grey),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              if (casierNumber == 1) ...[
+                Icon(Icons.folder_open, size: 32, color: Colors.blue[700]),
+                const SizedBox(height: 12),
               ],
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${casier.documents.length} documents',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'Créé le ${casier.dateCreation.day}/${casier.dateCreation.month}/${casier.dateCreation.year}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Text(
+                'C$casierNumber',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[900],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ],
           ),
