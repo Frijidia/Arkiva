@@ -5,25 +5,19 @@ class Armoire {
   final String nom;
   final String description;
   final DateTime dateCreation;
+  final DateTime dateModification;
   final List<Casier> casiers;
-  final int nombreCasiers;
 
   Armoire({
     required this.id,
     required this.nom,
     this.description = '',
     required this.dateCreation,
+    required this.dateModification,
     List<Casier>? casiers,
-    this.nombreCasiers = 10,
-  }) : casiers = casiers ?? List.generate(
-          nombreCasiers,
-          (index) => Casier(
-            id: 'C${index + 1}',
-            nom: 'Casier ${index + 1}',
-            armoireId: id,
-            dateCreation: DateTime.now(),
-          ),
-        );
+  }) : casiers = casiers ?? [];
+
+  int get nombreCasiers => casiers.length;
 
   Map<String, dynamic> toJson() {
     return {
@@ -31,6 +25,7 @@ class Armoire {
       'nom': nom,
       'description': description,
       'dateCreation': dateCreation.toIso8601String(),
+      'dateModification': dateModification.toIso8601String(),
       'casiers': casiers.map((c) => c.toJson()).toList(),
       'nombreCasiers': nombreCasiers,
     };
@@ -42,10 +37,10 @@ class Armoire {
       nom: json['nom'],
       description: json['description'],
       dateCreation: DateTime.parse(json['dateCreation']),
+      dateModification: DateTime.parse(json['dateModification']),
       casiers: (json['casiers'] as List)
           .map((c) => Casier.fromJson(c))
           .toList(),
-      nombreCasiers: json['nombreCasiers'],
     );
   }
 } 

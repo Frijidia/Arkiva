@@ -190,7 +190,13 @@ class HomeScreen extends StatelessWidget {
                           subtitle: Text('4 casiers | Modifié le JJ/MM/AAAA', style: TextStyle(color: Colors.grey[700])),
                           trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
                           onTap: () {
-                            _navigateToScreen(context, CasiersScreen(armoire: Armoire(id: '1', nom: 'Armoire 1 - RH', description: 'Documents administratifs', dateCreation: DateTime.now())));
+                            _navigateToScreen(context, CasiersScreen(armoire: Armoire(
+                              id: '1',
+                              nom: 'Armoire 1 - RH',
+                              description: 'Documents administratifs',
+                              dateCreation: DateTime.now(),
+                              dateModification: DateTime.now(),
+                            )));
                           },
                         ),
                       ),
@@ -207,7 +213,13 @@ class HomeScreen extends StatelessWidget {
                           subtitle: Text('2 casiers | Modifié le JJ/MM/AAAA', style: TextStyle(color: Colors.grey[700])),
                           trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
                           onTap: () {
-                            _navigateToScreen(context, CasiersScreen(armoire: Armoire(id: '2', nom: 'Armoire 2 - Projets', description: 'Documents comptables', dateCreation: DateTime.now())));
+                            _navigateToScreen(context, CasiersScreen(armoire: Armoire(
+                              id: '2',
+                              nom: 'Armoire 2 - Projets',
+                              description: 'Documents comptables',
+                              dateCreation: DateTime.now(),
+                              dateModification: DateTime.now(),
+                            )));
                           },
                         ),
                       ),
