@@ -11,9 +11,9 @@ import {
     updateUserInfo,
     deleteOwnAccount,
     deleteUserAccount
-} from './authController.js';
+  } from './authController.js';
 import { verifyToken, checkRole, check2FA } from './authMiddleware.js';
-
+  
 const router = express.Router();
 
 // Routes publiques

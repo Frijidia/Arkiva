@@ -6,11 +6,11 @@ Tu t’occupes de tout ce qui est :
 
     Sauvegarde & restauration
 
-    Journalisation des actions (logs)
+    ✅ Journalisation des actions (logs)
 
-    Authentification (SSO, 2FA)
+    ✅ Authentification (SSO, 2FA)
 
-    Gestion des rôles & permissions
+    ✅ Gestion des rôles & permissions
 
     Gestion des abonnements & paiements
 
@@ -24,21 +24,21 @@ Tu t’occupes de tout ce qui est :
 
 🔵 ÉTAPE 1 – Authentification & Gestion des utilisateurs
 
-    POST /auth/register
+   ✅ POST /auth/register
 
-    POST /auth/login
+   ✅ POST /auth/login
 
-    POST /auth/logout
+   ✅ POST /auth/logout
 
-    POST /auth/2fa/enable (email ou OTP mobile)
+   ✅ POST /auth/2fa/enable (email ou OTP mobile)
 
-    GET /me
+   ✅ GET /me
 
-    GET /users (admin)
+   ✅ GET /users (admin)
 
-    PUT /users/:id (changer rôle)
+   ✅ PUT /users/:id (changer rôle)
 
-    Middleware de permission (admin / contributeur / lecteur)
+   ✅ Middleware de permission (admin / contributeur / lecteur)
 
 Bonus : intégration SSO Google/Microsoft si le projet l’exige.
 
@@ -46,7 +46,7 @@ Bonus : intégration SSO Google/Microsoft si le projet l’exige.
 
 🟣 ÉTAPE 2 – Journalisation des actions
 
-    Crée un service d’audit : dès qu’un fichier est ajouté / modifié / supprimé / restauré → un log est enregistré avec :
+   ✅ Crée un service d’audit : dès qu’un fichier est ajouté / modifié / supprimé / restauré → un log est enregistré avec :
 
         utilisateur
 
@@ -56,7 +56,7 @@ Bonus : intégration SSO Google/Microsoft si le projet l’exige.
 
         date
 
-    Table : journal_activite
+    ✅ Table : journal_activite
 
 Exemple d’entrée :
 
@@ -64,19 +64,19 @@ Exemple d’entrée :
 
 🔴 ÉTAPE 3 – Chiffrement des documents
 
-    Lors de l’enregistrement d’un fichier (via ton collègue), tu crées un service de chiffrement :
+   ✅ Lors de l’enregistrement d’un fichier (via ton collègue), tu crées un service de chiffrement :
 
-        Input : fichier brut
+    ✅    Input : fichier brut
 
-        Output : fichier chiffré AES-256 (avec IV et clé sécurisée)
+    ✅    Output : fichier chiffré AES-256 (avec IV et clé sécurisée)
 
-        Stockage dans un répertoire protégé
+    ✅   Stockage dans un répertoire protégé
 
     Tu peux stocker la clé dans :
 
-        une table “clés_chiffrement” (clé encryptée par une clé maître)
+    ✅    une table “clés_chiffrement” (clé encryptée par une clé maître)
 
-        un service KMS si dispo (AWS KMS, Azure Key Vault)
+    ✅    un service KMS si dispo (AWS KMS, Azure Key Vault)
 
 ⚫ ÉTAPE 4 – Suppression automatique des fichiers locaux
 

@@ -26,7 +26,7 @@ export const register = async (req, res) => {
 
         if (existingUser.rows.length > 0) {
             return res.status(400).json({ message: 'Cet email est déjà utilisé' });
-        }
+    }
 
         // Hasher le mot de passe
         const hashedPassword = await bcrypt.hash(password, 10);

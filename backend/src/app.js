@@ -9,8 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-
-
 // Import des routes
 import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification
 import armoireRoutes from './modules/armoires/armoiresRoutes.js';
@@ -22,6 +20,8 @@ import tagRoutes from './modules/tags/tagRoutes.js'
 
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
 import auditRoutes from './modules/audit/auditRoutes.js'
+import encryptionRoutes from './modules/encryption/encryptionRoutes.js'
+
 const app = express();
 
 app.use(cors());
@@ -34,8 +34,6 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Arkiva Platform API' });
 });
 
-
-
 // Routes qui attendent du JSON
 app.use('/api/auth', authRoutes);
 app.use('/api/armoire', armoireRoutes);
@@ -47,6 +45,7 @@ app.use('/api/tag', tagRoutes);
 
 app.use('/api/entreprise', entrepriseRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/encryption', encryptionRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

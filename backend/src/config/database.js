@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { Sequelize } from 'sequelize';
 import "./config.js"
 // Configuration de la base de données
 
@@ -15,15 +16,43 @@ const pool = new Pool({
   connectionTimeoutMillis: parseInt(process.env.CONNECTION_TIMEOUT_MS) || 10000
 });
 
-// Test de la connexion
+// Configuration Sequelize
+const sequelize = new Sequelize(
+  process.env.POSTGRES_DB,
+  process.env.POSTGRES_USER,
+  process.env.POSTGRES_PASSWORD,
+  {
+    host: process.env.POSTGRES_HOST,
+    port: parseInt(process.env.POSTGRES_PORT),
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.POSTGRES_SSL === 'true' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    }
+  }
+);
+
+// Test de la connexion PostgreSQL
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('Erreur de connexion à la base de données:', err.stack);
+    console.error('Erreur de connexion à la base de données PostgreSQL:', err.stack);
   } else {
-    console.log('Connexion à la base de données établie');
+    console.log('Connexion à la base de données PostgreSQL établie');
     release();
   }
 });
+
+// Test de la connexion Sequelize
+sequelize.authenticate()
+  .then(() => {
+    console.log('Connexion à la base de données Sequelize établie');
+  })
+  .catch(err => {
+    console.error('Erreur de connexion à la base de données Sequelize:', err);
+  });
 
 // Gestionnaire d'erreurs
 pool.on('error', (err) => {
@@ -33,4 +62,5 @@ pool.on('error', (err) => {
 export default {
   query: (text, params) => pool.query(text, params),
   pool,
+  sequelize
 };
