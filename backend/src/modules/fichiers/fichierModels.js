@@ -9,7 +9,9 @@ const createTablefichier = `
   type VARCHAR(100), -- exemple : pdf, docx, txt
   chemin TEXT NOT NULL, -- chemin dans le système de fichiers ou URL
   taille INTEGER, -- taille en octets
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  contenu_ocr TEXT,
+  version_id INTEGER DEFAULT 0
 );
 `;
 

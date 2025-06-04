@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post('/', CreateArmoire);
 router.put('/:armoire_id', RenameArmoire);
-router.get('/getarmoires', GetAllArmoires);
+router.get('/:entreprise_id', GetAllArmoires);
 router.delete('/:armoire_id', DeleteArmoire);
 
 

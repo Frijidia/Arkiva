@@ -2,7 +2,6 @@ import pool from '../../config/database.js';
 
 
 
-
 export const CreateDossier = async (req, res) => {
   const { casier_id, nom, user_id } = req.body;
 
@@ -84,5 +83,43 @@ export const RenameDossier = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur lors du renommage du dossier' });
+  }
+};
+
+export const getDossierById = async (req, res) => {
+  const { dossier_id } = req.params;
+
+  if (!dossier_id) return res.status(400).json({ error: "ID du dossier requis" });
+
+  try {
+    const result = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [dossier_id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Dossier introuvable" });
+    }
+
+    res.status(200).json({ dossier: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la récupération du dossier" });
+  }
+};
+
+
+export const getDossierCountByCasierId = async (req, res) => {
+  const { casier_id } = req.params;
+
+  if (!casier_id) return res.status(400).json({ error: "ID du casier requis" });
+
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) FROM dossiers WHERE casier_id = $1',
+      [casier_id]
+    );
+
+    res.status(200).json({ casier_id, nombre_dossiers: parseInt(result.rows[0].count) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors du comptage des dossiers" });
   }
 };

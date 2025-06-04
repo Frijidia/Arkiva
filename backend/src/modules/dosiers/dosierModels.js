@@ -7,7 +7,8 @@ const createTabledosier = `
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   nom VARCHAR(100),
   description TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  version_id INTEGER DEFAULT 0
 );
 `;
 

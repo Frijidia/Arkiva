@@ -17,7 +17,7 @@ import dossierRoutes from './modules/dosiers/dosierRoute.js';
 import fichierRoutes from './modules/fichiers/fichierRoutes.js';
 import uploadRoutes from './modules/upload/uploadRoutes.js';
 import tagRoutes from './modules/tags/tagRoutes.js'
-
+import ocrRoutes from './modules/ocr/ocrRoutes.js'
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
 import auditRoutes from './modules/audit/auditRoutes.js'
 import encryptionRoutes from './modules/encryption/encryptionRoutes.js'
@@ -46,8 +46,10 @@ app.use('/api/tag', tagRoutes);
 
 app.use('/api/entreprise', entrepriseRoutes);
 app.use('/api/audit', auditRoutes);
+
 app.use('/api/encryption', encryptionRoutes);
 app.use('/api/sauvegardes', backupRoutes); // Montage des routes de sauvegarde
+app.use('/api/ocr', ocrRoutes );
 
 // Error handling middleware
 app.use((err, req, res, next) => {

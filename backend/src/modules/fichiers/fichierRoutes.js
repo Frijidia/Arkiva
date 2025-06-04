@@ -4,7 +4,9 @@ import {
     getFichiersByDossierId,
     renameFichier,
     deleteFichier,
-    getSignedUrlForFile
+    displayFichier,
+    telechargerFichier,
+    getFichierById
 
    
 } from './fichierControllers.js';
@@ -13,7 +15,11 @@ const router = express.Router();
 
 router.put('/:dossier_id', renameFichier);
 router.delete('/:dossier_id', deleteFichier);
-router.get('/:fichier_id', getSignedUrlForFile);
+router.get('/:fichier_id', displayFichier);
+router.get('/getfile/:dossier_id',  getFichiersByDossierId);
+router.get('/telecharger/:fichier_id', telechargerFichier);
+router.get('/getinfofile/:fichier_id', getFichierById);
+
 
 
 
