@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import unzipper from 'unzipper';
-import fileService from '../fichiers/fichierService.js';
-import folderService from '../dosiers/folderService.js';
-import systemService from '../system/systemService.js';
+import fileService from '../fichiers/fichierControllers.js';
+import dossierService from '../dosiers/dosierControllers.js';
+import * as casierService from '../cassiers/cassierContollers.js';
+import * as armoireService from '../armoires/armoireControllers.js';
 import versionService from './versionService.js';
-import auditService from '../audit/auditService.js';
-import userService from '../users/userService.js';
+import * as auditService from '../audit/auditService.js';
+import userService from '../auth/authController.js';
 
 class RestoreService {
     constructor() {
@@ -36,10 +37,13 @@ class RestoreService {
                     await this.restoreFile(backup, utilisateur_id);
                     break;
                 case 'dossier':
-                    await this.restoreFolder(backup, utilisateur_id);
+                    await this.restoreDossier(backup, utilisateur_id);
                     break;
-                case 'système':
-                    await this.restoreSystem(backup, utilisateur_id);
+                case 'casier':
+                    await this.restoreCasier(backup, utilisateur_id);
+                    break;
+                case 'armoire':
+                    await this.restoreArmoire(backup, utilisateur_id);
                     break;
                 default:
                     throw new Error(`Type de sauvegarde non supporté: ${backup.type}`);
@@ -95,29 +99,40 @@ class RestoreService {
         }
     }
 
-    async restoreFolder(backup, utilisateur_id) {
-        const existingFolder = await folderService.getFolderDetails(this.metadata.id);
+    async restoreDossier(backup, utilisateur_id) {
+        const existingDossier = await dossierService.getDossierDetails(this.metadata.id);
         
-        if (existingFolder) {
-            await this.updateExistingFolder(existingFolder, utilisateur_id);
+        if (existingDossier) {
+            await this.updateExistingDossier(existingDossier, utilisateur_id);
         } else {
-            await this.createNewFolder(utilisateur_id);
+            await this.createNewDossier(utilisateur_id);
         }
 
-        await this.restoreFolderContent(this.metadata, utilisateur_id);
+        await this.restoreDossierContent(this.metadata, utilisateur_id);
     }
 
-    async restoreSystem(backup, utilisateur_id) {
-        const systemStatus = await systemService.getSystemStatus();
-        if (systemStatus.isActive) {
-            throw new Error('Le système est actuellement en cours d\'utilisation. Impossible de restaurer.');
+    async restoreCasier(backup, utilisateur_id) {
+        const existingCasier = await casierService.getCasierDetails(this.metadata.id);
+        
+        if (existingCasier) {
+            await this.updateExistingCasier(existingCasier, utilisateur_id);
+        } else {
+            await this.createNewCasier(utilisateur_id);
         }
 
-        await this.restoreSystemConfigurations(utilisateur_id);
-        await this.restoreSystemParameters(utilisateur_id);
-        await this.restoreSystemFolders(utilisateur_id);
-        await this.restoreSystemUsers(utilisateur_id);
-        await this.updateSystemVersion(utilisateur_id);
+        await this.restoreCasierContent(this.metadata, utilisateur_id);
+    }
+
+    async restoreArmoire(backup, utilisateur_id) {
+        const existingArmoire = await armoireService.getArmoireDetails(this.metadata.id);
+        
+        if (existingArmoire) {
+            await this.updateExistingArmoire(existingArmoire, utilisateur_id);
+        } else {
+            await this.createNewArmoire(utilisateur_id);
+        }
+
+        await this.restoreArmoireContent(this.metadata, utilisateur_id);
     }
 
     // Méthodes utilitaires pour la restauration
@@ -160,8 +175,8 @@ class RestoreService {
         );
     }
 
-    async updateExistingFolder(existingFolder, utilisateur_id) {
-        await folderService.updateFolder(
+    async updateExistingDossier(existingDossier, utilisateur_id) {
+        await dossierService.updateDossier(
             this.metadata.id,
             {
                 ...this.metadata,
@@ -171,8 +186,8 @@ class RestoreService {
         );
     }
 
-    async createNewFolder(utilisateur_id) {
-        await folderService.createFolderFromBackup(
+    async createNewDossier(utilisateur_id) {
+        await dossierService.createDossierFromBackup(
             this.metadata.id,
             {
                 ...this.metadata,
@@ -183,132 +198,70 @@ class RestoreService {
         );
     }
 
-    async restoreFolderContent(folderMetadata, utilisateur_id) {
-        if (folderMetadata.files) {
-            await this.restoreFolderFiles(folderMetadata, utilisateur_id);
-        }
-        if (folderMetadata.subfolders) {
-            await this.restoreSubfolders(folderMetadata, utilisateur_id);
-        }
-    }
-
-    async restoreFolderFiles(folderMetadata, utilisateur_id) {
-        for (const fileMetadata of folderMetadata.files) {
-            try {
-                const fileEntry = this.fileEntries[fileMetadata.originalFileName];
-                if (!fileEntry) continue;
-
-                const fileContent = await fileEntry.buffer();
-                const existingFile = await fileService.getFileDetails(fileMetadata.id);
-
-                if (existingFile) {
-                    await this.createNewVersion(existingFile, fileContent, utilisateur_id);
-                } else {
-                    await this.createNewFile(fileContent, utilisateur_id);
-                }
-            } catch (error) {
-                console.error(`Erreur lors de la restauration du fichier ${fileMetadata.id}:`, error);
+    async updateExistingCasier(existingCasier, utilisateur_id) {
+        await casierService.updateCasier(
+            this.metadata.id,
+            {
+                ...this.metadata,
+                updated_by: utilisateur_id,
+                updated_at: new Date()
             }
-        }
+        );
     }
 
-    async restoreSubfolders(folderMetadata, utilisateur_id) {
-        for (const subfolderMetadata of folderMetadata.subfolders) {
-            try {
-                const existingSubfolder = await folderService.getFolderDetails(subfolderMetadata.id);
-                
-                if (existingSubfolder) {
-                    await this.updateExistingFolder(existingSubfolder, utilisateur_id);
-                } else {
-                    await this.createNewFolder(utilisateur_id);
-                }
+    async createNewCasier(utilisateur_id) {
+        await casierService.createCasierFromBackup(
+            this.metadata.id,
+            {
+                ...this.metadata,
+                created_by: utilisateur_id,
+                created_at: new Date()
+            },
+            utilisateur_id
+        );
+    }
 
-                await this.restoreFolderContent(subfolderMetadata, utilisateur_id);
-            } catch (error) {
-                console.error(`Erreur lors de la restauration du sous-dossier ${subfolderMetadata.id}:`, error);
+    async updateExistingArmoire(existingArmoire, utilisateur_id) {
+        await armoireService.updateArmoire(
+            this.metadata.id,
+            {
+                ...this.metadata,
+                updated_by: utilisateur_id,
+                updated_at: new Date()
             }
+        );
+    }
+
+    async createNewArmoire(utilisateur_id) {
+        await armoireService.createArmoireFromBackup(
+            this.metadata.id,
+            {
+                ...this.metadata,
+                created_by: utilisateur_id,
+                created_at: new Date()
+            },
+            utilisateur_id
+        );
+    }
+
+    async restoreDossierContent(dossierMetadata, utilisateur_id) {
+        if (dossierMetadata.files) {
+            await this.restoreDossierFiles(dossierMetadata, utilisateur_id);
+        }
+        if (dossierMetadata.subdossiers) {
+            await this.restoreSubdossiers(dossierMetadata, utilisateur_id);
         }
     }
 
-    async restoreSystemConfigurations(utilisateur_id) {
-        if (!this.metadata.configurations) return;
-
-        for (const [key, value] of Object.entries(this.metadata.configurations)) {
-            try {
-                await systemService.updateConfiguration(key, value, utilisateur_id);
-            } catch (error) {
-                console.error(`Erreur lors de la restauration de la configuration ${key}:`, error);
-            }
+    async restoreCasierContent(casierMetadata, utilisateur_id) {
+        if (casierMetadata.dossiers) {
+            await this.restoreCasierDossiers(casierMetadata, utilisateur_id);
         }
     }
 
-    async restoreSystemParameters(utilisateur_id) {
-        if (!this.metadata.parameters) return;
-
-        for (const [key, value] of Object.entries(this.metadata.parameters)) {
-            try {
-                await systemService.updateParameter(key, value, utilisateur_id);
-            } catch (error) {
-                console.error(`Erreur lors de la restauration du paramètre ${key}:`, error);
-            }
-        }
-    }
-
-    async restoreSystemFolders(utilisateur_id) {
-        if (!this.metadata.systemFolders) return;
-
-        for (const folderMetadata of this.metadata.systemFolders) {
-            try {
-                const existingFolder = await folderService.getFolderDetails(folderMetadata.id);
-                
-                if (existingFolder) {
-                    await this.updateExistingFolder(existingFolder, utilisateur_id);
-                } else {
-                    await this.createNewFolder(utilisateur_id);
-                }
-
-                await this.restoreFolderContent(folderMetadata, utilisateur_id);
-            } catch (error) {
-                console.error(`Erreur lors de la restauration du dossier système ${folderMetadata.id}:`, error);
-            }
-        }
-    }
-
-    async restoreSystemUsers(utilisateur_id) {
-        if (!this.metadata.systemUsers) return;
-
-        for (const userMetadata of this.metadata.systemUsers) {
-            try {
-                const existingUser = await userService.getUserById(userMetadata.id);
-                
-                if (existingUser) {
-                    await userService.updateUser(
-                        userMetadata.id,
-                        {
-                            ...userMetadata,
-                            updated_by: utilisateur_id,
-                            updated_at: new Date()
-                        }
-                    );
-                } else {
-                    await userService.createUserFromBackup(
-                        userMetadata.id,
-                        {
-                            ...userMetadata,
-                            created_by: utilisateur_id,
-                            created_at: new Date()
-                        }
-                    );
-                }
-            } catch (error) {
-                console.error(`Erreur lors de la restauration de l'utilisateur système ${userMetadata.id}:`, error);
-            }
-        }
-    }
-
-    async updateSystemVersion(utilisateur_id) {
-        if (this.metadata.version) {
-            await systemService.updateSystemVersion(this.metadata.version, utilisateur_id);
+    async restoreArmoireContent(armoireMetadata, utilisateur_id) {
+        if (armoireMetadata.casiers) {
+            await this.restoreArmoireCasiers(armoireMetadata, utilisateur_id);
         }
     }
 

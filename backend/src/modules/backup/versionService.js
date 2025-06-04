@@ -1,5 +1,5 @@
 import db from '../../config/database.js';
-import auditService from '../audit/auditService.js'; // Pour la journalisation
+import { logAction } from '../audit/auditService.js';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -71,19 +71,18 @@ class VersionService {
             console.log(`[versionService] Nouvelle version créée pour fichier ${fileId} avec ID ${versionId}`);
 
             // Journaliser l'action
-            if (auditService && utilisateur_id) {
-                await auditService.logAction({
+            if (utilisateur_id) {
+                await logAction(
                     utilisateur_id,
-                    action: 'creation_version_fichier',
-                    cible_type: 'version',
-                    cible_id: versionId,
-                    details: {
-                        file_id: fileId,
-                        version_number: newVersion.version_number,
-                        storage_path: versionContentPath,
-                    },
-                    date: new Date()
-                });
+                    'create_version',
+                    'version',
+                    versionId,
+                    {
+                        version_id: versionId,
+                        type: 'version',
+                        date: new Date()
+                    }
+                );
             }
 
             return newVersion;
@@ -116,17 +115,17 @@ class VersionService {
             console.log(`[versionService] Version active du fichier ${fileId} mise à jour vers ${newVersionId}`);
             
             // Journaliser l'action
-            if (auditService && utilisateur_id) {
-                await auditService.logAction({
+            if (utilisateur_id) {
+                await logAction(
                     utilisateur_id,
-                    action: 'mise_a_jour_version_fichier_parent',
-                    cible_type: 'fichier',
-                    cible_id: fileId,
-                    details: {
+                    'update_version',
+                    'fichier',
+                    fileId,
+                    {
                         new_version_id: newVersionId,
                     },
-                    date: new Date()
-                });
+                    new Date()
+                );
             }
 
             return result.rows[0];
@@ -197,18 +196,18 @@ class VersionService {
             }
 
             // Journaliser l'action
-            if (auditService && utilisateur_id) {
-                await auditService.logAction({
+            if (utilisateur_id) {
+                await logAction(
                     utilisateur_id,
-                    action: 'suppression_version',
-                    cible_type: 'version',
-                    cible_id: versionId,
-                    details: {
+                    'delete_version',
+                    'version',
+                    versionId,
+                    {
                         file_id: version.file_id,
                         version_number: version.version_number,
                     },
-                    date: new Date()
-                });
+                    new Date()
+                );
             }
 
             return result.rows[0];
@@ -265,6 +264,22 @@ class VersionService {
         }
 
         return Object.keys(diff).length > 0 ? diff : null;
+    }
+
+    async logVersionAction(version, utilisateur_id) {
+        if (!utilisateur_id) return;
+
+        await logAction(
+            utilisateur_id,
+            'create_version',
+            version.type,
+            version.cible_id,
+            {
+                version_id: version.id,
+                type: version.type,
+                date: new Date()
+            }
+        );
     }
 }
 

@@ -2,12 +2,13 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import backupModel from './backupModel.js';
-import versionService from '../versions/versionService.js';
+import versionService from './versionService.js';
 import restoreService from './restoreService.js';
 import { verifyToken, checkRole } from '../auth/authMiddleware.js';
-import fileService from '../fichiers/fichierService.js';
-import dossierService from '../dossiers/dossierService.js';
-import systemService from '../systemes/systemService.js';
+import fileService from '../fichiers/fichierControllers.js';
+import dossierService from '../dosiers/dosierControllers.js';
+import casierService from '../cassiers/cassierContollers.js';
+import armoireService from '../armoires/armoireControllers.js';
 
 const router = express.Router();
 
@@ -128,15 +129,40 @@ router.post('/versions', async (req, res) => {
                 };
                 break;
 
-            case 'systeme':
-                // Récupérer les informations du système
-                details = await systemService.getSystemDetails();
-                content = await systemService.getSystemContent();
+            case 'casier':
+                // Récupérer les informations du casier
+                details = await casierService.getCasierDetails(cible_id);
+                if (!details) {
+                    return res.status(404).json({ error: 'Casier non trouvé' });
+                }
+                content = await casierService.getCasierContent(cible_id);
+                if (!content) {
+                    return res.status(404).json({ error: 'Contenu du casier non trouvé' });
+                }
                 versionMetadata = {
-                    nom: "Sauvegarde système",
-                    type: "systeme",
-                    nombre_dossiers: details.nombre_dossiers,
-                    nombre_fichiers: details.nombre_fichiers,
+                    nom: details.nom,
+                    type: "casier",
+                    nombre_elements: details.nombre_elements,
+                    version_number: (details.version_number || 0) + 1,
+                    created_by: req.user.user_id,
+                    created_at: new Date()
+                };
+                break;
+
+            case 'armoire':
+                // Récupérer les informations de l'armoire
+                details = await armoireService.getArmoireDetails(cible_id);
+                if (!details) {
+                    return res.status(404).json({ error: 'Armoire non trouvée' });
+                }
+                content = await armoireService.getArmoireContent(cible_id);
+                if (!content) {
+                    return res.status(404).json({ error: 'Contenu de l\'armoire non trouvé' });
+                }
+                versionMetadata = {
+                    nom: details.nom,
+                    type: "armoire",
+                    nombre_elements: details.nombre_elements,
                     version_number: (details.version_number || 0) + 1,
                     created_by: req.user.user_id,
                     created_at: new Date()

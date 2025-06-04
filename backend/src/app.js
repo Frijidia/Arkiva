@@ -21,7 +21,7 @@ import ocrRoutes from './modules/ocr/ocrRoutes.js'
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
 import auditRoutes from './modules/audit/auditRoutes.js'
 import encryptionRoutes from './modules/encryption/encryptionRoutes.js'
-import backupRoutes from './modules/backup/backupRoutes.js'; // Routes de sauvegarde
+//import backupRoutes from './modules/backup/backupRoutes.js'; // Routes de sauvegarde
 
 const app = express();
 
@@ -48,7 +48,7 @@ app.use('/api/entreprise', entrepriseRoutes);
 app.use('/api/audit', auditRoutes);
 
 app.use('/api/encryption', encryptionRoutes);
-app.use('/api/sauvegardes', backupRoutes); // Montage des routes de sauvegarde
+//app.use('/api/sauvegardes', backupRoutes); // Montage des routes de sauvegarde
 app.use('/api/ocr', ocrRoutes );
 
 // Error handling middleware
