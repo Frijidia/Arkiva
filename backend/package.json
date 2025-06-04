@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node src/tests/backupVersionTest.js"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +35,7 @@
     "path": "^0.12.7",
     "pg": "^8.15.5",
     "sequelize": "^6.37.7",
+    "unzipper": "^0.10.11",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

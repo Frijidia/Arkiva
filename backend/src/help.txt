@@ -40,7 +40,7 @@ Tu t’occupes de tout ce qui est :
 
    ✅ Middleware de permission (admin / contributeur / lecteur)
 
-Bonus : intégration SSO Google/Microsoft si le projet l’exige.
+❌ Bonus : intégration SSO Google/Microsoft si le projet l’exige.
 
 🧩 Techno conseillée : JWT pour sessions + bcrypt pour hashing des mots de passe.
 
@@ -82,9 +82,9 @@ Exemple d’entrée :
 
 Tu dois concevoir un endpoint ou une logique côté desktop (à discuter avec le front-end ou app desktop) pour forcer la suppression des fichiers locaux après envoi réussi à l’API.
 
-    Inclure un flag delete_after_upload dans la requête si besoin
+    ❌ Inclure un flag delete_after_upload dans la requête si besoin
 
-    Ajouter un trigger de suppression sécurisée dans l’app desktop
+    ❌ Ajouter un trigger de suppression sécurisée dans l’app desktop
 
 🟡 ÉTAPE 5 – Sauvegarde & restauration
 
@@ -166,3 +166,41 @@ src/
 │ └── stats.controller.js
 
 —
+
+
+Pour les fichiers (déjà implémenté) :
+
+    const versionMetadata = {
+        nom: fileDetails.nom,
+        type_mime: fileDetails.type_mime,
+        taille: fileDetails.taille,
+        version_number: (fileDetails.version_number || 0) + 1,
+        created_by: req.user.user_id,
+        created_at: new Date()
+    };
+
+Pour les dossiers :
+
+    const versionMetadata = {
+        nom: dossierDetails.nom,
+        type: "dossier",
+        nombre_elements: dossierDetails.nombre_elements,
+        version_number: (dossierDetails.version_number || 0) + 1,
+        created_by: req.user.user_id,
+        created_at: new Date()
+    };
+
+
+Pour le système :
+
+
+    const versionMetadata = {
+        nom: "Sauvegarde système",
+        type: "systeme",
+        nombre_dossiers: systemDetails.nombre_dossiers,
+        nombre_fichiers: systemDetails.nombre_fichiers,
+        version_number: (systemDetails.version_number || 0) + 1,
+        created_by: req.user.user_id,
+        created_at: new Date()
+    };
+    

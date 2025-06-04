@@ -21,6 +21,7 @@ import tagRoutes from './modules/tags/tagRoutes.js'
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
 import auditRoutes from './modules/audit/auditRoutes.js'
 import encryptionRoutes from './modules/encryption/encryptionRoutes.js'
+import backupRoutes from './modules/backup/backupRoutes.js'; // Routes de sauvegarde
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/tag', tagRoutes);
 app.use('/api/entreprise', entrepriseRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/encryption', encryptionRoutes);
+app.use('/api/sauvegardes', backupRoutes); // Montage des routes de sauvegarde
 
 // Error handling middleware
 app.use((err, req, res, next) => {
