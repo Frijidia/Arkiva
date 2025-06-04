@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:arkiva/screens/home_screen.dart';
+import 'package:arkiva/screens/welcome_screen.dart';
 import 'package:arkiva/services/animation_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward().then((_) {
       Future.delayed(const Duration(seconds: 1), () {
         Navigator.of(context).pushReplacement(
-          AnimationService.fadeTransition(const HomeScreen()),
+          AnimationService.fadeTransition(const WelcomeScreen()),
         );
       });
     });

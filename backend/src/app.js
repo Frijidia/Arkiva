@@ -18,8 +18,8 @@ import fichierRoutes from './modules/fichiers/fichierRoutes.js';
 import uploadRoutes from './modules/upload/uploadRoutes.js';
 import tagRoutes from './modules/tags/tagRoutes.js'
 import ocrRoutes from './modules/ocr/ocrRoutes.js'
-import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
 import auditRoutes from './modules/audit/auditRoutes.js'
+import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
 import encryptionRoutes from './modules/encryption/encryptionRoutes.js'
 //import backupRoutes from './modules/backup/backupRoutes.js'; // Routes de sauvegarde
 
