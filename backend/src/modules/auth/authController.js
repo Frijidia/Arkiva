@@ -148,7 +148,6 @@ export const getMe = async (req, res) => {
                 password,
                 username,
                 role,
-                armoire_limit,
                 two_factor_enabled,
                 two_factor_secret,
                 two_factor_method,

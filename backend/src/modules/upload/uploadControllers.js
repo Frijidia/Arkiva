@@ -1,13 +1,15 @@
 import multer from 'multer';
-import multerS3 from 'multer-s3';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import s3 from '../../config/aws.js';  
+import s3 from '../../config/aws.js';
 import pool from '../../config/database.js';
-import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import libre from 'libreoffice-convert';
 import { promisify } from 'util';
+import { extractSmartText } from '../ocr/ocrControllers.js';
+// import pdf from 'pdf-parse';
+// import Tesseract from 'tesseract.js';
+// const { Converter } = pdfPoppler;
 
 
 const convert = promisify(libre.convert);
@@ -26,7 +28,7 @@ const convertToPdf = async (filePath) => {
   const pdfBuf = await convert(file, '.pdf', undefined);
   fs.writeFileSync(outputPath, pdfBuf);
 
-  return outputPath; 
+  return outputPath;
 };
 
 
@@ -39,7 +41,7 @@ const storage = multer.diskStorage({
   },
 });
 
-export const  upload = multer({ storage });
+export const upload = multer({ storage });
 
 
 // fonction pour send sur aws
@@ -65,6 +67,9 @@ export const uploadFileToS3 = async (filePath, originalName) => {
 };
 
 
+
+
+
 // Upload avec dossier_id
 export const uploadFiles = async (req, res) => {
   const { dossier_id } = req.body;
@@ -86,6 +91,8 @@ export const uploadFiles = async (req, res) => {
       }
 
       const s3Data = await uploadFileToS3(finalPath, finalName);
+
+      const contenu_ocr = await  extractSmartText(finalPath);
       fs.unlinkSync(finalPath); // Nettoie le PDF aussi
 
       uploaded.push([
@@ -94,15 +101,16 @@ export const uploadFiles = async (req, res) => {
         s3Data.type,
         s3Data.size,
         dossier_id,
+        contenu_ocr
       ]);
     }
 
     const placeholders = uploaded.map((_, i) =>
-      `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`
+      `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`
     ).join(', ');
 
     const query = `
-      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id)
+      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr)
       VALUES ${placeholders}
       RETURNING *;
     `;

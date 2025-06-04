@@ -8,7 +8,8 @@ const createTableCassiers = `
   sous_titre VARCHAR(255),
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   is_deleted BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  version_id INTEGER DEFAULT 0
 );
 `;
 

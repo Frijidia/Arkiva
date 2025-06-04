@@ -7,7 +7,9 @@ const createTableArmoires = `
   sous_titre VARCHAR(255),
   nom VARCHAR(50) UNIQUE,
   is_deleted BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
+  version_id INTEGER DEFAULT 0
 );
 `;
 
