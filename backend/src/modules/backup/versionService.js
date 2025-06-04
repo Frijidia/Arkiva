@@ -23,23 +23,37 @@ class VersionService {
     }
 
     async initializeDatabase() {
-        const createVersionsTableSQL = `
-            CREATE TABLE IF NOT EXISTS versions (
-                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                file_id UUID NOT NULL REFERENCES fichiers(id),
-                version_number INTEGER NOT NULL,
-                storage_path TEXT NOT NULL,
-                metadata JSONB,
-                created_by UUID REFERENCES utilisateurs(id),
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(file_id, version_number)
+        // Vérifier d'abord si la table fichiers existe
+        const checkFichiersTableSQL = `
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'fichiers'
             );
-
-            CREATE INDEX IF NOT EXISTS idx_versions_file_id ON versions(file_id);
-            CREATE INDEX IF NOT EXISTS idx_versions_version_number ON versions(version_number);
         `;
 
         try {
+            const checkResult = await db.query(checkFichiersTableSQL);
+            if (!checkResult.rows[0].exists) {
+                console.log('Table fichiers n\'existe pas encore. Création de la table versions reportée.');
+                return;
+            }
+
+            const createVersionsTableSQL = `
+                CREATE TABLE IF NOT EXISTS versions (
+                    id UUID PRIMARY KEY,
+                    file_id UUID NOT NULL REFERENCES fichiers(id),
+                    version_number INTEGER NOT NULL,
+                    storage_path TEXT NOT NULL,
+                    metadata JSONB,
+                    created_by UUID REFERENCES utilisateurs(id),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(file_id, version_number)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_versions_file_id ON versions(file_id);
+                CREATE INDEX IF NOT EXISTS idx_versions_version_number ON versions(version_number);
+            `;
+
             await db.query(createVersionsTableSQL);
             console.log('Table versions et index créés/mis à jour avec succès');
         } catch (error) {

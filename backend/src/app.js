@@ -9,19 +9,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Import des routes
-import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification
-import armoireRoutes from './modules/armoires/armoiresRoutes.js';
-import cassierRoutes from './modules/cassiers/cassierRoutes.js';
-import dossierRoutes from './modules/dosiers/dosierRoute.js';
-import fichierRoutes from './modules/fichiers/fichierRoutes.js';
-import uploadRoutes from './modules/upload/uploadRoutes.js';
-import tagRoutes from './modules/tags/tagRoutes.js'
-import ocrRoutes from './modules/ocr/ocrRoutes.js'
-import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'
-import auditRoutes from './modules/audit/auditRoutes.js'
-import encryptionRoutes from './modules/encryption/encryptionRoutes.js'
-//import backupRoutes from './modules/backup/backupRoutes.js'; // Routes de sauvegarde
+// Import des routes dans l'ordre des dépendances des tables
+import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification (utilisateurs)
+import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'; // entreprises
+import armoireRoutes from './modules/armoires/armoiresRoutes.js'; // armoires
+import cassierRoutes from './modules/cassiers/cassierRoutes.js'; // casiers
+import dossierRoutes from './modules/dosiers/dosierRoute.js'; // dossiers
+import fichierRoutes from './modules/fichiers/fichierRoutes.js'; // fichiers
+import tagRoutes from './modules/tags/tagRoutes.js'; // tags
+import auditRoutes from './modules/audit/auditRoutes.js'; // journal_activite
+import encryptionRoutes from './modules/encryption/encryptionRoutes.js'; // encryption_keys
+//import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes, versions
+import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
+import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
 
 const app = express();
 
@@ -35,21 +35,19 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Arkiva Platform API' });
 });
 
-// Routes qui attendent du JSON
+// Routes dans l'ordre des dépendances des tables
 app.use('/api/auth', authRoutes);
+app.use('/api/entreprise', entrepriseRoutes);
 app.use('/api/armoire', armoireRoutes);
 app.use('/api/casier', cassierRoutes);
 app.use('/api/dosier', dossierRoutes);
 app.use('/api/fichier', fichierRoutes);
-app.use('/api/upload', uploadRoutes);
 app.use('/api/tag', tagRoutes);
-
-app.use('/api/entreprise', entrepriseRoutes);
 app.use('/api/audit', auditRoutes);
-
 app.use('/api/encryption', encryptionRoutes);
-//app.use('/api/sauvegardes', backupRoutes); // Montage des routes de sauvegarde
-app.use('/api/ocr', ocrRoutes );
+//app.use('/api/sauvegardes', backupRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
