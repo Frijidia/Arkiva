@@ -1,5 +1,5 @@
 import pool from '../../config/database.js';
-
+import "./armoireModels.js";
 // Création d'une armoire
 
 export const CreateArmoire = async (req, res) => {
