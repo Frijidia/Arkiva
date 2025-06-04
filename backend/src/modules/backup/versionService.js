@@ -2,7 +2,13 @@ import db from '../../config/database.js';
 import { logAction } from '../audit/auditService.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+
+// Obtenir le chemin du répertoire actuel pour les modules ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Assume a storage directory for versioned files
 const VERSIONS_STORAGE_DIR = path.join(__dirname, '../../../../uploads/versions'); // Ajustez ce chemin si nécessaire
 

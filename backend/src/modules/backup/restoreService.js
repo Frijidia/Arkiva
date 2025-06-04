@@ -1,13 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import unzipper from 'unzipper';
-import fileService from '../fichiers/fichierControllers.js';
-import dossierService from '../dosiers/dosierControllers.js';
+import * as fileService from '../fichiers/fichierControllers.js';
+import * as dossierService from '../dosiers/dosierControllers.js';
 import * as casierService from '../cassiers/cassierContollers.js';
 import * as armoireService from '../armoires/armoireControllers.js';
 import versionService from './versionService.js';
 import * as auditService from '../audit/auditService.js';
-import userService from '../auth/authController.js';
+//import userService from '../auth/authController.js';
 
 class RestoreService {
     constructor() {

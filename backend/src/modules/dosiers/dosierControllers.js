@@ -1,5 +1,5 @@
 import pool from '../../config/database.js';
-
+import "./dosierModels.js";
 
 
 export const CreateDossier = async (req, res) => {

@@ -5,10 +5,10 @@ import backupModel from './backupModel.js';
 import versionService from './versionService.js';
 import restoreService from './restoreService.js';
 import { verifyToken, checkRole } from '../auth/authMiddleware.js';
-import fileService from '../fichiers/fichierControllers.js';
-import dossierService from '../dosiers/dosierControllers.js';
-import casierService from '../cassiers/cassierContollers.js';
-import armoireService from '../armoires/armoireControllers.js';
+import * as fileService from '../fichiers/fichierControllers.js';
+import * as dossierService from '../dosiers/dosierControllers.js';
+import * as casierService from '../cassiers/cassierContollers.js';
+import * as armoireService from '../armoires/armoireControllers.js';
 
 const router = express.Router();
 

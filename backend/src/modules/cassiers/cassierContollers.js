@@ -1,5 +1,5 @@
 import pool from '../../config/database.js';
-
+import "./cassierModels.js";
 
 // création d’un casier
 export const CreateCasier = async (req, res) => {

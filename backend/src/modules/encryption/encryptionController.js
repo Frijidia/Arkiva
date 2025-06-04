@@ -1,7 +1,7 @@
 import encryptionService from './encryptionService.js';
 import multer from 'multer';
 import { Readable } from 'stream';
-
+import "./encryptionKeyModel.js";
 // Configuration de multer pour le stockage en mémoire
 const upload = multer({
     storage: multer.memoryStorage(),
