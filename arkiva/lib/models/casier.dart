@@ -1,30 +1,34 @@
 import 'package:arkiva/models/document.dart';
+import 'package:arkiva/models/dossier.dart';
 
 class Casier {
   final String id;
   final String nom;
+  final String description;
   final String armoireId;
-  final String? description;
   final DateTime dateCreation;
-  final List<Document> documents;
+  final DateTime dateModification;
+  final List<Dossier> dossiers;
 
   Casier({
     required this.id,
     required this.nom,
+    this.description = '',
     required this.armoireId,
-    this.description,
     required this.dateCreation,
-    List<Document>? documents,
-  }) : documents = documents ?? [];
+    required this.dateModification,
+    this.dossiers = const [],
+  });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nom': nom,
-      'armoireId': armoireId,
       'description': description,
+      'armoireId': armoireId,
       'dateCreation': dateCreation.toIso8601String(),
-      'documents': documents.map((d) => d.toJson()).toList(),
+      'dateModification': dateModification.toIso8601String(),
+      'dossiers': dossiers.map((d) => d.toJson()).toList(),
     };
   }
 
@@ -32,11 +36,12 @@ class Casier {
     return Casier(
       id: json['id'],
       nom: json['nom'],
-      armoireId: json['armoireId'],
       description: json['description'],
+      armoireId: json['armoireId'],
       dateCreation: DateTime.parse(json['dateCreation']),
-      documents: (json['documents'] as List?)
-          ?.map((d) => Document.fromJson(d))
+      dateModification: DateTime.parse(json['dateModification']),
+      dossiers: (json['dossiers'] as List?)
+          ?.map((d) => Dossier.fromJson(d))
           .toList() ?? [],
     );
   }

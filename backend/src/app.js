@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Import des routes dans l'ordre des dépendances des tables
+
 import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification (utilisateurs)
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'; // entreprises
 import armoireRoutes from './modules/armoires/armoiresRoutes.js'; // armoires
@@ -22,6 +22,7 @@ import encryptionRoutes from './modules/encryption/encryptionRoutes.js'; // encr
 //import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes, versions
 import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
 import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
+
 
 const app = express();
 

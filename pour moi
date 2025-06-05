@@ -45,3 +45,8 @@ Ajouter des animations fluides
 Implémenter le mode sombre
 Optimiser l'accessibilité
 Par quelle fonctionnalité souhaitez-vous commencer ? Je suggère de commencer par la gestion des armoires et casiers, car c'est la base de l'organisation des documents dans l'application.
+
+
+Le carte "Rechercher" sur l'écran d'accueil est un élément d'interface qui est prévu pour implémenter la recherche avancée dans l'application ARKIVA.
+Pour l'instant, lorsque vous cliquez dessus, il n'y a pas de fonctionnalité associée car c'est un "TODO" dans le code (arkiva/lib/screens/home_screen.dart). L'objectif futur de cette carte est de permettre aux utilisateurs de rechercher des documents en utilisant des critères plus précis que la simple recherche par nom ou description, potentiellement en filtrant par tags, dates, types de documents, etc.
+C'est l'une des fonctionnalités que nous avons listées précédemment (fonctionnalité 4 : "Système de Recherche") et qui reste à développer.
