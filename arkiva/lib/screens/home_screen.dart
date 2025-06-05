@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:arkiva/screens/entreprise_detail_screen.dart';
 import 'package:arkiva/screens/create_user_screen.dart';
 import 'package:arkiva/screens/admin_dashboard_screen.dart';
+import 'package:arkiva/screens/login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -140,6 +141,17 @@ class HomeScreen extends StatelessWidget {
             },
             tooltip: 'Paramètres',
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await context.read<AuthStateService>().clearAuthState();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (Route<dynamic> route) => false,
+              );
+            },
+            tooltip: 'Déconnexion',
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -161,7 +173,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    'Vous avez : 📂 ${authStateService.armoireCount ?? 0} armoires | 🗄️ 20 casiers | 📄 235 documents',
+                    'Vous avez : 📂 ${authStateService.armoireCount ?? 0} armoires | 🗄️ ${authStateService.casierCount ?? 0} casiers | 📄 235 documents',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[800],

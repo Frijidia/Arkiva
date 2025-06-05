@@ -4,6 +4,7 @@ import '../services/armoire_service.dart';
 import 'casiers_screen.dart';
 import '../services/auth_state_service.dart';
 import 'package:provider/provider.dart';
+import '../services/casier_service.dart';
 
 class ArmoiresScreen extends StatefulWidget {
   final int entrepriseId;
@@ -41,11 +42,26 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
       final armoires = await _armoireService.getAllArmoires(widget.entrepriseId);
       setState(() {
         _armoires = armoires;
-        _isLoading = false;
       });
 
       // Mettre à jour le compteur d'armoires dans AuthStateService
       context.read<AuthStateService>().setArmoireCount(armoires.length);
+
+      // Calculer et mettre à jour le nombre total de casiers
+      int totalCasiers = 0;
+      final casierService = CasierService(); // Créer une instance du service Casier
+      for (final armoire in armoires) {
+        // Pour chaque armoire, récupérer ses casiers
+        final casiers = await casierService.getCasiersByArmoire(armoire.armoireId);
+        totalCasiers += casiers.length;
+      }
+
+      // Mettre à jour le compteur de casiers dans AuthStateService
+      context.read<AuthStateService>().setCasierCount(totalCasiers);
+
+      setState(() {
+        _isLoading = false; // Fin du chargement après avoir tout récupéré
+      });
 
     } catch (e) {
       setState(() {
