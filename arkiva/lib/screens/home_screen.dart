@@ -161,28 +161,13 @@ class HomeScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    'Vous avez : 📂 4 armoires | 🗄️ 20 casiers | 📄 235 documents',
+                    'Vous avez : 📂 ${authStateService.armoireCount ?? 0} armoires | 🗄️ 20 casiers | 📄 235 documents',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[800],
                     ),
                   ),
                   SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      print('Voir les statistiques button pressed');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      elevation: 4,
-                    ),
-                    child: Text('Voir les statistiques', style: TextStyle(fontSize: 16)),
-                  ),
                   if (userRole == 'admin')
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),
@@ -209,94 +194,53 @@ class HomeScreen extends StatelessWidget {
 
             SizedBox(height: 30),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Vos Armoires',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
+            InkWell(
+              onTap: () {
+                final authStateService = context.read<AuthStateService>();
+                final entrepriseId = authStateService.entrepriseId;
+                final userId = authStateService.userId;
+                
+                if (entrepriseId != null && userId != null) {
+                  _navigateToScreen(
+                    context,
+                    ArmoiresScreen(
+                      entrepriseId: entrepriseId,
+                      userId: int.parse(userId),
                     ),
-                  ),
-                  SizedBox(height: 16),
-
-                  Column(
-                    children: [
-                      Card(
-                        elevation: 3,
-                        margin: EdgeInsets.only(bottom: 12.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          leading: Icon(Icons.folder, size: 30, color: Colors.orange[700]),
-                          title: Text('Armoire 1 - RH', style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text('4 casiers | Modifié le JJ/MM/AAAA', style: TextStyle(color: Colors.grey[700])),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            _navigateToScreen(context, CasiersScreen(armoire: Armoire(
-                              id: '1',
-                              nom: 'Armoire 1 - RH',
-                              description: 'Documents administratifs',
-                              dateCreation: DateTime.now(),
-                              dateModification: DateTime.now(),
-                            )));
-                          },
-                        ),
-                      ),
-                      Card(
-                        elevation: 3,
-                        margin: EdgeInsets.only(bottom: 12.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          leading: Icon(Icons.folder, size: 30, color: Colors.orange[700]),
-                          title: Text('Armoire 2 - Projets', style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text('2 casiers | Modifié le JJ/MM/AAAA', style: TextStyle(color: Colors.grey[700])),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            _navigateToScreen(context, CasiersScreen(armoire: Armoire(
-                              id: '2',
-                              nom: 'Armoire 2 - Projets',
-                              description: 'Documents comptables',
-                              dateCreation: DateTime.now(),
-                              dateModification: DateTime.now(),
-                            )));
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 20),
-
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _showCreateArmoireDialog(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        elevation: 4,
-                      ),
-                      icon: Icon(Icons.add, color: Colors.white),
-                      label: Text('Créer une nouvelle armoire', style: TextStyle(fontSize: 16)),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Erreur: Informations d\'entreprise manquantes'),
                     ),
-                  ),
-                ],
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Vos Armoires',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[900],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // TODO: Afficher ici les armoires récentes ou un aperçu si nécessaire
+                    // Pour l'instant, cette section est un raccourci vers ArmoiresScreen
+                  ],
+                ),
               ),
             ),
 

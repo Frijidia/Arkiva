@@ -31,7 +31,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
       if (token != null && entrepriseId != null) {
         _stats = await _adminService.getEntrepriseStats(entrepriseId, token);
-        _users = await _adminService.getUsers(token);
+        _users = await _adminService.getUsers(token, entrepriseId);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

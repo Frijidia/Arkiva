@@ -1,67 +1,41 @@
 import 'package:arkiva/models/document.dart';
 
 class Dossier {
-  final String id;
+  final int dossierId;
+  final int casierId;
   final String nom;
-  final String casierId;
-  final String? description;
+  final String description;
   final DateTime dateCreation;
   final DateTime dateModification;
-  final List<Document> documents;
 
   Dossier({
-    required this.id,
-    required this.nom,
+    required this.dossierId,
     required this.casierId,
-    this.description,
+    required this.nom,
+    required this.description,
     required this.dateCreation,
     required this.dateModification,
-    List<Document>? documents,
-  }) : documents = documents ?? [];
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nom': nom,
-      'casierId': casierId,
-      'description': description,
-      'dateCreation': dateCreation.toIso8601String(),
-      'dateModification': dateModification.toIso8601String(),
-      'documents': documents.map((d) => d.toJson()).toList(),
-    };
-  }
+  });
 
   factory Dossier.fromJson(Map<String, dynamic> json) {
     return Dossier(
-      id: json['id'],
+      dossierId: json['dossier_id'],
+      casierId: json['casier_id'],
       nom: json['nom'],
-      casierId: json['casierId'],
-      description: json['description'],
-      dateCreation: DateTime.parse(json['dateCreation']),
-      dateModification: DateTime.parse(json['dateModification']),
-      documents: (json['documents'] as List?)
-          ?.map((d) => Document.fromJson(d))
-          .toList() ?? [],
+      description: json['description'] ?? '',
+      dateCreation: DateTime.parse(json['date_creation']),
+      dateModification: DateTime.parse(json['date_modification']),
     );
   }
 
-  Dossier copyWith({
-    String? id,
-    String? nom,
-    String? casierId,
-    String? description,
-    DateTime? dateCreation,
-    DateTime? dateModification,
-    List<Document>? documents,
-  }) {
-    return Dossier(
-      id: id ?? this.id,
-      nom: nom ?? this.nom,
-      casierId: casierId ?? this.casierId,
-      description: description ?? this.description,
-      dateCreation: dateCreation ?? this.dateCreation,
-      dateModification: dateModification ?? this.dateModification,
-      documents: documents ?? this.documents,
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'dossier_id': dossierId,
+      'casier_id': casierId,
+      'nom': nom,
+      'description': description,
+      'date_creation': dateCreation.toIso8601String(),
+      'date_modification': dateModification.toIso8601String(),
+    };
   }
 } 

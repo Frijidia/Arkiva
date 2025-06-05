@@ -9,6 +9,8 @@ class AuthStateService extends ChangeNotifier {
   String? _username;
   int? _entrepriseId;
   String? _role;
+  int? _armoireCount;
+  int? _casierCount;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
@@ -16,6 +18,8 @@ class AuthStateService extends ChangeNotifier {
   String? get username => _username;
   int? get entrepriseId => _entrepriseId;
   String? get role => _role;
+  int? get armoireCount => _armoireCount;
+  int? get casierCount => _casierCount;
 
   Future<void> initialize() async {
     print('🔄 Initialisation de l\'état d\'authentification...');
@@ -91,6 +95,16 @@ class AuthStateService extends ChangeNotifier {
     _isAuthenticated = false;
     
     print('✅ État d\'authentification supprimé');
+    notifyListeners();
+  }
+
+  void setArmoireCount(int count) {
+    _armoireCount = count;
+    notifyListeners();
+  }
+
+  void setCasierCount(int count) {
+    _casierCount = count;
     notifyListeners();
   }
 } 
