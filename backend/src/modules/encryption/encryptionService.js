@@ -13,11 +13,11 @@ class EncryptionService {
         
         // S'assure que la clé maître fait exactement 32 octets
         this.masterKey = crypto.createHash('sha256').update(masterKey).digest();
-        this.bucketName = process.env.AWS_S3_BUCKET_NAME;
-        
-        if (!this.bucketName) {
-            throw new Error('Le nom du bucket S3 (AWS_S3_BUCKET_NAME) doit être défini dans les variables d\'environnement');
-        }
+        //this.bucketName = process.env.AWS_S3_BUCKET_NAME;
+        //
+        //if (!this.bucketName) {
+        //    throw new Error('Le nom du bucket S3 (AWS_S3_BUCKET_NAME) doit être défini dans les variables d\'environnement');
+        //}
     }
 
     // Génère une nouvelle clé de chiffrement pour une entreprise
@@ -115,18 +115,16 @@ class EncryptionService {
             const encryptedContent = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
             const authTag = cipher.getAuthTag();
             
-            // Créer un fichier chiffré qui contient les métadonnées et le contenu
-            const encryptedFile = {
-                content: encryptedContent,
-                metadata: {
-                    originalFileName,
-                    iv: iv.toString('base64'),
-                    authTag: authTag.toString('base64'),
-                    entrepriseId
-                }
+            // Créer un objet avec toutes les informations nécessaires
+            const encryptedData = {
+                iv: iv.toString('base64'),
+                authTag: authTag.toString('base64'),
+                content: encryptedContent.toString('base64'),
+                originalFileName: originalFileName
             };
             
-            return encryptedFile;
+            // Convertir en JSON et puis en Buffer
+            return Buffer.from(JSON.stringify(encryptedData));
         } catch (error) {
             console.error('Erreur lors du chiffrement:', error);
             throw error;
@@ -134,35 +132,29 @@ class EncryptionService {
     }
 
     // Déchiffre un fichier depuis un buffer
-    async decryptFile(encryptedFile, entrepriseId) {
+    async decryptFile(encryptedBuffer, entrepriseId) {
         try {
-            console.log('Début du processus de déchiffrement:', { entrepriseId });
-            
             const { key } = await this.getEncryptionKey(entrepriseId);
-            console.log('Clé de déchiffrement récupérée:', {
-                keyLength: key.length
-            });
             
-            const decipher = crypto.createDecipheriv(
-                'aes-256-gcm', 
-                key, 
-                Buffer.from(encryptedFile.metadata.iv, 'base64')
-            );
+            // Convertir le buffer en JSON
+            const encryptedData = JSON.parse(encryptedBuffer.toString());
             
-            decipher.setAuthTag(Buffer.from(encryptedFile.metadata.authTag, 'base64'));
+            // Convertir les données base64 en Buffer
+            const iv = Buffer.from(encryptedData.iv, 'base64');
+            const authTag = Buffer.from(encryptedData.authTag, 'base64');
+            const encryptedContent = Buffer.from(encryptedData.content, 'base64');
+            
+            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+            decipher.setAuthTag(authTag);
             
             const decryptedContent = Buffer.concat([
-                decipher.update(encryptedFile.content),
+                decipher.update(encryptedContent),
                 decipher.final()
             ]);
             
-            console.log('Contenu déchiffré:', {
-                decryptedLength: decryptedContent.length
-            });
-            
             return {
                 content: decryptedContent,
-                originalFileName: encryptedFile.metadata.originalFileName
+                originalFileName: encryptedData.originalFileName
             };
         } catch (error) {
             console.error('Erreur détaillée dans decryptFile:', {

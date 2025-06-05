@@ -19,6 +19,4 @@ router.get('/:entreprise_id', checkRole(['admin', 'contributeur']), GetAllArmoir
 router.delete('/:armoire_id', checkRole(['admin', 'contributeur']), DeleteArmoire);
 
 
-
-
 export default router;

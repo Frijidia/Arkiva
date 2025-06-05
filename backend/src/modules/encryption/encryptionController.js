@@ -24,20 +24,17 @@ class EncryptionController {
             }
 
             const { entrepriseId } = req.params;
-            const { encryptedContent, originalFileName, iv, authTag } = await encryptionService.encryptFile(
+            const encryptedFile = await encryptionService.encryptFile(
                 req.file.buffer,
                 req.file.originalname,
                 entrepriseId
             );
 
-            res.json({
-                message: 'Fichier chiffré avec succès',
-                entrepriseId,
-                encryptedContent: encryptedContent.toString('base64'),
-                originalFileName,
-                iv,
-                authTag
-            });
+            // Envoyer le fichier chiffré
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="${req.file.originalname}.enc"`);
+            res.send(encryptedFile);
+
         } catch (error) {
             console.error('Erreur lors du chiffrement:', error);
             res.status(500).json({
@@ -51,31 +48,22 @@ class EncryptionController {
     static async decryptFile(req, res) {
         try {
             const { entrepriseId } = req.params;
-            const { encryptedContent, iv, authTag, originalFileName } = req.body;
             
-            console.log('Début du déchiffrement - Paramètres:', { entrepriseId });
+            if (!req.file) {
+                return res.status(400).json({ error: 'Aucun fichier n\'a été uploadé' });
+            }
 
-            const { content } = await encryptionService.decryptFile(
-                Buffer.from(encryptedContent, 'base64'),
-                iv,
-                authTag,
+            const { content, originalFileName } = await encryptionService.decryptFile(
+                req.file.buffer,
                 entrepriseId
             );
 
-            console.log('Fichier déchiffré avec succès:', { 
-                originalFileName,
-                contentLength: content.length 
-            });
-
-            // Vérifie que le contenu n'est pas vide
-            if (!content || content.length === 0) {
-                throw new Error('Le contenu déchiffré est vide');
-            }
-
-            res.setHeader('Content-Disposition', `attachment; filename="${originalFileName}"`);
+            // Envoyer le fichier déchiffré avec son extension originale
             res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="${originalFileName}"`);
             res.setHeader('Content-Length', content.length);
             res.send(content);
+
         } catch (error) {
             console.error('Erreur détaillée lors du déchiffrement:', {
                 message: error.message,
