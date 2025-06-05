@@ -26,14 +26,13 @@ export const register = async (req, res) => {
 
         if (existingUser.rows.length > 0) {
             return res.status(400).json({ message: 'Cet email est déjà utilisé' });
-    }
+        }
 
         // Hasher le mot de passe
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Vérifier si c'est le premier utilisateur
-        const firstUser = await isFirstUser();
-        const role = firstUser ? 'admin' : 'user';
+        // Définir le rôle comme admin
+        const role = 'admin';
 
         // Créer l'utilisateur
         const result = await pool.query(
@@ -55,9 +54,7 @@ export const register = async (req, res) => {
         );
 
         res.status(201).json({
-            message: firstUser ? 
-                'Compte administrateur créé avec succès' : 
-                'Compte créé avec succès',
+            message: 'Compte administrateur créé avec succès',
             user: {
                 id: result.rows[0].user_id,
                 email: result.rows[0].email,
