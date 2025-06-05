@@ -15,8 +15,6 @@ const createEncryptionKeysTable = `
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-
-      -- Ajoute la colonne auth_tag si elle n'existe pas
       IF NOT EXISTS (
         SELECT 1 
         FROM information_schema.columns 

@@ -71,7 +71,6 @@ class EncryptionService {
         try {
             let keyRecord = await EncryptionKey.findByEntrepriseId(entrepriseId);
             console.log('Clé trouvée:', keyRecord);
-
             // Si la clé n'existe pas, on la génère
             if (!keyRecord) {
                 console.log('Aucune clé trouvée pour l\'entreprise', entrepriseId, '- Génération d\'une nouvelle clé');
@@ -79,11 +78,9 @@ class EncryptionService {
                 keyRecord = await EncryptionKey.findByEntrepriseId(entrepriseId);
                 console.log('Nouvelle clé générée:', keyRecord);
             }
-
             if (!keyRecord || !keyRecord.auth_tag) {
                 throw new Error('Clé invalide ou incomplète');
             }
-
             // Déchiffre la clé avec la clé maître
             const decipher = crypto.createDecipheriv(
                 'aes-256-gcm',

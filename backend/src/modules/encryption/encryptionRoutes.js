@@ -5,16 +5,25 @@ import { verifyToken, checkRole } from '../../modules/auth/authMiddleware.js';
 const router = express.Router();
 
 // Route pour générer une clé de chiffrement pour une entreprise
-router.post('/generate-key/:entrepriseId', verifyToken, checkRole(['admin']), EncryptionController.generateKey);
+router.post(
+    '/generate-key/:entrepriseId',
+    verifyToken, checkRole(['admin']), 
+    EncryptionController.generateKey
+);
 
 // Route pour chiffrer un fichier
-router.post('/encrypt/:entrepriseId', 
+router.post(
+    '/encrypt/:entrepriseId', 
     verifyToken, 
     EncryptionController.uploadMiddleware(),
     EncryptionController.encryptFile
 );
 
 // Route pour déchiffrer un fichier
-router.get('/decrypt/:entrepriseId/:s3Key', verifyToken, EncryptionController.decryptFile);
+router.get(
+    '/decrypt/:entrepriseId/:s3Key',
+    verifyToken,
+    EncryptionController.decryptFile
+);
 
 export default router; 
