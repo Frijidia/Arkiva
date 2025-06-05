@@ -1,31 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:arkiva/screens/login_screen.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+import '../services/auth_state_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({Key? key}) : super(key: key);
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+
+  // Champs du formulaire d'inscription
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
-  void _register() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Logique d'inscription
-      print('Inscription avec Email: ${_emailController.text}, Mot de passe: ${_passwordController.text}');
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    print('🔄 Début du processus d\'inscription...');
+    setState(() => _isLoading = true);
+
+    try {
+      print('📝 Validation du formulaire d\'inscription...');
+      final response = await _authService.registerAdmin(
+        email: _emailController.text,
+        password: _passwordController.text,
+        username: _usernameController.text,
+      );
+
+      print('✅ Inscription réussie, redirection vers la création d\'entreprise...');
+      final authStateService = context.read<AuthStateService>();
+      await authStateService.setAuthState(
+        response['token'],
+        response['userId'],
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/create-entreprise');
+
+    } catch (e) {
+      print('❌ Erreur lors de l\'inscription: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -35,76 +68,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         title: const Text('Inscription'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nom',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre nom';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16.0),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre email';
-                    }
-                    // TODO: Ajouter une validation d'email plus robuste si nécessaire
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16.0),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mot de passe',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre mot de passe';
-                    }
-                    // TODO: Ajouter des critères de mot de passe si nécessaire
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24.0),
-                ElevatedButton(
-                  onPressed: _register,
-                  child: const Text('S\'inscrire'),
-                ),
-                const SizedBox(height: 16.0),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    );
-                  },
-                  child: const Text('Déjà un compte ? Se connecter'),
-                ),
-              ],
-            ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer votre email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Nom d\'utilisateur'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer votre nom d\'utilisateur';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Mot de passe'),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer votre mot de passe';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _handleRegister,
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('S\'inscrire'),
+              ),
+            ],
           ),
         ),
       ),

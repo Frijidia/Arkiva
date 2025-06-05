@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arkiva/screens/register_screen.dart';
+import 'package:arkiva/services/auth_service.dart';
+import 'package:arkiva/services/auth_state_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -20,10 +25,48 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Logique de connexion
-      print('Connexion avec Email: ${_emailController.text}, Mot de passe: ${_passwordController.text}');
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    print('🔄 Tentative de connexion...');
+
+    try {
+      final loginResponse = await _authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      // Mettre à jour l'état d'authentification
+      final authStateService = context.read<AuthStateService>();
+      await authStateService.setAuthState(
+        loginResponse['token'],
+        loginResponse['userId'],
+      );
+
+      // Récupérer les informations complètes de l'utilisateur
+      final userInfo = await _authService.getUserInfo(loginResponse['token']);
+      final userRole = userInfo['role'];
+      final entrepriseId = userInfo['entreprise_id'];
+
+      if (!mounted) return;
+
+      // Vérifier le rôle et l'entreprise_id
+      if (userRole == 'admin' && (entrepriseId == 0 || entrepriseId == null)) {
+        print('✅ Admin connecté sans entreprise, redirection vers la création d\'entreprise.');
+        Navigator.of(context).pushReplacementNamed('/create-entreprise');
+      } else {
+        print('✅ Utilisateur connecté (Admin avec entreprise ou autre rôle), redirection vers l\'accueil.');
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+
+    } catch (e) {
+      print('❌ Erreur lors de la connexion: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -52,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer votre email';
                     }
-                    // TODO: Ajouter une validation d'email plus robuste si nécessaire
                     return null;
                   },
                 ),
@@ -73,8 +115,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24.0),
                 ElevatedButton(
-                  onPressed: _login,
-                  child: const Text('Se connecter'),
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Se connecter'),
                 ),
                 const SizedBox(height: 16.0),
                 TextButton(

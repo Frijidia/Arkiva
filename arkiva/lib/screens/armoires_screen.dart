@@ -23,11 +23,11 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
   }
 
   void _loadArmoires() {
-    // TODO: Charger les armoires depuis le backend
-    setState(() {
-      _armoires = [
-        Armoire(
-          id: '1',
+      // TODO: Charger les armoires depuis le backend
+      setState(() {
+        _armoires = [
+          Armoire(
+            id: '1',
           nom: 'Armoire Administrative',
           description: 'Documents administratifs et contrats',
           dateCreation: DateTime.now().subtract(const Duration(days: 30)),
@@ -128,9 +128,9 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
               ],
             ),
           ],
-        ),
-        Armoire(
-          id: '2',
+          ),
+          Armoire(
+            id: '2',
           nom: 'Armoire RH',
           description: 'Documents ressources humaines',
           dateCreation: DateTime.now().subtract(const Duration(days: 20)),
@@ -162,7 +162,7 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
                       dateCreation: DateTime.now().subtract(const Duration(days: 8)),
                       dateModification: DateTime.now(),
                       description: 'Fiche de paie - Janvier 2024',
-                    ),
+        ),
                   ],
                 ),
               ],
@@ -170,8 +170,8 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
           ],
         ),
       ];
-      _isLoading = false;
-    });
+        _isLoading = false;
+      });
   }
 
   Future<void> _creerArmoire() async {

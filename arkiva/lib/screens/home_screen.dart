@@ -5,6 +5,11 @@ import 'package:arkiva/screens/armoires_screen.dart';
 import 'package:arkiva/screens/casiers_screen.dart';
 import 'package:arkiva/models/armoire.dart';
 import 'package:arkiva/services/animation_service.dart';
+import 'package:arkiva/services/auth_state_service.dart';
+import 'package:provider/provider.dart';
+import 'package:arkiva/screens/entreprise_detail_screen.dart';
+import 'package:arkiva/screens/create_user_screen.dart';
+import 'package:arkiva/screens/admin_dashboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -71,6 +76,10 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authStateService = context.watch<AuthStateService>();
+    final username = authStateService.username ?? 'Utilisateur';
+    final userRole = authStateService.role;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -79,7 +88,7 @@ class HomeScreen extends StatelessWidget {
             SizedBox(width: 16),
             Expanded(
               child: Text(
-                'Bonjour [Nom Utilisateur]',
+                'Bonjour $username',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -92,24 +101,44 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {
               _navigateToScreen(context, const ScanScreen());
             },
+            tooltip: 'Scanner un document',
           ),
           IconButton(
             icon: const Icon(Icons.upload_file),
             onPressed: () {
               _navigateToScreen(context, const UploadScreen());
             },
+            tooltip: 'Téléverser un fichier',
           ),
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
               print('Notifications button pressed');
             },
+            tooltip: 'Notifications',
           ),
+          if (userRole == 'admin')
+            IconButton(
+              icon: const Icon(Icons.dashboard),
+              onPressed: () {
+                _navigateToScreen(context, const AdminDashboardScreen());
+              },
+              tooltip: 'Tableau de bord administrateur',
+            ),
+          if (userRole == 'admin')
+            IconButton(
+              icon: const Icon(Icons.person_add),
+              onPressed: () {
+                _navigateToScreen(context, const CreateUserScreen());
+              },
+              tooltip: 'Créer un utilisateur',
+            ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
               print('Profile/Settings button pressed');
             },
+            tooltip: 'Paramètres',
           ),
         ],
       ),
@@ -123,7 +152,7 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '👋 Bonjour [Nom] !',
+                    '👋 Bonjour $username !',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -154,6 +183,26 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: Text('Voir les statistiques', style: TextStyle(fontSize: 16)),
                   ),
+                  if (userRole == 'admin')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _navigateToScreen(context, const EntrepriseDetailScreen());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueGrey[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          elevation: 4,
+                        ),
+                        icon: Icon(Icons.business, color: Colors.white),
+                        label: Text('Voir infos entreprise', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
                 ],
               ),
             ),
