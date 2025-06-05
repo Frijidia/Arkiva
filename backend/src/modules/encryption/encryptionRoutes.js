@@ -20,9 +20,10 @@ router.post(
 );
 
 // Route pour déchiffrer un fichier
-router.get(
-    '/decrypt/:entrepriseId/:s3Key',
+router.post(
+    '/decrypt/:entrepriseId',
     verifyToken,
+    EncryptionController.uploadMiddleware(),
     EncryptionController.decryptFile
 );
 
