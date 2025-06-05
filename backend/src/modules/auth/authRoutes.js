@@ -10,7 +10,8 @@ import {
     verify2FA,
     updateUserInfo,
     deleteOwnAccount,
-    deleteUserAccount
+    deleteUserAccount,
+    getUsersByEntreprise
   } from './authController.js';
 import { verifyToken, checkRole, check2FA } from './authMiddleware.js';
   
@@ -30,6 +31,7 @@ router.delete('/me', verifyToken, deleteOwnAccount);
 
 // Routes admin
 router.get('/users', verifyToken, checkRole(['admin']), getUsers);
+router.get('/entreprise/:entrepriseId/users', verifyToken, checkRole(['admin']), getUsersByEntreprise);
 router.put('/users/:id', verifyToken, checkRole(['admin']), updateUserRole);
 router.delete('/users/:id', verifyToken, checkRole(['admin']), deleteUserAccount);
 

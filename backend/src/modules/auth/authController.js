@@ -361,3 +361,35 @@ export const deleteUserAccount = async (req, res) => {
     }
 };
 
+// Obtenir les utilisateurs par entreprise
+export const getUsersByEntreprise = async (req, res) => {
+    try {
+        const { entrepriseId } = req.params;
+
+        const result = await pool.query(
+            `SELECT 
+                user_id,
+                email,
+                username,
+                role,
+                created_at,
+                two_factor_enabled
+             FROM users 
+             WHERE entreprise_id = $1
+             ORDER BY created_at DESC`,
+            [entrepriseId]
+        );
+
+        res.json({
+            message: 'Liste des utilisateurs récupérée avec succès',
+            users: result.rows
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des utilisateurs:', error);
+        res.status(500).json({ 
+            message: 'Erreur lors de la récupération des utilisateurs',
+            details: error.message 
+        });
+    }
+};
+
