@@ -106,129 +106,68 @@ class EncryptionService {
         }
     }
 
-    // Chiffre un fichier et l'upload sur S3
+    // Chiffre un fichier et retourne le fichier chiffré
     async encryptFile(fileBuffer, originalFileName, entrepriseId) {
         try {
             const { key, iv } = await this.getEncryptionKey(entrepriseId);
-            
+        
             const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
             const encryptedContent = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
             const authTag = cipher.getAuthTag();
             
-            // Génère un nom de fichier unique pour le fichier chiffré
-            const encryptedFileName = `${crypto.randomBytes(16).toString('hex')}.enc`;
-            const s3Key = `encrypted/${entrepriseId}/${encryptedFileName}`;
-            
-            // Upload sur S3
-            await s3.send(new PutObjectCommand({
-                Bucket: this.bucketName,
-                Key: s3Key,
-                Body: encryptedContent,
-                Metadata: {
-                    'original-filename': originalFileName,
-                    'encryption-iv': iv.toString('base64'),
-                    'auth-tag': authTag.toString('base64')
+            // Créer un fichier chiffré qui contient les métadonnées et le contenu
+            const encryptedFile = {
+                content: encryptedContent,
+                metadata: {
+                    originalFileName,
+                    iv: iv.toString('base64'),
+                    authTag: authTag.toString('base64'),
+                    entrepriseId
                 }
-            }));
-            
-            return {
-                s3Key,
-                originalFileName
             };
+            
+            return encryptedFile;
         } catch (error) {
             console.error('Erreur lors du chiffrement:', error);
             throw error;
         }
     }
 
-    // Déchiffre un fichier depuis S3
-    async decryptFile(s3Key, entrepriseId) {
+    // Déchiffre un fichier depuis un buffer
+    async decryptFile(encryptedFile, entrepriseId) {
         try {
-            console.log('Début du processus de déchiffrement:', { s3Key, entrepriseId });
+            console.log('Début du processus de déchiffrement:', { entrepriseId });
             
-            const { key, iv } = await this.getEncryptionKey(entrepriseId);
+            const { key } = await this.getEncryptionKey(entrepriseId);
             console.log('Clé de déchiffrement récupérée:', {
-                keyLength: key.length,
-                ivLength: iv.length
+                keyLength: key.length
             });
             
-            // S'assure que le chemin S3 est complet
-            const fullS3Key = s3Key.startsWith('encrypted/') ? s3Key : `encrypted/${entrepriseId}/${s3Key}`;
-            console.log('Chemin S3 complet:', fullS3Key);
+            const decipher = crypto.createDecipheriv(
+                'aes-256-gcm', 
+                key, 
+                Buffer.from(encryptedFile.metadata.iv, 'base64')
+            );
             
-            // Récupère le fichier depuis S3
-            const response = await s3.send(new GetObjectCommand({
-                Bucket: this.bucketName,
-                Key: fullS3Key
-            }));
-            
-            if (!response.Metadata || !response.Metadata['auth-tag']) {
-                throw new Error('Métadonnées de chiffrement manquantes dans le fichier S3');
-            }
-
-            const encryptedContent = await response.Body.transformToByteArray();
-            console.log('Contenu chiffré récupéré:', {
-                contentLength: encryptedContent.length,
-                hasAuthTag: !!response.Metadata['auth-tag'],
-                hasOriginalFilename: !!response.Metadata['original-filename']
-            });
-
-            const authTag = Buffer.from(response.Metadata['auth-tag'], 'base64');
-            
-            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-            decipher.setAuthTag(authTag);
+            decipher.setAuthTag(Buffer.from(encryptedFile.metadata.authTag, 'base64'));
             
             const decryptedContent = Buffer.concat([
-                decipher.update(Buffer.from(encryptedContent)),
+                decipher.update(encryptedFile.content),
                 decipher.final()
             ]);
             
             console.log('Contenu déchiffré:', {
                 decryptedLength: decryptedContent.length
             });
-
-            // Détermine le type MIME du fichier original
-            const originalFileName = response.Metadata['original-filename'];
-            if (!originalFileName) {
-                throw new Error('Nom de fichier original manquant dans les métadonnées');
-            }
-
-            const fileExtension = originalFileName.split('.').pop().toLowerCase();
-            let contentType = 'application/octet-stream';
-            
-            // Mappe les extensions de fichiers courantes à leurs types MIME
-            const mimeTypes = {
-                'pdf': 'application/pdf',
-                'jpg': 'image/jpeg',
-                'jpeg': 'image/jpeg',
-                'png': 'image/png',
-                'doc': 'application/msword',
-                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'xls': 'application/vnd.ms-excel',
-                'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'txt': 'text/plain'
-            };
-            
-            if (mimeTypes[fileExtension]) {
-                contentType = mimeTypes[fileExtension];
-            }
-            
-            console.log('Type de fichier détecté:', {
-                originalFileName,
-                fileExtension,
-                contentType
-            });
             
             return {
                 content: decryptedContent,
-                originalFileName,
-                contentType
+                originalFileName: encryptedFile.metadata.originalFileName
             };
         } catch (error) {
             console.error('Erreur détaillée dans decryptFile:', {
                 message: error.message,
                 stack: error.stack,
-                s3Key,
                 entrepriseId
             });
             throw error;

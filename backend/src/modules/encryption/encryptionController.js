@@ -24,7 +24,7 @@ class EncryptionController {
             }
 
             const { entrepriseId } = req.params;
-            const { s3Key, originalFileName } = await encryptionService.encryptFile(
+            const { encryptedContent, originalFileName, iv, authTag } = await encryptionService.encryptFile(
                 req.file.buffer,
                 req.file.originalname,
                 entrepriseId
@@ -33,8 +33,10 @@ class EncryptionController {
             res.json({
                 message: 'Fichier chiffré avec succès',
                 entrepriseId,
-                s3Key,
-                originalFileName
+                encryptedContent: encryptedContent.toString('base64'),
+                originalFileName,
+                iv,
+                authTag
             });
         } catch (error) {
             console.error('Erreur lors du chiffrement:', error);
@@ -48,13 +50,20 @@ class EncryptionController {
     // Déchiffre un fichier
     static async decryptFile(req, res) {
         try {
-            const { entrepriseId, s3Key } = req.params;
-            console.log('Début du déchiffrement - Paramètres:', { entrepriseId, s3Key });
+            const { entrepriseId } = req.params;
+            const { encryptedContent, iv, authTag, originalFileName } = req.body;
+            
+            console.log('Début du déchiffrement - Paramètres:', { entrepriseId });
 
-            const { content, originalFileName, contentType } = await encryptionService.decryptFile(s3Key, entrepriseId);
+            const { content } = await encryptionService.decryptFile(
+                Buffer.from(encryptedContent, 'base64'),
+                iv,
+                authTag,
+                entrepriseId
+            );
+
             console.log('Fichier déchiffré avec succès:', { 
-                originalFileName, 
-                contentType,
+                originalFileName,
                 contentLength: content.length 
             });
 
@@ -64,7 +73,7 @@ class EncryptionController {
             }
 
             res.setHeader('Content-Disposition', `attachment; filename="${originalFileName}"`);
-            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Type', 'application/octet-stream');
             res.setHeader('Content-Length', content.length);
             res.send(content);
         } catch (error) {
