@@ -129,7 +129,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     );
   }
 
-  String _formatTaille(int octets) {
+  String _formatTaille(int? octets) {
+    if (octets == null) {
+      return 'N/A';
+    }
     if (octets < 1024) {
       return '$octets octets';
     } else if (octets < 1024 * 1024) {

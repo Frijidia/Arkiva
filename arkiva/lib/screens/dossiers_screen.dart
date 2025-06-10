@@ -4,6 +4,7 @@ import 'package:arkiva/models/dossier.dart';
 import 'package:arkiva/services/dossier_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:provider/provider.dart';
+import 'package:arkiva/screens/fichiers_screen.dart';
 
 class DossiersScreen extends StatefulWidget {
   final Casier casier;
@@ -33,11 +34,11 @@ class _DossiersScreenState extends State<DossiersScreen> {
 
       if (token != null) {
         final dossiers = await _dossierService.getDossiers(token, widget.casier.casierId);
-    setState(() {
+        setState(() {
           _dossiers = dossiers;
-      _isLoading = false;
-    });
-  }
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur: ${e.toString()}')),
@@ -97,13 +98,17 @@ class _DossiersScreenState extends State<DossiersScreen> {
 
     if (result != null) {
       try {
-        final token = context.read<AuthStateService>().token;
-        if (token != null) {
+        final authStateService = context.read<AuthStateService>();
+        final token = authStateService.token;
+        final userId = authStateService.userId;
+
+        if (token != null && userId != null) {
           await _dossierService.createDossier(
             token,
             widget.casier.casierId,
             result['nom']!,
             result['description'] ?? '',
+            int.parse(userId),
           );
           await _loadDossiers();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -116,6 +121,125 @@ class _DossiersScreenState extends State<DossiersScreen> {
         );
       }
     }
+  }
+
+  Future<void> _renommerDossier(Dossier dossier) async {
+    final TextEditingController nomController = TextEditingController(text: dossier.nom);
+    final TextEditingController descriptionController = TextEditingController(text: dossier.description);
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Renommer le dossier'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nomController,
+              decoration: const InputDecoration(
+                labelText: 'Nouveau nom',
+                hintText: 'Entrez le nouveau nom',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Description du dossier',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (nomController.text.isNotEmpty) {
+                Navigator.pop(context, {
+                  'nom': nomController.text,
+                  'description': descriptionController.text,
+                });
+              }
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      try {
+        final token = context.read<AuthStateService>().token;
+        if (token != null) {
+          await _dossierService.updateDossier(
+            token,
+            dossier.dossierId,
+            result['nom']!,
+            result['description'] ?? '',
+          );
+          await _loadDossiers();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dossier mis à jour avec succès')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _supprimerDossier(Dossier dossier) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text('Voulez-vous vraiment supprimer le dossier "${dossier.nom}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final token = context.read<AuthStateService>().token;
+        if (token != null) {
+          await _dossierService.deleteDossier(token, dossier.dossierId);
+          await _loadDossiers();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dossier supprimé avec succès')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  void _naviguerVersDocuments(Dossier dossier) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FichiersScreen(dossier: dossier),
+      ),
+    );
   }
 
   @override
@@ -139,49 +263,82 @@ class _DossiersScreenState extends State<DossiersScreen> {
       body: RefreshIndicator(
         onRefresh: _loadDossiers,
         child: _dossiers.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     const Icon(
-                                Icons.folder_open,
-                                size: 64,
+                      Icons.folder_open,
+                      size: 64,
                       color: Colors.grey,
-                              ),
-                              const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
                     const Text(
                       'Aucun dossier dans ce casier',
-                                style: TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                                const SizedBox(height: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     const Text(
                       'Créez votre premier dossier',
                       style: TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 16),
-                                ElevatedButton.icon(
+                    ElevatedButton.icon(
                       onPressed: _creerDossier,
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Créer un dossier'),
-                                ),
-                            ],
-                          ),
-                        )
+                      icon: const Icon(Icons.add),
+                      label: const Text('Créer un dossier'),
+                    ),
+                  ],
+                ),
+              )
             : ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 itemCount: _dossiers.length,
-                          itemBuilder: (context, index) {
+                itemBuilder: (context, index) {
                   final dossier = _dossiers[index];
                   return Card(
                     child: ListTile(
+                      leading: const Icon(Icons.folder),
                       title: Text(dossier.nom),
                       subtitle: Text(dossier.description),
-                      onTap: () {
-                        // TODO: Naviguer vers l'écran des documents
-                      },
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'renommer':
+                              _renommerDossier(dossier);
+                              break;
+                            case 'supprimer':
+                              _supprimerDossier(dossier);
+                              break;
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'renommer',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit),
+                                SizedBox(width: 8),
+                                Text('Renommer'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'supprimer',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Supprimer', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () => _naviguerVersDocuments(dossier),
                     ),
                   );
                 },

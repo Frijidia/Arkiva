@@ -23,14 +23,14 @@ class Armoire {
 
   factory Armoire.fromJson(Map<String, dynamic> json) {
     return Armoire(
-      armoireId: json['armoire_id'],
-      userId: json['user_id'],
-      sousTitre: json['sous_titre'] ?? '',
-      nom: json['nom'],
-      isDeleted: json['is_deleted'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
-      entrepriseId: json['entreprise_id'],
-      versionId: json['version_id'],
+      armoireId: json['armoire_id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      sousTitre: json['sous_titre'] as String? ?? '',
+      nom: json['nom'] as String? ?? '',
+      isDeleted: json['is_deleted'] as bool? ?? false,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      entrepriseId: json['entreprise_id'] as int? ?? 0,
+      versionId: json['version_id'] as int? ?? 0,
     );
   }
 

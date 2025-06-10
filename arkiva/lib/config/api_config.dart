@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfig {
-  static const String baseUrl = 'http://localhost:3000';
+  static const String baseUrl = 'http://localhost:3000/api';
 
   static Future<Map<String, String>> getHeaders() async {
     final prefs = await SharedPreferences.getInstance();

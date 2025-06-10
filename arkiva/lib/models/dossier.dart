@@ -1,30 +1,40 @@
 import 'package:arkiva/models/document.dart';
 
 class Dossier {
-  final int dossierId;
-  final int casierId;
+  final int? dossierId;
+  final int? casierId;
   final String nom;
   final String description;
-  final DateTime dateCreation;
-  final DateTime dateModification;
+  final DateTime createdAt;
+  final int versionId;
 
   Dossier({
-    required this.dossierId,
-    required this.casierId,
+    this.dossierId,
+    this.casierId,
     required this.nom,
     required this.description,
-    required this.dateCreation,
-    required this.dateModification,
+    required this.createdAt,
+    required this.versionId,
   });
 
   factory Dossier.fromJson(Map<String, dynamic> json) {
+    final int? parsedDossierId = json['dossier_id'] as int?;
+    final int? parsedCasierId = json['casier_id'] as int?;
+
+    if (parsedDossierId == null) {
+      throw FormatException('Dossier ID is missing or null in JSON: $json');
+    }
+    if (parsedCasierId == null) {
+      throw FormatException('Casier ID is missing or null in JSON: $json');
+    }
+
     return Dossier(
-      dossierId: json['dossier_id'],
-      casierId: json['casier_id'],
-      nom: json['nom'],
-      description: json['description'] ?? '',
-      dateCreation: DateTime.parse(json['date_creation']),
-      dateModification: DateTime.parse(json['date_modification']),
+      dossierId: parsedDossierId,
+      casierId: parsedCasierId,
+      nom: json['nom'] as String,
+      description: json['description'] as String? ?? '',
+      createdAt: DateTime.parse(json['created_at'] as String),
+      versionId: json['version_id'] as int? ?? 0,
     );
   }
 
@@ -34,8 +44,8 @@ class Dossier {
       'casier_id': casierId,
       'nom': nom,
       'description': description,
-      'date_creation': dateCreation.toIso8601String(),
-      'date_modification': dateModification.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'version_id': versionId,
     };
   }
 } 

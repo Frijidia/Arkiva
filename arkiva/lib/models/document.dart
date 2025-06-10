@@ -4,7 +4,7 @@ class Document {
   final String? description;
   final String type;
   final String chemin;
-  final int taille;
+  final int? taille;
   final DateTime dateCreation;
   final DateTime dateModification;
   final List<String> tags;
@@ -17,7 +17,7 @@ class Document {
     this.description,
     required this.type,
     required this.chemin,
-    required this.taille,
+    this.taille,
     required this.dateCreation,
     required this.dateModification,
     required this.dateAjout,
@@ -43,17 +43,17 @@ class Document {
 
   factory Document.fromJson(Map<String, dynamic> json) {
     return Document(
-      id: json['id'],
-      nom: json['nom'],
-      description: json['description'],
-      type: json['type'],
-      chemin: json['chemin'],
-      taille: json['taille'],
-      dateCreation: DateTime.parse(json['dateCreation']),
-      dateModification: DateTime.parse(json['dateModification']),
-      dateAjout: DateTime.parse(json['dateAjout']),
+      id: json['id'] as String,
+      nom: json['nom'] as String,
+      description: json['description'] as String?,
+      type: json['type'] as String,
+      chemin: json['chemin'] as String,
+      taille: json['taille'] as int? ?? 0,
+      dateCreation: DateTime.parse(json['dateCreation'] as String),
+      dateModification: DateTime.parse(json['dateModification'] as String),
+      dateAjout: DateTime.parse(json['dateAjout'] as String),
       tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
-      estChiffre: json['estChiffre'] ?? false,
+      estChiffre: json['estChiffre'] as bool? ?? false,
     );
   }
 
