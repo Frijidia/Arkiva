@@ -2,13 +2,13 @@ import express from 'express';
 
 import {
     
-searchFichiersByOcrContent
+// searchFichiersByOcrContent
    
 } from './ocrControllers.js';
 
 const router = express.Router();
 
-router.get('/:searchTerm', searchFichiersByOcrContent);
+// router.get('/:searchTerm', searchFichiersByOcrContent);
 
 
 

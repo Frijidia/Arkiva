@@ -172,32 +172,6 @@ export async function removeTagFromFile(req, res) {
 }
 
 
-/**
- * 4. recuperer les fichiers par tag
- */
-
-export async function getFilesByTag(req, res) {
-    const { tag_id } = req.params;
-
-    try {
-        const query = `
-     SELECT fichiers.*, tags.name AS tag_nom
-        FROM fichiers
-        JOIN fichier_tags ON fichiers.fichier_id = fichier_tags.fichier_id
-        JOIN tags ON fichier_tags.tag_id = tags.tag_id
-        WHERE fichier_tags.tag_id = $1
-        ORDER BY fichiers.nom;
-
-    `;
-        const result = await pool.query(query, [tag_id]);
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Erreur lors de la récupération des fichiers par tag :', error);
-        res.status(500).json({
-            error: 'Erreur serveur lors de la récupération des fichiers', details: error.message  // Ajout du détail de l'erreur ici
-        });
-    }
-}
 
 
 /**

@@ -4,6 +4,8 @@ import s3 from '../../config/aws.js';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mime from "mime-types";
+import encryptionService from '../encryption/encryptionService.js';
+
 // import fs from 'fs/promises';
 
 
@@ -126,58 +128,69 @@ async function genererLienSigne(chemin) {
 
 
 
+//test
+
+export async function streamToBuffer(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("error", reject);
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
+  });
+}
+
+
+export async function downloadFileBufferFromS3(key) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: key,
+  });
+  
+  const response = await s3.send(command);
+
+  // Convertir le ReadableStream en Buffer
+  const buffer = await streamToBuffer(response.Body);
+  return buffer;
+}
+
+
+
 // afficher le fichier
+
 export const displayFichier = async (req, res) => {
-  const { fichier_id } = req.params;
+  const { fichier_id, entreprise_id } = req.params;
 
   try {
     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
 
-    const chemin = rows[0].chemin;
-
-    const signedUrl = await genererLienSigne(chemin);
-    res.redirect(signedUrl); // Redirection vers le lien signé
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur lors du téléchargement' });
-  }
-};
-
-
-//telecharger le fichier
-export const telechargerFichier = async (req, res) => {
-  const { fichier_id } = req.params;
-  const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-
-  try {
-    const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
-
-    const chemin = rows[0].chemin;
-
+    const fichier = rows[0];
+    const chemin = fichier.chemin;
+    const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
     const key = chemin.replace(s3BaseUrl, '');
-    const contentType = mime.lookup(chemin) || 'application/octet-stream';
 
-    const command = new GetObjectCommand({
-      Bucket: 'arkiva-storage',
-      Key: key,
-      ResponseContentType: contentType,
-      ResponseContentDisposition: 'attachment', // <-- ceci force le téléchargement
+    // Étape 1 : Télécharger le fichier chiffré depuis S3
+    const encryptedBuffer = await downloadFileBufferFromS3(key);
 
-    });
+    // Étape 2 : Déchiffrer le buffer (le JSON est parsé dans decryptFile)
+    const { content: decryptedBuffer, originalFileName } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
 
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
-    console.log("URL signée:", url);
+    // Étape 3 : Détecter le bon type MIME
+    const mimeType = mime.lookup(originalFileName) || 'application/octet-stream';
+    let Name = "toto"
+    console.log(originalFileName)
 
-    // res.redirect(url); 
+    // Étape 4 : Répondre avec le fichier déchiffré
+    res.setHeader('Content-Disposition', `inline; filename="${Name}"`);
+    res.setHeader('Content-Type', mimeType);
+    res.send(decryptedBuffer);
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erreur lors du téléchargement' });
+    res.status(500).json({ error: 'Erreur lors de l\'affichage du fichier' });
   }
 };
+
 
 
 
@@ -227,5 +240,40 @@ export const getFichierCountByDossierId = async (req, res) => {
 //   } catch (err) {
 //     console.error(err);
 //     res.status(500).json({ error: "Erreur lors du partage du fichier" });
+//   }
+// };
+
+
+//telecharger le fichier
+
+// export const telechargerFichier = async (req, res) => {
+//   const { fichier_id } = req.params;
+//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+
+//   try {
+//     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
+//     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
+
+//     const chemin = rows[0].chemin;
+
+//     const key = chemin.replace(s3BaseUrl, '');
+//     const contentType = mime.lookup(chemin) || 'application/octet-stream';
+
+//     const command = new GetObjectCommand({
+//       Bucket: 'arkiva-storage',
+//       Key: key,
+//       ResponseContentType: contentType,
+//       ResponseContentDisposition: 'attachment', // <-- ceci force le téléchargement
+
+//     });
+
+//     const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
+//     console.log("URL signée:", url);
+
+//     // res.redirect(url); 
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: 'Erreur lors du téléchargement' });
 //   }
 // };

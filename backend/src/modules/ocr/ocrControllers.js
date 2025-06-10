@@ -3,12 +3,18 @@ import pdf from "pdf-parse";
 import { fromPath } from "pdf2pic";
 import Tesseract from "tesseract.js";
 import pool from '../../config/database.js';
+import path from "path";
 
-
-async function extractTextFromPdf (pdfPath)  {
-  const dataBuffer =  fs.readFileSync(pdfPath);
-  const data =  await pdf(dataBuffer);
+async function extractTextFromPdf(pdfPath) {
+  const dataBuffer = fs.readFileSync(pdfPath);
+  const data = await pdf(dataBuffer);
   return data.text;
+};
+
+
+export const extractTextFromImage = async (imagePath) => {
+  const result = await Tesseract.recognize(imagePath, 'eng'); // ou 'fra' pour le français
+  return result.data.text.trim();
 };
 
 
@@ -46,39 +52,23 @@ async function extractTextFromScannedPdf(pdfPath) {
 
 
 
-export const extractSmartText = async (pdfPath) => {
-  const rawText = await extractTextFromPdf(pdfPath);
+export const extractSmartText = async (filePath) => {
+  const ext = path.extname(filePath).toLowerCase();
 
-//   // Si texte extrait > 20 caractères, on considère que c'est un PDF texte
-  if (rawText.trim().length > 20) {
-    return rawText.trim();
-  } else {
-    // Sinon, PDF scanné, on fait de l'OCR
-    return await extractTextFromScannedPdf(pdfPath);
-  }
-};
+  if (ext === '.pdf') {
+    const rawText = await extractTextFromPdf(filePath);
 
-
-export const searchFichiersByOcrContent = async (req, res) => {
-  const { searchTerm } = req.params;
-
-  if (!searchTerm) {
-    return res.status(400).json({ error: "Le paramètre 'searchTerm' est obligatoire." });
+    if (rawText.trim().length > 20) {
+      return rawText.trim();
+    } else {
+      return await extractTextFromScannedPdf(filePath); // OCR du PDF scanné
+    }
   }
 
-  try {
-    const query = `
-      SELECT *
-      FROM fichiers
-      WHERE contenu_ocr ILIKE '%' || $1 || '%'
-    `;
-
-    const { rows } = await pool.query(query, [searchTerm]);
-
-    res.status(200).json(rows);
-  } catch (error) {
-    console.error('Erreur recherche OCR:', error);
-    res.status(500).json({ error: "Erreur lors de la recherche dans le contenu OCR." });
+  if (['.jpg', '.jpeg', '.png', '.bmp', '.tiff'].includes(ext)) {
+    return await extractTextFromImage(filePath); // OCR direct sur l'image
   }
+
+  return ''; // Format non pris en charge pour l’OCR
 };
 
