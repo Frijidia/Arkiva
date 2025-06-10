@@ -10,6 +10,7 @@ class Document {
   final List<String> tags;
   final bool estChiffre;
   final DateTime dateAjout;
+  final String? contenuOcr;
 
   Document({
     required this.id,
@@ -23,6 +24,7 @@ class Document {
     required this.dateAjout,
     List<String>? tags,
     this.estChiffre = false,
+    this.contenuOcr,
   }) : tags = tags ?? [];
 
   Map<String, dynamic> toJson() {
@@ -38,22 +40,24 @@ class Document {
       'dateAjout': dateAjout.toIso8601String(),
       'tags': tags,
       'estChiffre': estChiffre,
+      'contenu_ocr': contenuOcr,
     };
   }
 
   factory Document.fromJson(Map<String, dynamic> json) {
     return Document(
-      id: json['id'] as String,
+      id: json['fichier_id'].toString(),
       nom: json['nom'] as String,
       description: json['description'] as String?,
       type: json['type'] as String,
       chemin: json['chemin'] as String,
-      taille: json['taille'] as int? ?? 0,
-      dateCreation: DateTime.parse(json['dateCreation'] as String),
-      dateModification: DateTime.parse(json['dateModification'] as String),
-      dateAjout: DateTime.parse(json['dateAjout'] as String),
+      taille: json['taille'] as int?,
+      dateCreation: DateTime.parse(json['created_at'] as String),
+      dateModification: DateTime.parse(json['created_at'] as String),
+      dateAjout: DateTime.parse(json['created_at'] as String),
       tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
-      estChiffre: json['estChiffre'] as bool? ?? false,
+      estChiffre: json['est_chiffre'] as bool? ?? false,
+      contenuOcr: json['contenu_ocr'] as String?,
     );
   }
 
@@ -69,6 +73,7 @@ class Document {
     List<String>? tags,
     bool? estChiffre,
     DateTime? dateAjout,
+    String? contenuOcr,
   }) {
     return Document(
       id: id ?? this.id,
@@ -82,6 +87,7 @@ class Document {
       dateAjout: dateAjout ?? this.dateAjout,
       tags: tags ?? this.tags,
       estChiffre: estChiffre ?? this.estChiffre,
+      contenuOcr: contenuOcr ?? this.contenuOcr,
     );
   }
 } 

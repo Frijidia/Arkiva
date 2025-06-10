@@ -159,9 +159,17 @@ class _FichiersScreenState extends State<FichiersScreen> {
         final token = authStateService.token;
 
         if (token != null && widget.dossier.dossierId != null) {
+          final entrepriseId = authStateService.entrepriseId;
+          if (entrepriseId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Erreur: ID de l\'entreprise manquant.')),
+            );
+            return;
+          }
           await _uploadService.uploadFile(
             token,
             widget.dossier.dossierId!,
+            entrepriseId,
             _selectedFile!,
           );
           await _loadDocuments();

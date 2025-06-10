@@ -7,6 +7,7 @@ class UploadService {
   Future<void> uploadFile(
     String token,
     int dossierId,
+    int entrepriseId,
     PlatformFile selectedFile,
   ) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/upload');
@@ -17,6 +18,7 @@ class UploadService {
     });
 
     request.fields['dossier_id'] = dossierId.toString();
+    request.fields['entreprise_id'] = entrepriseId.toString();
 
     if (kIsWeb) {
       if (selectedFile.bytes == null) {

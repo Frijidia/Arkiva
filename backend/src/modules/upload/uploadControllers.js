@@ -158,7 +158,7 @@ export const uploadFiles = async (req, res) => {
     res.status(200).json({ fichiers: result.rows });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erreur détaillée lors du téléversement des fichiers :", err);
     res.status(500).json({ error: 'Erreur lors du téléversement des fichiers' });
   }
 };
