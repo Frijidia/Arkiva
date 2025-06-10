@@ -7,14 +7,33 @@ import path from 'path';
 import libre from 'libreoffice-convert';
 import { promisify } from 'util';
 import { extractSmartText } from '../ocr/ocrControllers.js';
-// import pdf from 'pdf-parse';
-// import Tesseract from 'tesseract.js';
-// const { Converter } = pdfPoppler;
+import encryptionService from '../encryption/encryptionService.js';
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+
 
 
 const convert = promisify(libre.convert);
 const bucketName = process.env.AWS_S3_BUCKET_NAME;  // ton bucket S3
 
+
+//verifier le type du fichier
+const allowedExtensions = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.txt',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.bmp',
+  '.tiff',
+  '.webp'
+];
+
+function isAllowedExtension(filename) {
+  const ext = path.extname(filename).toLowerCase();
+  return allowedExtensions.includes(ext);
+}
 
 //fonction pour convertir en pdf
 
@@ -44,15 +63,15 @@ const storage = multer.diskStorage({
 export const upload = multer({ storage });
 
 
-// fonction pour send sur aws
-export const uploadFileToS3 = async (filePath, originalName) => {
-  const fileContent = fs.readFileSync(filePath);
-  const fileKey = 'uploads/' + Date.now() + '-' + path.basename(filePath);
+
+//fonction pour upload sur s3
+export const uploadFileBufferToS3 = async (fileBuffer, originalName) => {
+  const fileKey = 'uploads/' + Date.now() + '-' + originalName;
 
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: fileKey,
-    Body: fileContent,
+    Body: fileBuffer,
   });
 
   await s3.send(command);
@@ -60,40 +79,49 @@ export const uploadFileToS3 = async (filePath, originalName) => {
   return {
     key: fileKey,
     originalName,
-    size: fileContent.length,
-    type: path.extname(filePath).substring(1),
+    size: fileBuffer.length,
+    type: path.extname(originalName).substring(1),
     location: `https://${bucketName}.s3.amazonaws.com/${fileKey}`,
   };
 };
 
 
 
-
-
 // Upload avec dossier_id
 export const uploadFiles = async (req, res) => {
-  const { dossier_id } = req.body;
+  const { dossier_id, entreprise_id } = req.body;
 
   if (!dossier_id) return res.status(400).json({ error: "ID du dossier requis" });
+  if (!entreprise_id) return res.status(400).json({ error: "ID de l'entreprise requis" });
 
   try {
     const uploaded = [];
 
     for (const file of req.files) {
-      let finalPath = file.path;
+
+      if (!isAllowedExtension(file.originalname)) {
+        console.warn(`Fichier ignoré (extension non autorisée) : ${file.originalname}`);
+        continue;
+      }
       let finalName = file.originalname;
+      let finalPath = file.path;
+      let isConverted = false;
 
       const convertedPath = await convertToPdf(file.path);
+
       if (convertedPath) {
         finalPath = convertedPath;
         finalName = path.basename(convertedPath);
-        fs.unlinkSync(file.path); // Nettoie le .docx
+        fs.unlinkSync(file.path); // on supprime l'original (ex : .docx)
+        isConverted = true;
       }
 
-      const s3Data = await uploadFileToS3(finalPath, finalName);
+      const finalBuffer = fs.readFileSync(finalPath);
 
-      const contenu_ocr = await  extractSmartText(finalPath);
-      fs.unlinkSync(finalPath); // Nettoie le PDF aussi
+      const contenu_ocr = await extractSmartText(finalPath);
+      const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, finalName, entreprise_id);
+      const jsonString = encryptedBuffer.toString('utf8');
+      const s3Data = await uploadFileBufferToS3(encryptedBuffer, finalName + '.enc');
 
       uploaded.push([
         s3Data.originalName,
@@ -101,8 +129,17 @@ export const uploadFiles = async (req, res) => {
         s3Data.type,
         s3Data.size,
         dossier_id,
-        contenu_ocr
+        contenu_ocr,
+        // jsonString
       ]);
+
+      if (isConverted) {
+        fs.unlinkSync(finalPath); // ici, on supprime le PDF converti
+      }
+      if (!isConverted && fs.existsSync(finalPath)) {
+        fs.unlinkSync(finalPath); // supprime les fichiers non convertis (images, pdf, etc.)
+      }
+
     }
 
     const placeholders = uploaded.map((_, i) =>
@@ -114,6 +151,7 @@ export const uploadFiles = async (req, res) => {
       VALUES ${placeholders}
       RETURNING *;
     `;
+
     const flatValues = uploaded.flat();
     const result = await pool.query(query, flatValues);
 
@@ -124,5 +162,3 @@ export const uploadFiles = async (req, res) => {
     res.status(500).json({ error: 'Erreur lors du téléversement des fichiers' });
   }
 };
-
-

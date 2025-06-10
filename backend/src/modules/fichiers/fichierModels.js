@@ -11,7 +11,8 @@ const createTablefichier = `
   taille INTEGER, -- taille en octets
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   contenu_ocr TEXT,
-  version_id INTEGER DEFAULT 0
+  version_id INTEGER DEFAULT 0,
+  jsonString TEXT
 );
 `;
 
