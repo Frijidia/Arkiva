@@ -160,17 +160,46 @@ export const getStats = async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT 
+                -- Nombre total d'utilisateurs
                 (SELECT COUNT(*) FROM users WHERE entreprise_id = $1) as nombre_utilisateurs,
-                (SELECT COUNT(*) FROM armoires WHERE user_id IN (SELECT user_id FROM users WHERE entreprise_id = $1)) as nombre_armoires,
+                
+                -- Nombre d'utilisateurs par rôle
+                (SELECT COUNT(*) FROM users WHERE entreprise_id = $1 AND role = 'admin') as nombre_admins,
+                (SELECT COUNT(*) FROM users WHERE entreprise_id = $1 AND role = 'contributeur') as nombre_contributeurs,
+                (SELECT COUNT(*) FROM users WHERE entreprise_id = $1 AND role = 'lecteur') as nombre_lecteurs,
+                
+                -- Nombre d'armoires
+                (SELECT COUNT(*) FROM armoires WHERE entreprise_id = $1) as nombre_armoires,
+                
+                -- Nombre de casiers
+                (SELECT COUNT(*) FROM casiers WHERE armoire_id IN (
+                    SELECT armoire_id FROM armoires WHERE entreprise_id = $1
+                )) as nombre_casiers,
+                
+                -- Nombre de dossiers
+                (SELECT COUNT(*) FROM dossiers WHERE casier_id IN (
+                    SELECT cassier_id FROM casiers WHERE armoire_id IN (
+                        SELECT armoire_id FROM armoires WHERE entreprise_id = $1
+                    )
+                )) as nombre_dossiers,
+                
+                -- Nombre de fichiers
                 (SELECT COUNT(*) FROM fichiers WHERE dossier_id IN (
                     SELECT dossier_id FROM dossiers WHERE casier_id IN (
                         SELECT cassier_id FROM casiers WHERE armoire_id IN (
-                            SELECT armoire_id FROM armoires WHERE user_id IN (
-                                SELECT user_id FROM users WHERE entreprise_id = $1
-                            )
+                            SELECT armoire_id FROM armoires WHERE entreprise_id = $1
                         )
                     )
-                )) as nombre_fichiers
+                )) as nombre_fichiers,
+                
+                -- Taille totale des fichiers (en octets)
+                (SELECT COALESCE(SUM(taille), 0) FROM fichiers WHERE dossier_id IN (
+                    SELECT dossier_id FROM dossiers WHERE casier_id IN (
+                        SELECT cassier_id FROM casiers WHERE armoire_id IN (
+                            SELECT armoire_id FROM armoires WHERE entreprise_id = $1
+                        )
+                    )
+                )) as taille_totale_fichiers
             `,
             [req.params.id]
         );
@@ -179,7 +208,11 @@ export const getStats = async (req, res) => {
             return res.status(404).json({ message: 'Entreprise non trouvée' });
         }
         
-        res.json(result.rows[0]);
+        // Formater la taille des fichiers en MB pour plus de lisibilité
+        const stats = result.rows[0];
+        stats.taille_totale_fichiers_mb = (stats.taille_totale_fichiers / (1024 * 1024)).toFixed(2);
+        
+        res.json(stats);
     } catch (error) {
         console.error('Erreur lors de la récupération des statistiques:', error);
         res.status(500).json({ message: 'Erreur lors de la récupération des statistiques' });
