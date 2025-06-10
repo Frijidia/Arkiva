@@ -7,6 +7,8 @@ import 'package:arkiva/screens/document_viewer_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:arkiva/services/upload_service.dart';
+import 'package:arkiva/config/api_config.dart';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -22,6 +24,7 @@ class FichiersScreen extends StatefulWidget {
 
 class _FichiersScreenState extends State<FichiersScreen> {
   final DocumentService _documentService = DocumentService();
+  final UploadService _uploadService = UploadService();
   List<Document> _documents = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
@@ -41,6 +44,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
       final token = authStateService.token;
 
       if (token != null) {
+        if (widget.dossier.dossierId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erreur: ID du dossier manquant.')),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
         final documents = await _documentService.getDocuments(token, widget.dossier.dossierId);
         setState(() {
           _documents = documents;
@@ -81,61 +91,66 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ajouter un document'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomController,
-              decoration: const InputDecoration(
-                labelText: 'Nom du document',
-                hintText: 'Entrez le nom du document',
+      builder: (context) => StatefulBuilder(builder: (context, setStateSB) {
+        return AlertDialog(
+          title: const Text('Ajouter un document'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom du document',
+                  hintText: 'Entrez le nom du document',
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (facultatif)',
-                hintText: 'Entrez la description',
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (facultatif)',
+                  hintText: 'Entrez la description',
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await _pickFile();
+                  setStateSB(() {});
+                },
+                icon: const Icon(Icons.upload_file),
+                label: Text(_selectedFile != null ? _selectedFile!.name : 'Sélectionner un fichier'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _pickFile,
-              icon: const Icon(Icons.upload_file),
-              label: Text(_selectedFile != null ? _selectedFile!.name : 'Sélectionner un fichier'),
+            ElevatedButton(
+              onPressed: () {
+                final nom = nomController.text.trim();
+                if (nom.isNotEmpty && _selectedFile != null) {
+                  Navigator.pop(context, {
+                    'nom': nom,
+                    'description': descriptionController.text.trim(),
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Veuillez saisir un nom et sélectionner un fichier'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Ajouter'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final nom = nomController.text.trim();
-              if (nom.isNotEmpty && _selectedFile != null) {
-                Navigator.pop(context, {
-                  'nom': nom,
-                  'description': descriptionController.text.trim(),
-                });
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Veuillez saisir un nom et sélectionner un fichier'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
+        );
+      }),
     );
 
     if (result != null && _selectedFile != null) {
@@ -143,14 +158,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
         final authStateService = context.read<AuthStateService>();
         final token = authStateService.token;
 
-        if (token != null) {
-          await _documentService.createDocument(
+        if (token != null && widget.dossier.dossierId != null) {
+          await _uploadService.uploadFile(
             token,
-            widget.dossier.dossierId,
-            result['nom']!,
-            result['description'] ?? '',
-            _selectedFile!.extension ?? '',
-            _selectedFile!.size,
+            widget.dossier.dossierId!,
+            _selectedFile!,
           );
           await _loadDocuments();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -166,6 +178,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
   }
 
   Future<void> _modifierDocument(Document document) async {
+    if (document.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour la modification.')),
+      );
+      return;
+    }
+
     final TextEditingController nomController = TextEditingController(text: document.nom);
     final TextEditingController descriptionController = TextEditingController(text: document.description ?? '');
 
@@ -241,6 +260,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
   }
 
   Future<void> _supprimerDocument(Document document) async {
+    if (document.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour la suppression.')),
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -277,6 +303,54 @@ class _FichiersScreenState extends State<FichiersScreen> {
           SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
       }
+    }
+  }
+
+  Future<void> _displayDocument(Document document) async {
+    if (document.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour l\'affichage.')),
+      );
+      return;
+    }
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final entrepriseId = authStateService.entrepriseId;
+      if (entrepriseId == null) {
+        throw 'ID de l\'entreprise manquant';
+      }
+      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      if (!await launchUrl(url)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de l\'affichage du document: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _telechargerDocument(Document document) async {
+    if (document.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour le téléchargement.')),
+      );
+      return;
+    }
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final entrepriseId = authStateService.entrepriseId;
+      if (entrepriseId == null) {
+        throw 'ID de l\'entreprise manquant';
+      }
+      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      if (!await launchUrl(url)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors du téléchargement du document: ${e.toString()}')),
+      );
     }
   }
 
@@ -376,6 +450,12 @@ class _FichiersScreenState extends State<FichiersScreen> {
                             trailing: PopupMenuButton<String>(
                               onSelected: (value) {
                                 switch (value) {
+                                  case 'afficher':
+                                    _displayDocument(document);
+                                    break;
+                                  case 'telecharger':
+                                    _telechargerDocument(document);
+                                    break;
                                   case 'modifier':
                                     _modifierDocument(document);
                                     break;
@@ -385,6 +465,26 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                 }
                               },
                               itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'afficher',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.visibility),
+                                      SizedBox(width: 8),
+                                      Text('Afficher'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'telecharger',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.download),
+                                      SizedBox(width: 8),
+                                      Text('Télécharger'),
+                                    ],
+                                  ),
+                                ),
                                 const PopupMenuItem(
                                   value: 'modifier',
                                   child: Row(
@@ -431,3 +531,5 @@ class _FichiersScreenState extends State<FichiersScreen> {
     );
   }
 } 
+
+//sur mobile on va ajouter un systeme pour scanner les fichiers 

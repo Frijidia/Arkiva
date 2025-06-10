@@ -17,7 +17,8 @@ class DocumentService {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> data = responseData['fichiers'] ?? [];
       return data.map((json) => Document.fromJson(json)).toList();
     } else {
       throw Exception('Échec du chargement des documents');

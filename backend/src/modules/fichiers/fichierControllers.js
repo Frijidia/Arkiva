@@ -1,7 +1,7 @@
 import "./fichierModels.js";
 import pool from '../../config/database.js';
 import s3 from '../../config/aws.js';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mime from "mime-types";
 import encryptionService from '../encryption/encryptionService.js';
@@ -36,15 +36,20 @@ export const deleteFichier = async (req, res) => {
   const { fichier_id } = req.params;
 
   try {
-    const result = await pool.query('SELECT chemin FROM fichiers WHERE fichier_id = $1', [id]);
+    const result = await pool.query('SELECT chemin FROM fichiers WHERE fichier_id = $1', [fichier_id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Fichier non trouvé" });
     }
 
     const filePath = result.rows[0].chemin;
+    const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+    const key = filePath.replace(s3BaseUrl, '');
 
-    // Supprimer le fichier physique
-    await fs.unlink(filePath);
+    // Supprimer le fichier physique de S3
+    await s3.send(new DeleteObjectCommand({
+      Bucket: 'arkiva-storage',
+      Key: key,
+    }));
 
     // Supprimer de la base
     await pool.query('DELETE FROM fichiers WHERE fichier_id = $1', [fichier_id]);
@@ -177,7 +182,7 @@ export const displayFichier = async (req, res) => {
 
     // Étape 3 : Détecter le bon type MIME
     const mimeType = mime.lookup(originalFileName) || 'application/octet-stream';
-    let Name = "toto"
+    let Name = originalFileName
     console.log(originalFileName)
 
     // Étape 4 : Répondre avec le fichier déchiffré
