@@ -1,4 +1,3 @@
-
 import pool from '../../config/database.js';
 
 const createTablefichier = `
@@ -16,9 +15,40 @@ const createTablefichier = `
 );
 `;
 
-pool.query(createTablefichier)
-    .then(() => console.log('Table fichier created successfully'))
-    .catch((err) => console.error('Error creating table:', err));
+const addContenuOcrColumn = `
+  DO $$ 
+  BEGIN 
+    IF NOT EXISTS (
+      SELECT 1 
+      FROM information_schema.columns 
+      WHERE table_name = 'fichiers' 
+      AND column_name = 'contenu_ocr'
+    ) THEN
+      ALTER TABLE fichiers ADD COLUMN contenu_ocr TEXT;
+    END IF;
+  END $$;
+`;
+
+const initializeTable = async () => {
+  try {
+    // Créer la table si elle n'existe pas
+    await pool.query(createTablefichier);
+    console.log('Table fichiers créée ou déjà existante');
+
+    // Ajouter la colonne contenu_ocr si elle n'existe pas
+    await pool.query(addContenuOcrColumn);
+    console.log('Colonne contenu_ocr vérifiée/ajoutée');
+
+  } catch (err) {
+    console.error('Erreur lors de l\'initialisation de la table fichiers:', err);
+    throw err;
+  }
+};
+
+// Exécuter l'initialisation
+initializeTable();
+
+export default pool;
 
 
 
