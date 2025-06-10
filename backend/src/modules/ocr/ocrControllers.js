@@ -51,7 +51,6 @@ async function extractTextFromScannedPdf(pdfPath) {
 }
 
 
-
 export const extractSmartText = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
 
