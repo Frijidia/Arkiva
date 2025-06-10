@@ -19,7 +19,7 @@ import fichierRoutes from './modules/fichiers/fichierRoutes.js'; // fichiers
 import tagRoutes from './modules/tags/tagRoutes.js'; // tags
 import auditRoutes from './modules/audit/auditRoutes.js'; // journal_activite
 import encryptionRoutes from './modules/encryption/encryptionRoutes.js'; // encryption_keys
-//import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes, versions
+import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes, versions
 import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
 import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
 
@@ -46,7 +46,7 @@ app.use('/api/fichier', fichierRoutes);
 app.use('/api/tag', tagRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/encryption', encryptionRoutes);
-//app.use('/api/sauvegardes', backupRoutes);
+app.use('/api/sauvegardes', backupRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ocr', ocrRoutes);
 

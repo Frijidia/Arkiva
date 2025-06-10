@@ -1,115 +1,217 @@
 import backupModel from './backupModel.js';
-import auditService from '../audit/auditService.js'; // Supposant l'existence de ce service
+import versionService from './versionService.js';
+import restoreService from './restoreService.js';
+import * as fileService from '../fichiers/fichierControllers.js';
+import * as dossierService from '../dosiers/dosierControllers.js';
+import * as casierService from '../cassiers/cassierContollers.js';
+import * as armoireService from '../armoires/armoireControllers.js';
 import fs from 'fs';
 import path from 'path';
-import archiver from 'archiver'; // Assurez-vous que ce package est installé (npm install archiver)
-import unzipper from 'unzipper'; // Assurez-vous que ce package est installé (npm install unzipper)
-// Importer les services ou modèles pour récupérer les données des fichiers/dossiers si nécessaire
-import fileService from '../fichiers/fichierService.js'; // Supposant l'existence de ce service
-import folderService from '../dosiers/folderService.js'; // Supposant l'existence de ce service pour les dossiers
-import systemService from '../system/systemService.js'; // Supposant l'existence de ce service pour la sauvegarde système
-import backupService from './backupService.js';
+import { fileURLToPath } from 'url';
 
-// Chemin où stocker les sauvegardes (vous pouvez configurer cela via une variable d'environnement)
-const BACKUP_DIR = path.join(__dirname, '../../uploads/backups'); // Exemple : un sous-dossier dans uploads
+// Obtenir le chemin du répertoire actuel pour les modules ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Chemin où stocker les sauvegardes
+const BACKUP_DIR = path.join(__dirname, '../../uploads/backups');
 
 // S'assurer que le répertoire de sauvegarde existe
 if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
-class BackupController {
-    // Endpoint pour déclencher une sauvegarde (POST /sauvegardes)
-    static async createBackup(req, res) {
-        try {
-            const { type, cible_id, mode } = req.body;
-            const declenche_par_id = req.user ? req.user.id : null;
+// Contrôleurs pour les sauvegardes
+export const createBackup = async (req, res) => {
+    try {
+        const backupData = {
+            type: req.body.type,
+            cible_id: req.body.cible_id,
+            chemin_sauvegarde: req.file.path,
+            contenu_json: JSON.parse(req.body.contenu_json || '{}'),
+            declenche_par_id: req.user.user_id
+        };
 
-            // Valider le type de sauvegarde
-            if (!['fichier', 'dossier', 'système'].includes(type)) {
-                return res.status(400).json({ error: 'Type de sauvegarde invalide.' });
-            }
-
-            // Déléguer la création de la sauvegarde au service
-            const newBackup = await backupService.createBackup({
-                type,
-                cible_id,
-                mode,
-                declenche_par_id,
-                res // Passer l'objet res pour permettre au service de gérer les réponses HTTP
-            });
-
-            // Si la sauvegarde a réussi et que la réponse n'a pas encore été envoyée
-            if (!res.headersSent) {
-                res.status(201).json({
-                    message: `Sauvegarde de type ${type} déclenchée avec succès.`,
-                    backup: newBackup
-                });
-            }
-        } catch (error) {
-            console.error('Erreur lors du déclenchement de la sauvegarde:', error);
-            if (!res.headersSent) {
-                res.status(500).json({
-                    error: 'Erreur lors du déclenchement de la sauvegarde',
-                    details: error.message
-                });
-            }
-        }
+        const backup = await backupModel.createBackup(backupData);
+        res.status(201).json(backup);
+    } catch (error) {
+        console.error('Erreur lors de la création de la sauvegarde:', error);
+        res.status(500).json({ error: error.message });
     }
+};
 
-    // Endpoint pour lister les sauvegardes (GET /sauvegardes)
-    static async listBackups(req, res) {
-        try {
-            const backups = await backupModel.getAllBackups();
-
-            const formattedBackups = backups.map(backup => ({
-                id: backup.id,
-                type: backup.type,
-                contenu: backup.contenu_json,
-                date_creation: backup.date_creation
-            }));
-
-            res.json(formattedBackups);
-        } catch (error) {
-            console.error('Erreur lors de la liste des sauvegardes:', error);
-            res.status(500).json({
-                error: 'Erreur lors de la récupération des sauvegardes',
-                details: error.message
-            });
-        }
+export const getAllBackups = async (req, res) => {
+    try {
+        const backups = await backupModel.getAllBackups();
+        res.json(backups);
+    } catch (error) {
+        console.error('Erreur lors de la récupération des sauvegardes:', error);
+        res.status(500).json({ error: error.message });
     }
+};
 
-    // Endpoint pour restaurer une sauvegarde (POST /sauvegardes/:id/restaurer)
-    // NOTE: Cette route devrait être protégée par un middleware pour les administrateurs uniquement.
-    static async restoreBackup(req, res) {
-        try {
-            const backupId = req.params.id;
-            const utilisateur_id = req.user ? req.user.id : null;
-
-            // Assurez-vous que l'utilisateur est un admin (middleware checkRole('admin')) est appliqué à cette route
-
-            // La logique de restauration est maintenant dans le modèle.
-            const result = await backupModel.restoreBackup(backupId, utilisateur_id);
-
-            // Envoyer la réponse une fois la logique du modèle terminée
-            res.json(result); // Le modèle retourne un objet avec un message
-
-        } catch (error) {
-            console.error(`Erreur lors de la restauration de la sauvegarde ID ${req.params.id} dans le contrôleur:`, error);
-            // Gérer les erreurs remontées par le modèle ou d'autres erreurs du contrôleur
-            if (!res.headersSent) {
-                res.status(500).json({
-                    error: 'Erreur lors de la restauration de la sauvegarde',
-                    details: error.message
-                });
-            }
+export const getBackupById = async (req, res) => {
+    try {
+        const backup = await backupModel.getBackupById(req.params.id);
+        if (!backup) {
+            return res.status(404).json({ error: 'Sauvegarde non trouvée' });
         }
+        res.json(backup);
+    } catch (error) {
+        console.error('Erreur lors de la récupération de la sauvegarde:', error);
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
-// Nécessaire pour utiliser __dirname et __filename avec les modules ES
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+export const restoreBackup = async (req, res) => {
+    try {
+        const result = await restoreService.restoreBackup(req.params.id, req.user.user_id);
+        res.json(result);
+    } catch (error) {
+        console.error('Erreur lors de la restauration:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
 
-export default BackupController; 
+// Contrôleurs pour les versions
+export const createVersion = async (req, res) => {
+    try {
+        const { cible_id, type } = req.body;
+        
+        let details, content, versionMetadata;
+
+        switch(type) {
+            case 'fichier':
+                details = await fileService.getFileDetails(cible_id);
+                if (!details) {
+                    return res.status(404).json({ error: 'Fichier non trouvé' });
+                }
+                content = await fileService.getFileContent(cible_id);
+                if (!content) {
+                    return res.status(404).json({ error: 'Contenu du fichier non trouvé' });
+                }
+                versionMetadata = {
+                    nom: details.nom,
+                    type_mime: details.type_mime,
+                    taille: details.taille,
+                    version_number: (details.version_number || 0) + 1,
+                    created_by: req.user.user_id,
+                    created_at: new Date()
+                };
+                break;
+
+            case 'dossier':
+                details = await dossierService.getDossierDetails(cible_id);
+                if (!details) {
+                    return res.status(404).json({ error: 'Dossier non trouvé' });
+                }
+                content = await dossierService.getDossierContent(cible_id);
+                if (!content) {
+                    return res.status(404).json({ error: 'Contenu du dossier non trouvé' });
+                }
+                versionMetadata = {
+                    nom: details.nom,
+                    type: "dossier",
+                    nombre_elements: details.nombre_elements,
+                    version_number: (details.version_number || 0) + 1,
+                    created_by: req.user.user_id,
+                    created_at: new Date()
+                };
+                break;
+
+            case 'casier':
+                details = await casierService.getCasierDetails(cible_id);
+                if (!details) {
+                    return res.status(404).json({ error: 'Casier non trouvé' });
+                }
+                content = await casierService.getCasierContent(cible_id);
+                if (!content) {
+                    return res.status(404).json({ error: 'Contenu du casier non trouvé' });
+                }
+                versionMetadata = {
+                    nom: details.nom,
+                    type: "casier",
+                    nombre_elements: details.nombre_elements,
+                    version_number: (details.version_number || 0) + 1,
+                    created_by: req.user.user_id,
+                    created_at: new Date()
+                };
+                break;
+
+            case 'armoire':
+                details = await armoireService.getArmoireDetails(cible_id);
+                if (!details) {
+                    return res.status(404).json({ error: 'Armoire non trouvée' });
+                }
+                content = await armoireService.getArmoireContent(cible_id);
+                if (!content) {
+                    return res.status(404).json({ error: 'Contenu de l\'armoire non trouvé' });
+                }
+                versionMetadata = {
+                    nom: details.nom,
+                    type: "armoire",
+                    nombre_elements: details.nombre_elements,
+                    version_number: (details.version_number || 0) + 1,
+                    created_by: req.user.user_id,
+                    created_at: new Date()
+                };
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Type de cible invalide' });
+        }
+
+        const version = await versionService.createNewVersion(
+            cible_id,
+            content,
+            versionMetadata,
+            req.user.user_id
+        );
+
+        res.status(201).json(version);
+    } catch (error) {
+        console.error('Erreur lors de la création de la version:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getVersionHistory = async (req, res) => {
+    try {
+        const history = await versionService.getVersionHistory(req.params.fileId);
+        res.json(history);
+    } catch (error) {
+        console.error('Erreur lors de la récupération de l\'historique:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getVersionContent = async (req, res) => {
+    try {
+        const version = await versionService.getVersionContent(req.params.id);
+        res.json(version);
+    } catch (error) {
+        console.error('Erreur lors de la récupération du contenu:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const compareVersions = async (req, res) => {
+    try {
+        const { versionId1, versionId2 } = req.body;
+        const comparison = await versionService.compareVersions(versionId1, versionId2);
+        res.json(comparison);
+    } catch (error) {
+        console.error('Erreur lors de la comparaison des versions:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const deleteVersion = async (req, res) => {
+    try {
+        const result = await versionService.deleteVersion(req.params.id, req.user.user_id);
+        res.json(result);
+    } catch (error) {
+        console.error('Erreur lors de la suppression de la version:', error);
+        res.status(500).json({ error: error.message });
+    }
+}; 

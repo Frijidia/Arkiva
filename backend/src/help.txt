@@ -87,7 +87,21 @@ Tu dois concevoir un endpoint ou une logique côté desktop (à discuter avec le
     ❌ Ajouter un trigger de suppression sécurisée dans l’app desktop
 
 🟡 ÉTAPE 5 – Sauvegarde & restauration
-
+    ✅ Table sauvegardes avec tous les champs nécessaires
+    ✅ Endpoints API :
+    ✅ POST /sauvegardes
+    ✅ GET /sauvegardes
+    ✅ POST /sauvegardes/:id/restaurer
+    ✅ Logique de sauvegarde :
+    ✅ Sauvegarde de fichiers
+    ✅ Sauvegarde de dossiers
+    ✅ Sauvegarde système
+    ✅ Gestion des archives ZIP
+    ✅ Logs de sauvegarde
+    ✅ Gestion des versions lors de la restauration
+    ✅ Création de nouvelles versions pour les fichiers existants
+    ✅ Restauration des dossiers, casiers et armoires
+    ✅ Logs de restauration
     Table sauvegardes : avec date, déclencheur, contenu (json résumé), chemin
 
     API :
