@@ -39,7 +39,7 @@ function isAllowedExtension(filename) {
 
 const convertToPdf = async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase();
-  if (!['.doc', '.docx'].includes(fileExt)) return null;
+  if (!['.doc', '.docx', '.txt'].includes(fileExt)) return null;
 
   const file = fs.readFileSync(filePath);
   const outputPath = filePath.replace(fileExt, '.pdf');
@@ -90,6 +90,7 @@ export const uploadFileBufferToS3 = async (fileBuffer, originalName) => {
 // Upload avec dossier_id
 export const uploadFiles = async (req, res) => {
   const { dossier_id, entreprise_id } = req.body;
+  let originalFileName = "";
 
   if (!dossier_id) return res.status(400).json({ error: "ID du dossier requis" });
   if (!entreprise_id) return res.status(400).json({ error: "ID de l'entreprise requis" });
@@ -130,6 +131,7 @@ export const uploadFiles = async (req, res) => {
         s3Data.size,
         dossier_id,
         contenu_ocr,
+        originalFileName = finalName
         // jsonString
       ]);
 
@@ -143,11 +145,11 @@ export const uploadFiles = async (req, res) => {
     }
 
     const placeholders = uploaded.map((_, i) =>
-      `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`
+      `($${i * 7 + 1}, $${i * 7 + 2}, $${i * 7 + 3}, $${i * 7 + 4}, $${i * 7 + 5}, $${i * 7 + 6},  $${i * 7 + 7})`
     ).join(', ');
 
     const query = `
-      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr)
+      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr, originalFileName)
       VALUES ${placeholders}
       RETURNING *;
     `;
