@@ -248,13 +248,20 @@ class _FichiersScreenState extends State<FichiersScreen> {
         final token = authStateService.token;
 
         if (token != null) {
-          await _documentService.updateDocument(
+          final updatedDocument = await _documentService.updateDocument(
             token,
             document.id,
             result['nom']!,
             result['description'] ?? '',
           );
-          await _loadDocuments();
+          
+          setState(() {
+            final index = _documents.indexWhere((d) => d.id == document.id);
+            if (index != -1) {
+              _documents[index] = updatedDocument;
+            }
+          });
+          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Document mis à jour avec succès')),
           );
@@ -454,12 +461,31 @@ class _FichiersScreenState extends State<FichiersScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.description),
                             title: Text(document.nom),
-                            subtitle: Text(document.description ?? ''),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (document.description != null && document.description!.isNotEmpty)
+                                  Text(document.description!),
+                                if (document.tags.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Wrap(
+                                      spacing: 6,
+                                      children: document.tags.map((tag) => Chip(label: Text(tag))).toList(),
+                                    ),
+                                  ),
+                              ],
+                            ),
                             trailing: PopupMenuButton<String>(
                               onSelected: (value) {
                                 switch (value) {
                                   case 'afficher':
-                                    _displayDocument(document);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DocumentViewerScreen(document: document),
+                                      ),
+                                    );
                                     break;
                                   case 'telecharger':
                                     _telechargerDocument(document);

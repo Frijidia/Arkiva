@@ -18,14 +18,34 @@ class DocumentViewerScreen extends StatefulWidget {
 
 class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   Future<void> _ouvrirDocument() async {
-    // TODO: Remplacer par l'URL réelle du document
-    final Uri url = Uri.parse('https://example.com/documents/${widget.document.id}');
-    
-    if (!await launchUrl(url)) {
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final entrepriseId = authStateService.entrepriseId;
+    if (token == null || entrepriseId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Impossible d\'ouvrir le document'),
+            content: Text('Erreur: Token ou ID entreprise manquant'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final blob = html.Blob([response.bodyBytes], 'application/pdf');
+      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+      html.window.open(blobUrl, '_blank');
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de l\'ouverture du document'),
             backgroundColor: Colors.red,
           ),
         );
@@ -34,13 +54,41 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   }
 
   Future<void> _telechargerDocument() async {
-    // TODO: Implémenter le téléchargement
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Téléchargement en cours...'),
-        ),
-      );
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final entrepriseId = authStateService.entrepriseId;
+    if (token == null || entrepriseId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur: Token ou ID entreprise manquant'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final blob = html.Blob([response.bodyBytes], 'application/pdf');
+      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: blobUrl)
+        ..setAttribute('download', widget.document.nom)
+        ..click();
+      html.Url.revokeObjectUrl(blobUrl);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors du téléchargement du document'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

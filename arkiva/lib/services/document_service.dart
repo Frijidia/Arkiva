@@ -58,7 +58,7 @@ class DocumentService {
     }
   }
 
-  Future<void> updateDocument(
+  Future<Document> updateDocument(
     String token,
     String? documentId,
     String nom,
@@ -74,12 +74,15 @@ class DocumentService {
         'Content-Type': 'application/json',
       },
       body: json.encode({
-        'nom': nom,
+        'nouveauNom': nom,
         'description': description,
       }),
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      return Document.fromJson(responseData['fichier']);
+    } else {
       throw Exception('Échec de la mise à jour du document');
     }
   }
