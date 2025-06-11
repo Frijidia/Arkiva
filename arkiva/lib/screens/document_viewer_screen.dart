@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:arkiva/models/document.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/config/api_config.dart';
+import 'package:provider/provider.dart';
+import 'dart:html' as html;
+import 'package:http/http.dart' as http;
 
 class DocumentViewerScreen extends StatefulWidget {
   final Document document;
@@ -48,6 +53,27 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _ouvrirPDFWeb() async {
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final url = _fileUrl;
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final blob = html.Blob([response.bodyBytes], 'application/pdf');
+    final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+    html.window.open(blobUrl, '_blank');
+  }
+
+  // Construction de l'URL pour afficher le fichier déchiffré via la route backend
+  // /api/fichier/:fichier_id/:entreprise_id
+  String get _fileUrl {
+    final authStateService = context.read<AuthStateService>();
+    final entrepriseId = authStateService.entrepriseId;
+    return '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
   }
 
   @override
@@ -119,7 +145,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
             ],
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: _ouvrirDocument,
+              onPressed: _ouvrirPDFWeb,
               icon: const Icon(Icons.open_in_new),
               label: const Text('Ouvrir le document'),
             ),
