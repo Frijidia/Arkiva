@@ -60,17 +60,17 @@ export const deleteFichier = async (req, res) => {
 
 export const renameFichier = async (req, res) => {
   const { fichier_id } = req.params;
-  const { nouveauNom } = req.body;
+  const { nouveauoriginalFileName } = req.body;
 
-  if (!nouveauNom) {
+  if (!nouveauoriginalFileName) {
     return res.status(400).json({ error: "Le nouveau nom est requis" });
   }
 
   try {
     // Mise à jour du champ "nom" dans la base
     const result = await pool.query(
-      'UPDATE fichiers SET nom = $1 WHERE fichier_id = $2 RETURNING *',
-      [nouveauNom, fichier_id]
+      'UPDATE fichiers SET originalFileName = $1 WHERE fichier_id = $2 RETURNING *',
+      [nouveauoriginalFileName, fichier_id]
     );
 
     if (result.rowCount === 0) {
