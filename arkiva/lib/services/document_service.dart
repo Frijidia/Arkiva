@@ -103,4 +103,19 @@ class DocumentService {
       throw Exception('Échec de la suppression du document');
     }
   }
+
+  Future<int> fetchDocumentsCount(String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/documents/count'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['count'];
+    } else {
+      throw Exception('Erreur lors du chargement du nombre de documents');
+    }
+  }
 } 

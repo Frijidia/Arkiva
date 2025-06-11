@@ -11,6 +11,7 @@ import 'package:arkiva/screens/entreprise_detail_screen.dart';
 import 'package:arkiva/screens/create_user_screen.dart';
 import 'package:arkiva/screens/admin_dashboard_screen.dart';
 import 'package:arkiva/screens/login_screen.dart';
+import 'package:arkiva/services/document_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -80,6 +81,7 @@ class HomeScreen extends StatelessWidget {
     final authStateService = context.watch<AuthStateService>();
     final username = authStateService.username ?? 'Utilisateur';
     final userRole = authStateService.role;
+    final token = authStateService.token;
 
     return Scaffold(
       appBar: AppBar(
@@ -172,12 +174,18 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 12),
-                  Text(
-                    'Vous avez : 📂 ${authStateService.armoireCount ?? 0} armoires | 🗄️ ${authStateService.casierCount ?? 0} casiers | 📄 235 documents',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[800],
-                    ),
+                  FutureBuilder<int>(
+                    future: token != null ? DocumentService().fetchDocumentsCount(token) : Future.value(0),
+                    builder: (context, snapshot) {
+                      final docCount = snapshot.data ?? 0;
+                      return Text(
+                        'Vous avez : 📂 ${authStateService.armoireCount ?? 0} armoires | 🗄️ ${authStateService.casierCount ?? 0} casiers',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[800],
+                        ),
+                      );
+                    },
                   ),
                   SizedBox(height: 20),
                   if (userRole == 'admin')
