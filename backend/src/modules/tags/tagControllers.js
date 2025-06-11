@@ -1,17 +1,19 @@
 import pool from '../../config/database.js';
 import nlp from 'compromise';
 import "./tagModels.js";
+
+
 /**
  * 1. Créer un nouveau tag
  */
 
 export async function createTag(req, res) {
-    const { name, color, description } = req.body;
+    const { name, color, description, entreprise_id } = req.body;
 
     try {
         const result = await pool.query(
-            'INSERT INTO tags (name, color, description) VALUES ($1, $2, $3) RETURNING *',
-            [name, color, description || '']
+            'INSERT INTO tags (name, color, description, entreprise_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, color, description || '', entreprise_id]
         );
         res.status(201).json({
             message: 'Tag créé avec succès',
@@ -25,13 +27,19 @@ export async function createTag(req, res) {
     }
 }
 
+
 /**
  * 2. Récupérer tous les tags
  */
 
 export async function getAllTags(req, res) {
+    const { entreprise_id } = req.body;
+
     try {
-        const result = await pool.query('SELECT * FROM tags ORDER BY name');
+        const result = await pool.query(
+            'SELECT * FROM tags WHERE entreprise_id = $1 ORDER BY name',
+            [entreprise_id]
+        );
         res.status(200).json(result.rows);
     } catch (error) {
         console.error('Erreur lors de la récupération des tags:', error);
@@ -46,15 +54,16 @@ export async function getAllTags(req, res) {
 
 export async function deleteTag(req, res) {
     const { tag_id } = req.params;
+    const { entreprise_id } = req.body;
 
     try {
         const result = await pool.query(
-            'DELETE FROM tags WHERE tag_id = $1 RETURNING *',
-            [tag_id]
+            'DELETE FROM tags WHERE tag_id = $1 AND entreprise_id = $2 RETURNING *',
+            [tag_id, entreprise_id]
         );
 
         if (result.rowCount === 0) {
-            return res.status(404).json({ error: 'Tag non trouvé' });
+            return res.status(404).json({ error: 'Tag non trouvé ou non autorisé' });
         }
 
         res.status(200).json({ success: true, message: 'Tag supprimé avec succès' });
@@ -63,6 +72,7 @@ export async function deleteTag(req, res) {
         res.status(500).json({ error: 'Erreur interne lors de la suppression du tag' });
     }
 }
+
 
 
 /**
@@ -93,26 +103,36 @@ export async function renameTag(req, res) {
     }
 }
 
+
 /**
  * 4. Ajouter un tag a un fichier
  */
 
 export async function addTagToFile(req, res) {
-    const { fichier_id, nom_tag } = req.body;
+    const { fichier_id, nom_tag, entreprise_id } = req.body;
 
-    if (!fichier_id || !nom_tag) {
-        return res.status(400).json({ error: 'fichier_id et nom_tag sont obligatoires' });
+    if (!fichier_id || !nom_tag || !entreprise_id) {
+        return res.status(400).json({ error: 'fichier_id, nom_tag et entreprise_id sont obligatoires' });
     }
 
     try {
-        // Chercher si le tag existe
-        let result = await pool.query('SELECT tag_id FROM tags WHERE nom = $1', [nom_tag]);
+        // Chercher si le tag existe pour cette entreprise
+        let result = await pool.query(
+            'SELECT tag_id FROM tags WHERE name = $1 AND entreprise_id = $2',
+            [nom_tag, entreprise_id]
+        );
 
         let tag_id;
 
-        // S'il n'existe pas, on le crée
         if (result.rows.length === 0) {
-            result = await pool.query('INSERT INTO tags (nom) VALUES ($1) RETURNING tag_id', [nom_tag]);
+            const defaultColor = '#3498db';
+            const defaultDescription = '';
+
+            result = await pool.query(
+                'INSERT INTO tags (name, color, description, entreprise_id) VALUES ($1, $2, $3, $4) RETURNING tag_id',
+                [nom_tag, defaultColor, defaultDescription, entreprise_id]
+            );
+
             tag_id = result.rows[0].tag_id;
         } else {
             tag_id = result.rows[0].tag_id;
@@ -120,7 +140,7 @@ export async function addTagToFile(req, res) {
 
         // Vérifier si déjà associé
         result = await pool.query(
-            'SELECT * FROM fichiers_tags WHERE fichier_id = $1 AND tag_id = $2',
+            'SELECT * FROM fichier_tags WHERE fichier_id = $1 AND tag_id = $2',
             [fichier_id, tag_id]
         );
 
@@ -128,9 +148,8 @@ export async function addTagToFile(req, res) {
             return res.status(200).json({ message: 'Le tag est déjà associé à ce fichier.' });
         }
 
-        // Associer le tag au fichier
         result = await pool.query(
-            'INSERT INTO fichiers_tags (fichier_id, tag_id) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO fichier_tags (fichier_id, tag_id) VALUES ($1, $2) RETURNING *',
             [fichier_id, tag_id]
         );
 
@@ -147,6 +166,7 @@ export async function addTagToFile(req, res) {
         });
     }
 }
+
 
 
 /**
@@ -179,14 +199,20 @@ export async function removeTagFromFile(req, res) {
  */
 
 
-export function extractKeywordsFromText(text, maxKeywords = 10) {
-    const doc = nlp(text);
+export function extractKeywordsFromText(text, maxKeywords = 4) {
+    const stopWords = new Set([
+        'il', 'elle', 'dans', 'le', 'la', 'les', 'de', 'des', 'un', 'une', 'et', 'à', 'en', 'du', 'au', 'aux', 'pour', 'par', 'sur', 'avec', 'ce', 'ces', 'qui', 'que', 'quoi', 'où', 'mais', 'ou', 'donc', 'or', 'ni', 'car'
+    ]);
 
+    const doc = nlp(text);
     const nouns = doc.nouns().out('array');
     const frequency = {};
 
     nouns.forEach(word => {
         const lower = word.toLowerCase();
+        if (stopWords.has(lower)) return; // Ignore stop words
+        if (lower.length < 4) return;    // Ignore mots trop courts
+
         if (!frequency[lower]) frequency[lower] = 0;
         frequency[lower]++;
     });
@@ -200,56 +226,96 @@ export function extractKeywordsFromText(text, maxKeywords = 10) {
     return sorted;
 }
 
-/**
- * 6. recuperer les tags existant et ceux frequament utiliset
- */
-export const getTagSuggestions = async (req, res) => {
-    const { mode = 'top', limit = 10 } = req.query;
+export const getSuggestedTagsByFileId = async (req, res) => {
+    const { fichier_id } = req.body;
+
+    if (!fichier_id) {
+        return res.status(400).json({ error: 'Le paramètre fichier_id est requis.' });
+    }
 
     try {
-        if (mode === 'top') {
-            const result = await pool.query(`
-        SELECT tags.nom
-        FROM fichier_tags
-        JOIN tags ON tags.tag_id = fichier_tags.tag_id
-        GROUP BY tags.nom
-        ORDER BY COUNT(*) DESC
-        LIMIT $1
-      `, [limit]);
+        const result = await pool.query(
+            `SELECT * FROM fichiers WHERE fichier_id = $1`,
+            [fichier_id]
+        );
 
-            return res.status(200).json({ tags: result.rows.map(row => row.nom) });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Fichier non trouvé.' });
         }
 
-        if (mode === 'voir_plus') {
-            const topResult = await pool.query(`
-        SELECT tags.nom
-        FROM fichier_tags
-        JOIN tags ON tags.tag_id = fichier_tags.tag_id
-        GROUP BY tags.nom
-        ORDER BY COUNT(*) DESC
-        LIMIT $1
-      `, [limit]);
+        const text = result.rows[0].contenu_ocr;
 
-            const topTags = topResult.rows.map(row => row.nom);
-
-            const placeholders = topTags.map((_, index) => `$${index + 1}`).join(', ');
-
-            const othersResult = await pool.query(`
-        SELECT tags.nom, COUNT(fichier_tags.fichier_id) AS count
-        FROM tags
-        LEFT JOIN fichier_tags ON tags.tag_id = fichier_tags.tag_id
-        WHERE tags.nom NOT IN (${placeholders})
-        GROUP BY tags.nom
-        ORDER BY count DESC
-      `, topTags);
-
-            return res.status(200).json({ tags: othersResult.rows.map(row => row.nom) });
+        if (!text) {
+            return res.status(404).json({ error: 'Texte OCR non disponible pour ce fichier.' });
         }
 
-        return res.status(400).json({ error: 'Mode invalide. Utilise "top" ou "voir_plus".' });
+        // Extraire les tags du texte OCR
+        const tags = extractKeywordsFromText(text, 5);
+
+        return res.status(200).json({ tags });
+    } catch (error) {
+        console.error('Erreur extraction tags par fichier :', error);
+        return res.status(500).json({ error: 'Erreur serveur.' });
+    }
+};
+
+
+
+/**
+ * 6. recuperer les tags frequament utiliser et suivi des autres tags
+ */
+
+export const getPopularTags = async (req, res) => {
+    const { entreprise_id } = req.body;
+    const limit = 10;
+
+    try {
+        const topResult = await pool.query(
+            `
+            SELECT tags.name, COUNT(fichier_tags.fichier_id)
+            FROM fichier_tags
+            JOIN tags ON tags.tag_id = fichier_tags.tag_id
+            WHERE tags.entreprise_id = $1
+            GROUP BY tags.name
+            ORDER BY COUNT(fichier_tags.fichier_id) DESC
+            LIMIT $2
+            `,
+            [entreprise_id, limit]
+        );
+
+        const topTags = topResult.rows.map(row => row.name);
+        return res.status(200).json({ tags: topTags });
 
     } catch (error) {
-        console.error('Erreur lors de la suggestion de tags :', error);
-        res.status(500).json({ error: 'Erreur serveur.' });
+        console.error('Erreur récupération tags populaires :', error);
+        return res.status(500).json({ error: 'Erreur serveur.' });
+    }
+};
+
+
+/**
+ * . recuperer les tags par fichiers 
+ */
+
+
+export const getTagsForFile = async (req, res) => {
+    const { fichier_id } = req.params;
+
+    if (!fichier_id) {
+        return res.status(400).json({ error: "L'identifiant du fichier est requis." });
+    }
+
+    try {
+        const result = await pool.query(`
+      SELECT tags.tag_id, tags.name
+      FROM fichier_tags
+      JOIN tags ON fichier_tags.tag_id = tags.tag_id
+      WHERE fichier_tags.fichier_id = $1
+    `, [fichier_id]);
+
+        return res.status(200).json({ tags: result.rows });
+    } catch (error) {
+        console.error("Erreur lors de la récupération des tags :", error);
+        return res.status(500).json({ error: "Erreur serveur lors de la récupération des tags." });
     }
 };
