@@ -56,12 +56,22 @@ export const extractSmartText = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
 
   if (ext === '.pdf') {
-    const rawText = await extractTextFromPdf(filePath);
+    try {
+      const dataBuffer = fs.readFileSync(filePath);
+      const data = await pdf(dataBuffer);
+      const rawText = data.text;
 
-    if (rawText.trim().length > 20) {
-      return rawText.trim();
-    } else {
-      return await extractTextFromScannedPdf(filePath); // OCR du PDF scanné
+      if (rawText.trim().length > 20) {
+        return rawText.trim();
+      } else {
+        return await extractTextFromScannedPdf(filePath); // OCR du PDF scanné
+      }
+    } catch (error) {
+      if (error.message === 'No password given') {
+        console.warn(`PDF protégé par mot de passe : ${filePath}`);
+        return ''; // Retourne une chaîne vide pour les PDF protégés
+      }
+      throw error; // Relance les autres types d'erreurs
     }
   }
 
@@ -69,6 +79,6 @@ export const extractSmartText = async (filePath) => {
     return await extractTextFromImage(filePath); // OCR direct sur l'image
   }
 
-  return ''; // Format non pris en charge pour l’OCR
+  return ''; // Format non pris en charge pour l'OCR
 };
 

@@ -38,9 +38,24 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
-      final blob = html.Blob([response.bodyBytes], 'application/pdf');
+      final fileName = widget.document.nomOriginal ?? widget.document.nom;
+      final mimeType = _getMimeType(fileName);
+      print('DEBUG: nom=$fileName, mimeType=$mimeType');
+      final blob = html.Blob([response.bodyBytes], mimeType);
       final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-      html.window.open(blobUrl, '_blank');
+      if (mimeType.startsWith('application/pdf')) {
+        html.window.open(blobUrl, '_blank');
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ce type de fichier n\'est pas prévisualisable. Il va être téléchargé.')),
+          );
+        }
+        final anchor = html.AnchorElement(href: blobUrl)
+          ..setAttribute('download', fileName)
+          ..click();
+        html.Url.revokeObjectUrl(blobUrl);
+      }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -74,10 +89,12 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
-      final blob = html.Blob([response.bodyBytes], 'application/pdf');
+      final fileName = widget.document.nomOriginal ?? widget.document.nom;
+      final mimeType = _getMimeType(fileName);
+      final blob = html.Blob([response.bodyBytes], mimeType);
       final blobUrl = html.Url.createObjectUrlFromBlob(blob);
       final anchor = html.AnchorElement(href: blobUrl)
-        ..setAttribute('download', widget.document.nom)
+        ..setAttribute('download', fileName)
         ..click();
       html.Url.revokeObjectUrl(blobUrl);
     } else {
@@ -122,6 +139,27 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     final authStateService = context.read<AuthStateService>();
     final entrepriseId = authStateService.entrepriseId;
     return '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+  }
+
+  String _getMimeType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf': return 'application/pdf';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'gif': return 'image/gif';
+      case 'doc': return 'application/msword';
+      case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls': return 'application/vnd.ms-excel';
+      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt': return 'application/vnd.ms-powerpoint';
+      case 'pptx': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      case 'txt': return 'text/plain';
+      case 'zip': return 'application/zip';
+      case 'rar': return 'application/x-rar-compressed';
+      default: return 'application/octet-stream';
+    }
   }
 
   @override

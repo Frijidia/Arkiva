@@ -11,6 +11,7 @@ class Document {
   final bool estChiffre;
   final DateTime dateAjout;
   final String? contenuOcr;
+  final String? nomOriginal;
 
   Document({
     required this.id,
@@ -25,6 +26,7 @@ class Document {
     List<String>? tags,
     this.estChiffre = false,
     this.contenuOcr,
+    this.nomOriginal,
   }) : tags = tags ?? [];
 
   Map<String, dynamic> toJson() {
@@ -41,6 +43,7 @@ class Document {
       'tags': tags,
       'estChiffre': estChiffre,
       'contenu_ocr': contenuOcr,
+      'nom_original': nomOriginal,
     };
   }
 
@@ -58,6 +61,7 @@ class Document {
       tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
       estChiffre: json['est_chiffre'] as bool? ?? false,
       contenuOcr: json['contenu_ocr'] as String?,
+      nomOriginal: json['originalfilename'] as String?,
     );
   }
 
@@ -74,6 +78,7 @@ class Document {
     bool? estChiffre,
     DateTime? dateAjout,
     String? contenuOcr,
+    String? nomOriginal,
   }) {
     return Document(
       id: id ?? this.id,
@@ -88,6 +93,7 @@ class Document {
       tags: tags ?? this.tags,
       estChiffre: estChiffre ?? this.estChiffre,
       contenuOcr: contenuOcr ?? this.contenuOcr,
+      nomOriginal: nomOriginal ?? this.nomOriginal,
     );
   }
 } 

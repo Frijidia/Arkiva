@@ -119,7 +119,14 @@ export const uploadFiles = async (req, res) => {
 
       const finalBuffer = fs.readFileSync(finalPath);
 
-      const contenu_ocr = await extractSmartText(finalPath);
+      let contenu_ocr = '';
+      try {
+        contenu_ocr = await extractSmartText(finalPath);
+      } catch (error) {
+        console.warn(`Erreur lors de l'extraction du texte : ${error.message}`);
+        // Continue l'upload même si l'OCR échoue
+      }
+
       const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, finalName, entreprise_id);
       const jsonString = encryptedBuffer.toString('utf8');
       const s3Data = await uploadFileBufferToS3(encryptedBuffer, finalName + '.enc');
@@ -132,7 +139,6 @@ export const uploadFiles = async (req, res) => {
         dossier_id,
         contenu_ocr,
         originalFileName = finalName
-        // jsonString
       ]);
 
       if (isConverted) {
@@ -149,9 +155,9 @@ export const uploadFiles = async (req, res) => {
     ).join(', ');
 
     const query = `
-      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr, originalFileName)
+      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr, originalfilename)
       VALUES ${placeholders}
-      RETURNING *;
+      RETURNING *
     `;
 
     const flatValues = uploaded.flat();

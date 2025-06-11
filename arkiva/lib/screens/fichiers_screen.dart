@@ -9,6 +9,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:arkiva/services/upload_service.dart';
 import 'package:arkiva/config/api_config.dart';
+import 'package:http/http.dart' as http;
+import 'dart:html' as html;
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -369,6 +371,79 @@ class _FichiersScreenState extends State<FichiersScreen> {
     }
   }
 
+  void _ouvrirOuTelechargerDocument(Document document) {
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final entrepriseId = authStateService.entrepriseId;
+    if (token == null || entrepriseId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur: Token ou ID entreprise manquant'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    final url = '${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId';
+    http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    ).then((response) {
+      if (response.statusCode == 200) {
+        final fileName = document.nomOriginal ?? document.nom;
+        final mimeType = _getMimeType(fileName);
+        print('DEBUG: nom=$fileName, mimeType=$mimeType');
+        final blob = html.Blob([response.bodyBytes], mimeType);
+        final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+        if (mimeType.startsWith('application/pdf')) {
+          html.window.open(blobUrl, '_blank');
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Ce type de fichier n\'est pas prévisualisable. Il va être téléchargé.')),
+            );
+          }
+          final anchor = html.AnchorElement(href: blobUrl)
+            ..setAttribute('download', fileName)
+            ..click();
+          html.Url.revokeObjectUrl(blobUrl);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur lors de l\'ouverture du document'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  String _getMimeType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf': return 'application/pdf';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'gif': return 'image/gif';
+      case 'doc': return 'application/msword';
+      case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls': return 'application/vnd.ms-excel';
+      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt': return 'application/vnd.ms-powerpoint';
+      case 'pptx': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      case 'txt': return 'text/plain';
+      case 'zip': return 'application/zip';
+      case 'rar': return 'application/x-rar-compressed';
+      default: return 'application/octet-stream';
+    }
+  }
+
   List<Document> get _filteredDocuments {
     if (_searchQuery.isEmpty) {
       return _documents;
@@ -460,7 +535,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                         return Card(
                           child: ListTile(
                             leading: const Icon(Icons.description),
-                            title: Text(document.nom),
+                            title: Text(document.nomOriginal ?? document.nom),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -480,12 +555,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                               onSelected: (value) {
                                 switch (value) {
                                   case 'afficher':
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => DocumentViewerScreen(document: document),
-                                      ),
-                                    );
+                                    _ouvrirOuTelechargerDocument(document);
                                     break;
                                   case 'telecharger':
                                     _telechargerDocument(document);
@@ -542,12 +612,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                               ],
                             ),
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DocumentViewerScreen(document: document),
-                                ),
-                              );
+                              _ouvrirOuTelechargerDocument(document);
                             },
                           ),
                         );
