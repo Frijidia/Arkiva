@@ -22,7 +22,8 @@ import encryptionRoutes from './modules/encryption/encryptionRoutes.js'; // encr
 //import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes, versions
 import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
 import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
-
+import favorisRoutes from "./modules/favoris/favorisRoutes.js"; //favoris
+import searchRoutes from "./modules/search/searchRoute.js" //search
 const app = express();
 
 app.use(cors());
@@ -48,6 +49,8 @@ app.use('/api/encryption', encryptionRoutes);
 //app.use('/api/sauvegardes', backupRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ocr', ocrRoutes);
+app.use('/api/favoris', favorisRoutes);
+app.use('/api/search', searchRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
