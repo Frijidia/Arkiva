@@ -1,0 +1,86 @@
+//partage du fichier par lien 
+
+
+// import { PutObjectCommand } from "@aws-sdk/client-s3";
+// import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+// export const partagerFichierDecrypté = async (req, res) => {
+//   const { fichier_id, entreprise_id } = req.params;
+
+//   try {
+//     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
+//     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
+
+//     const fichier = rows[0];
+//     const chemin = fichier.chemin;
+//     const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+//     const key = chemin.replace(s3BaseUrl, '');
+
+//     // 1. Télécharger le fichier chiffré
+//     const encryptedBuffer = await downloadFileBufferFromS3(key);
+
+//     // 2. Déchiffrer le fichier
+//     const { content: decryptedBuffer, originalFileName } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
+
+//     // 3. Déterminer le type MIME
+//     const mimeType = mime.lookup(originalFileName) || 'application/octet-stream';
+
+//     // 4. Définir un chemin temporaire pour le fichier déchiffré
+//     const tempKey = `temp-share/${entreprise_id}-${Date.now()}-${originalFileName}`;
+
+//     // 5. Upload du fichier déchiffré en clair dans S3
+//     await s3.send(new PutObjectCommand({
+//       Bucket: process.env.AWS_S3_BUCKET_NAME,
+//       Key: tempKey,
+//       Body: decryptedBuffer,
+//       ContentType: mimeType,
+//       ContentDisposition: `attachment; filename="${originalFileName}"`,
+//     }));
+
+//     // 6. Générer un lien signé temporaire (valable 1h)
+//     const command = new GetObjectCommand({
+//       Bucket: process.env.AWS_S3_BUCKET_NAME,
+//       Key: tempKey,
+//     });
+
+//     const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 * 60 });
+
+//     res.json({ lien: signedUrl });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: 'Erreur lors du partage du fichier déchiffré' });
+//   }
+// };
+
+
+// Très bien, voici comment tu peux faire les deux options pour gérer automatiquement la suppression des fichiers déchiffrés temporairement uploadés sur S3.
+
+// ✅ 1. Configuration d’une "Lifecycle Rule" sur S3 (auto-suppression après 24h)
+// 🪜 Étapes sur AWS Console :
+// Va dans la console AWS S3.
+
+// Clique sur ton bucket (ex: arkiva-storage).
+
+// Onglet "Management" > section "Lifecycle rules".
+
+// Clique sur "Create lifecycle rule".
+
+// 📝 Configuration :
+// Nom de la règle : TempShareExpiry
+
+// Scope : Limit the scope... → coche "Prefix" et mets :
+
+// pgsql
+// Copier
+// Modifier
+// temp-share/
+// Transitions : (aucune, laisse vide)
+
+// Expiration :
+// ✅ Coche "Expire current versions of objects"
+// → Mets 1 jour (ou 1 pour 24h)
+
+// ✅ Résultat :
+// Tous les fichiers qui commencent par temp-share/ seront automatiquement supprimés après 1 jour.
+
