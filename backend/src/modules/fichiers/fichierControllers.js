@@ -19,7 +19,14 @@ export const getFichiersByDossierId = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM fichiers WHERE dossier_id = $1 ORDER BY fichier_id DESC',
+      `SELECT f.*, 
+        COALESCE(ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
+      FROM fichiers f
+      LEFT JOIN fichier_tags ft ON ft.fichier_id = f.fichier_id
+      LEFT JOIN tags t ON t.tag_id = ft.tag_id
+      WHERE f.dossier_id = $1
+      GROUP BY f.fichier_id
+      ORDER BY f.fichier_id DESC`,
       [dossier_id]
     );
 
