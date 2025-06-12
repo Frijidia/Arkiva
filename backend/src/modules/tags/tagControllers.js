@@ -140,8 +140,8 @@ export async function addTagToFile(req, res) {
 
         // Vérifier si déjà associé
         result = await pool.query(
-            'SELECT * FROM fichier_tags WHERE fichier_id = $1 AND tag_id = $2',
-            [fichier_id, tag_id]
+            'SELECT * FROM fichier_tags WHERE fichier_id = $1 AND tag_id = $2 AND entreprise_id =$3',
+            [fichier_id, tag_id, entreprise_id]
         );
 
         if (result.rows.length > 0) {
@@ -149,8 +149,8 @@ export async function addTagToFile(req, res) {
         }
 
         result = await pool.query(
-            'INSERT INTO fichier_tags (fichier_id, tag_id) VALUES ($1, $2) RETURNING *',
-            [fichier_id, tag_id]
+            'INSERT INTO fichier_tags (fichier_id, tag_id, entreprise_id) VALUES ($1, $2, $3) RETURNING *',
+            [fichier_id, tag_id, entreprise_id]
         );
 
         res.status(201).json({
