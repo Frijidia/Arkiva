@@ -20,7 +20,12 @@ export const getFichiersByDossierId = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT f.*, 
-        COALESCE(ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
+        COALESCE(
+          ARRAY_AGG(
+            DISTINCT jsonb_build_object('name', t.name, 'color', t.color)
+          ) FILTER (WHERE t.tag_id IS NOT NULL), 
+          '{}'
+        ) AS tags
       FROM fichiers f
       LEFT JOIN fichier_tags ft ON ft.fichier_id = f.fichier_id
       LEFT JOIN tags t ON t.tag_id = ft.tag_id

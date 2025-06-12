@@ -7,7 +7,7 @@ class Document {
   final int? taille;
   final DateTime dateCreation;
   final DateTime dateModification;
-  final List<String> tags;
+  final List<Map<String, dynamic>> tags;
   final bool estChiffre;
   final DateTime dateAjout;
   final String? contenuOcr;
@@ -23,7 +23,7 @@ class Document {
     required this.dateCreation,
     required this.dateModification,
     required this.dateAjout,
-    List<String>? tags,
+    List<Map<String, dynamic>>? tags,
     this.estChiffre = false,
     this.contenuOcr,
     this.nomOriginal,
@@ -58,7 +58,7 @@ class Document {
       dateCreation: DateTime.parse(json['created_at'] as String),
       dateModification: DateTime.parse(json['created_at'] as String),
       dateAjout: DateTime.parse(json['created_at'] as String),
-      tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
+      tags: (json['tags'] as List?)?.map((t) => Map<String, dynamic>.from(t)).toList() ?? [],
       estChiffre: json['est_chiffre'] as bool? ?? false,
       contenuOcr: json['contenu_ocr'] as String?,
       nomOriginal: json['originalfilename'] as String?,
@@ -74,7 +74,7 @@ class Document {
     int? taille,
     DateTime? dateCreation,
     DateTime? dateModification,
-    List<String>? tags,
+    List<Map<String, dynamic>>? tags,
     bool? estChiffre,
     DateTime? dateAjout,
     String? contenuOcr,

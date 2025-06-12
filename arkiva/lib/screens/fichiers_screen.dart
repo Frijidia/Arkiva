@@ -493,7 +493,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                         children: [
                           TextField(
                             decoration: const InputDecoration(
-                              labelText: 'Rechercher ou saisir un tag',
+                              labelText: 'Rechercher un tag',
                             ),
                             onChanged: (value) => setStateSB(() => search = value),
                           ),
@@ -504,10 +504,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
                             child: ListView(
                               children: filteredTags.map<Widget>((tag) => ListTile(
                                 title: Text(tag['name']),
-                                onTap: () => selectedTag = tag['name'],
+                                onTap: () => setStateSB(() => selectedTag = tag['name']),
                                 selected: selectedTag == tag['name'],
                                 trailing: selectedTag == tag['name'] ? const Icon(Icons.check, color: Colors.blue) : null,
-                                onLongPress: () => Navigator.pop(context, tag['name']),
                               )).toList(),
                             ),
                           ),
@@ -516,13 +515,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
               ElevatedButton(
-                onPressed: () {
-                  if (search.isNotEmpty) {
-                    Navigator.pop(context, search);
-                  } else if (selectedTag != null) {
-                    Navigator.pop(context, selectedTag);
-                  }
-                },
+                onPressed: selectedTag == null ? null : () => Navigator.pop(context, selectedTag),
                 child: const Text('Assigner'),
               ),
             ],
@@ -538,6 +531,16 @@ class _FichiersScreenState extends State<FichiersScreen> {
         );
       }
     });
+  }
+
+  Color _parseColor(String? colorString) {
+    if (colorString == null) return Colors.grey;
+    try {
+      if (colorString.startsWith('#') && (colorString.length == 7)) {
+        return Color(int.parse(colorString.replaceFirst('#', '0xff')));
+      }
+    } catch (_) {}
+    return Colors.grey;
   }
 
   @override
@@ -637,7 +640,26 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Wrap(
                                       spacing: 6,
-                                      children: document.tags.map((tag) => Chip(label: Text(tag))).toList(),
+                                      children: document.tags.map((tag) => Chip(
+                                        label: Text(tag['name'] ?? ''),
+                                        backgroundColor: _parseColor(tag['color']),
+                                        onDeleted: () async {
+                                          final authState = context.read<AuthStateService>();
+                                          final token = authState.token;
+                                          final entrepriseId = authState.entrepriseId;
+                                          if (token != null && entrepriseId != null && tag['name'] != null) {
+                                            final allTags = await _tagService.getAllTags(token, entrepriseId);
+                                            final tagObj = allTags.firstWhere((t) => t['name'] == tag['name'], orElse: () => null);
+                                            if (tagObj != null) {
+                                              await _tagService.removeTagFromFile(token, entrepriseId, int.parse(document.id), tagObj['tag_id']);
+                                              await _loadDocuments();
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Tag "${tag['name']}" retiré du document.')),
+                                              );
+                                            }
+                                          }
+                                        },
+                                      )).toList(),
                                     ),
                                   ),
                               ],
