@@ -12,6 +12,7 @@ import 'package:arkiva/screens/create_user_screen.dart';
 import 'package:arkiva/screens/admin_dashboard_screen.dart';
 import 'package:arkiva/screens/login_screen.dart';
 import 'package:arkiva/services/document_service.dart';
+import 'package:arkiva/screens/tags_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

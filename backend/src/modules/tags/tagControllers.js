@@ -8,6 +8,7 @@ import "./tagModels.js";
  */
 
 export async function createTag(req, res) {
+    console.log('Body reçu pour création de tag:', req.body);
     const { name, color, description, entreprise_id } = req.body;
 
     try {
@@ -33,7 +34,7 @@ export async function createTag(req, res) {
  */
 
 export async function getAllTags(req, res) {
-    const { entreprise_id } = req.body;
+    const { entreprise_id } = req.query;
 
     try {
         const result = await pool.query(

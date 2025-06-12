@@ -11,6 +11,8 @@ import 'package:arkiva/services/upload_service.dart';
 import 'package:arkiva/config/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html;
+import 'package:arkiva/screens/tags_screen.dart';
+import 'package:arkiva/services/tag_service.dart';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -27,6 +29,7 @@ class FichiersScreen extends StatefulWidget {
 class _FichiersScreenState extends State<FichiersScreen> {
   final DocumentService _documentService = DocumentService();
   final UploadService _uploadService = UploadService();
+  final TagService _tagService = TagService();
   List<Document> _documents = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
@@ -454,6 +457,89 @@ class _FichiersScreenState extends State<FichiersScreen> {
     }).toList();
   }
 
+  Future<void> _assignTagToFile(Document document) async {
+    final authState = context.read<AuthStateService>();
+    final token = authState.token;
+    final entrepriseId = authState.entrepriseId;
+    if (token == null || entrepriseId == null) return;
+    List<dynamic> tags = [];
+    String? selectedTag;
+    String search = '';
+    bool isLoading = true;
+    String? error;
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateSB) {
+          Future<void> loadTags() async {
+            setStateSB(() { isLoading = true; error = null; });
+            try {
+              tags = await _tagService.getAllTags(token, entrepriseId);
+            } catch (e) {
+              error = 'Erreur lors du chargement des tags';
+            }
+            setStateSB(() { isLoading = false; });
+          }
+          if (isLoading) loadTags();
+          final filteredTags = tags.where((tag) => tag['name'].toLowerCase().contains(search.toLowerCase())).toList();
+          return AlertDialog(
+            title: const Text('Assigner un tag'),
+            content: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : error != null
+                    ? Text(error!, style: const TextStyle(color: Colors.red))
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Rechercher ou saisir un tag',
+                            ),
+                            onChanged: (value) => setStateSB(() => search = value),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 180,
+                            width: 300,
+                            child: ListView(
+                              children: filteredTags.map<Widget>((tag) => ListTile(
+                                title: Text(tag['name']),
+                                onTap: () => selectedTag = tag['name'],
+                                selected: selectedTag == tag['name'],
+                                trailing: selectedTag == tag['name'] ? const Icon(Icons.check, color: Colors.blue) : null,
+                                onLongPress: () => Navigator.pop(context, tag['name']),
+                              )).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+              ElevatedButton(
+                onPressed: () {
+                  if (search.isNotEmpty) {
+                    Navigator.pop(context, search);
+                  } else if (selectedTag != null) {
+                    Navigator.pop(context, selectedTag);
+                  }
+                },
+                child: const Text('Assigner'),
+              ),
+            ],
+          );
+        },
+      ),
+    ).then((tagName) async {
+      if (tagName != null && tagName is String && tagName.isNotEmpty) {
+        await _tagService.addTagToFile(token, entrepriseId, int.parse(document.id.toString()), tagName);
+        await _loadDocuments();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tag "$tagName" assigné au document.')),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -469,6 +555,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _ajouterDocument,
+          ),
+          IconButton(
+            icon: const Icon(Icons.label),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TagsScreen())),
+            tooltip: 'Tags',
           ),
         ],
       ),
@@ -566,6 +657,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                   case 'supprimer':
                                     _supprimerDocument(document);
                                     break;
+                                  case 'assigner_tag':
+                                    _assignTagToFile(document);
+                                    break;
                                 }
                               },
                               itemBuilder: (context) => [
@@ -606,6 +700,16 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                       Icon(Icons.delete, color: Colors.red),
                                       SizedBox(width: 8),
                                       Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'assigner_tag',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.label, color: Colors.blue),
+                                      SizedBox(width: 8),
+                                      Text('Assigner un tag'),
                                     ],
                                   ),
                                 ),

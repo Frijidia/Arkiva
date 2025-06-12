@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/tag_service.dart';
 import '../services/auth_state_service.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class TagsScreen extends StatefulWidget {
   const TagsScreen({super.key});
@@ -25,48 +26,105 @@ class _TagsScreenState extends State<TagsScreen> {
   Future<void> _loadTags() async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final token = context.read<AuthStateService>().token;
-      final tags = await _tagService.getAllTags(token!);
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      final tags = await _tagService.getAllTags(token!, entrepriseId!);
       setState(() { _tags = tags; _isLoading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _isLoading = false; });
     }
   }
 
+  Color? _parseColor(String? colorString) {
+    if (colorString == null) return Colors.grey;
+    try {
+      if (colorString.startsWith('#') && (colorString.length == 7)) {
+        return Color(int.parse(colorString.replaceFirst('#', '0xff')));
+      }
+    } catch (_) {}
+    return Colors.grey;
+  }
+
   Future<void> _createTag() async {
     final nameController = TextEditingController();
-    final colorController = TextEditingController();
     final descriptionController = TextEditingController();
+    Color selectedColor = Colors.blue; // couleur par défaut
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Créer un tag'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nom')), 
-            TextField(controller: colorController, decoration: const InputDecoration(labelText: 'Couleur (#RRGGBB)')),
-            TextField(controller: descriptionController, decoration: const InputDecoration(labelText: 'Description')),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Créer un tag'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nom')),
+              Row(
+                children: [
+                  const Text('Couleur : '),
+                  GestureDetector(
+                    onTap: () async {
+                      Color? picked = await showDialog<Color>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Choisir une couleur'),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: selectedColor,
+                              onColorChanged: (color) => setState(() => selectedColor = color),
+                              showLabel: false,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text('OK'),
+                              onPressed: () => Navigator.of(context).pop(selectedColor),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (picked != null) setState(() => selectedColor = picked);
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: selectedColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black26),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              TextField(controller: descriptionController, decoration: const InputDecoration(labelText: 'Description')),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty) {
+                  final hexColor = '#${selectedColor.value.toRadixString(16).substring(2)}';
+                  Navigator.pop(context, {
+                    'name': nameController.text,
+                    'color': hexColor,
+                    'description': descriptionController.text
+                  });
+                }
+              },
+              child: const Text('Créer'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
-          ElevatedButton(onPressed: () {
-            if (nameController.text.isNotEmpty && colorController.text.isNotEmpty) {
-              Navigator.pop(context, {
-                'name': nameController.text,
-                'color': colorController.text,
-                'description': descriptionController.text
-              });
-            }
-          }, child: const Text('Créer')),
-        ],
       ),
     );
-    if (result != null) {
+    if (result != null && result['name'] != null && result['name']!.isNotEmpty) {
       try {
-        final token = context.read<AuthStateService>().token;
-        await _tagService.createTag(token!, result['name']!, result['color']!, result['description'] ?? '');
+        final authState = context.read<AuthStateService>();
+        final token = authState.token;
+        final entrepriseId = authState.entrepriseId;
+        await _tagService.createTag(token!, entrepriseId!, result['name']!, result['color']!, result['description'] ?? '');
         await _loadTags();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
@@ -89,8 +147,10 @@ class _TagsScreenState extends State<TagsScreen> {
     );
     if (result != null && result.isNotEmpty && result != oldName) {
       try {
-        final token = context.read<AuthStateService>().token;
-        await _tagService.renameTag(token!, tagId, result);
+        final authState = context.read<AuthStateService>();
+        final token = authState.token;
+        final entrepriseId = authState.entrepriseId;
+        await _tagService.renameTag(token!, entrepriseId!, tagId, result);
         await _loadTags();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
@@ -112,8 +172,10 @@ class _TagsScreenState extends State<TagsScreen> {
     );
     if (confirm == true) {
       try {
-        final token = context.read<AuthStateService>().token;
-        await _tagService.deleteTag(token!, tagId);
+        final authState = context.read<AuthStateService>();
+        final token = authState.token;
+        final entrepriseId = authState.entrepriseId;
+        await _tagService.deleteTag(token!, entrepriseId!, tagId);
         await _loadTags();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
@@ -123,8 +185,10 @@ class _TagsScreenState extends State<TagsScreen> {
 
   Future<void> _showSuggestions() async {
     try {
-      final token = context.read<AuthStateService>().token;
-      final suggestions = await _tagService.getTagSuggestions(token!);
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      final suggestions = await _tagService.getTagSuggestions(token!, entrepriseId!);
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -161,7 +225,9 @@ class _TagsScreenState extends State<TagsScreen> {
                   itemBuilder: (context, index) {
                     final tag = _tags[index];
                     return ListTile(
-                      leading: CircleAvatar(backgroundColor: Color(int.parse(tag['color'].replaceFirst('#', '0xff')))),
+                      leading: CircleAvatar(
+                        backgroundColor: _parseColor(tag['color']),
+                      ),
                       title: Text(tag['name']),
                       subtitle: Text(tag['description'] ?? ''),
                       trailing: Row(
