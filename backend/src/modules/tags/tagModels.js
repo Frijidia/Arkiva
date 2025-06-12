@@ -6,7 +6,8 @@ const createTableTags = `
     color VARCHAR(7) NOT NULL,
     description TEXT,
     entreprise_id INTEGER,
-    FOREIGN KEY (entreprise_id) REFERENCES entreprises(entreprise_id) ON DELETE CASCADE
+    FOREIGN KEY (entreprise_id) REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
+    CONSTRAINT unique_tag_name_per_entreprise UNIQUE (name, entreprise_id)
   );
 `;
 
