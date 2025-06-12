@@ -35,6 +35,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   PlatformFile? _selectedFile;
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -50,7 +51,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
       if (token != null) {
         if (widget.dossier.dossierId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(content: Text('Erreur: ID du dossier manquant.')),
           );
           setState(() => _isLoading = false);
@@ -63,7 +64,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Erreur: ${e.toString()}')),
       );
       setState(() => _isLoading = false);
@@ -94,7 +95,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
     final TextEditingController descriptionController = TextEditingController();
     _selectedFile = null;
 
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, String>?> (
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setStateSB) {
         return AlertDialog(
@@ -143,12 +144,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                     'description': descriptionController.text.trim(),
                   });
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Veuillez saisir un nom et sélectionner un fichier'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  Navigator.pop(context, {'erreur': 'Veuillez saisir un nom et sélectionner un fichier'});
                 }
               },
               child: const Text('Ajouter'),
@@ -158,6 +154,14 @@ class _FichiersScreenState extends State<FichiersScreen> {
       }),
     );
 
+    if (result != null && result['erreur'] != null) {
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(result['erreur']!)),
+      );
+      return;
+    }
+
     if (result != null && _selectedFile != null) {
       try {
         final authStateService = context.read<AuthStateService>();
@@ -166,7 +170,8 @@ class _FichiersScreenState extends State<FichiersScreen> {
         if (token != null && widget.dossier.dossierId != null) {
           final entrepriseId = authStateService.entrepriseId;
           if (entrepriseId == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            if (!mounted) return;
+            _scaffoldMessengerKey.currentState?.showSnackBar(
               const SnackBar(content: Text('Erreur: ID de l\'entreprise manquant.')),
             );
             return;
@@ -178,13 +183,15 @@ class _FichiersScreenState extends State<FichiersScreen> {
             _selectedFile!,
           );
           await _loadDocuments();
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!mounted) return;
+          _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(content: Text('Document ajouté avec succès')),
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Erreur: \\${e.toString()}')),
         );
       }
     }
@@ -192,7 +199,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
   Future<void> _modifierDocument(Document document) async {
     if (document.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(content: Text('Erreur: ID du document manquant pour la modification.')),
       );
       return;
@@ -267,12 +274,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
             }
           });
           
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!mounted) return;
+          _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(content: Text('Document mis à jour avec succès')),
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
       }
@@ -281,7 +289,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
   Future<void> _supprimerDocument(Document document) async {
     if (document.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(content: Text('Erreur: ID du document manquant pour la suppression.')),
       );
       return;
@@ -314,12 +322,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
         if (token != null) {
           await _documentService.deleteDocument(token, document.id);
           await _loadDocuments();
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!mounted) return;
+          _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(content: Text('Document supprimé avec succès')),
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
       }
@@ -328,7 +337,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
   Future<void> _displayDocument(Document document) async {
     if (document.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(content: Text('Erreur: ID du document manquant pour l\'affichage.')),
       );
       return;
@@ -344,7 +353,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         throw 'Could not launch $url';
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Erreur lors de l\'affichage du document: ${e.toString()}')),
       );
     }
@@ -352,7 +361,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
   Future<void> _telechargerDocument(Document document) async {
     if (document.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(content: Text('Erreur: ID du document manquant pour le téléchargement.')),
       );
       return;
@@ -368,7 +377,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         throw 'Could not launch $url';
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Erreur lors du téléchargement du document: ${e.toString()}')),
       );
     }
@@ -380,7 +389,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
     final entrepriseId = authStateService.entrepriseId;
     if (token == null || entrepriseId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessengerKey.currentState?.showSnackBar(
           const SnackBar(
             content: Text('Erreur: Token ou ID entreprise manquant'),
             backgroundColor: Colors.red,
@@ -404,7 +413,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
           html.window.open(blobUrl, '_blank');
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            _scaffoldMessengerKey.currentState?.showSnackBar(
               SnackBar(content: Text('Ce type de fichier n\'est pas prévisualisable. Il va être téléchargé.')),
             );
           }
@@ -415,7 +424,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(
               content: Text('Erreur lors de l\'ouverture du document'),
               backgroundColor: Colors.red,
@@ -467,7 +476,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
     String search = '';
     bool isLoading = true;
     String? error;
-    await showDialog(
+    final tagName = await showDialog<String>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setStateSB) {
@@ -522,15 +531,15 @@ class _FichiersScreenState extends State<FichiersScreen> {
           );
         },
       ),
-    ).then((tagName) async {
-      if (tagName != null && tagName is String && tagName.isNotEmpty) {
-        await _tagService.addTagToFile(token, entrepriseId, int.parse(document.id.toString()), tagName);
-        await _loadDocuments();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tag "$tagName" assigné au document.')),
-        );
-      }
-    });
+    );
+    if (tagName != null && tagName.isNotEmpty) {
+      await _tagService.addTagToFile(token, entrepriseId, int.parse(document.id.toString()), tagName);
+      await _loadDocuments();
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Tag "$tagName" assigné au document.')),
+      );
+    }
   }
 
   Color _parseColor(String? colorString) {
@@ -551,207 +560,224 @@ class _FichiersScreenState extends State<FichiersScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.dossier.nom),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _ajouterDocument,
-          ),
-          IconButton(
-            icon: const Icon(Icons.label),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TagsScreen())),
-            tooltip: 'Tags',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un document...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.dossier.nom),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _ajouterDocument,
             ),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _loadDocuments,
-              child: _filteredDocuments.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.description,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Aucun document dans ce dossier',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+            IconButton(
+              icon: const Icon(Icons.label),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TagsScreen())),
+              tooltip: 'Tags',
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher un document...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadDocuments,
+                child: _filteredDocuments.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.description,
+                              size: 64,
+                              color: Colors.grey,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Ajoutez votre premier document',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _ajouterDocument,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Ajouter un document'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filteredDocuments.length,
-                      itemBuilder: (context, index) {
-                        final document = _filteredDocuments[index];
-                        return Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.description),
-                            title: Text(document.nomOriginal ?? document.nom),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (document.description != null && document.description!.isNotEmpty)
-                                  Text(document.description!),
-                                if (document.tags.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Wrap(
-                                      spacing: 6,
-                                      children: document.tags.map((tag) => Chip(
-                                        label: Text(tag['name'] ?? ''),
-                                        backgroundColor: _parseColor(tag['color']),
-                                        onDeleted: () async {
-                                          final authState = context.read<AuthStateService>();
-                                          final token = authState.token;
-                                          final entrepriseId = authState.entrepriseId;
-                                          if (token != null && entrepriseId != null && tag['name'] != null) {
-                                            final allTags = await _tagService.getAllTags(token, entrepriseId);
-                                            final tagObj = allTags.firstWhere((t) => t['name'] == tag['name'], orElse: () => null);
-                                            if (tagObj != null) {
-                                              await _tagService.removeTagFromFile(token, entrepriseId, int.parse(document.id), tagObj['tag_id']);
-                                              await _loadDocuments();
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('Tag "${tag['name']}" retiré du document.')),
-                                              );
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Aucun document dans ce dossier',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Ajoutez votre premier document',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _ajouterDocument,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Ajouter un document'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredDocuments.length,
+                        itemBuilder: (context, index) {
+                          final document = _filteredDocuments[index];
+                          return Card(
+                            child: ListTile(
+                              leading: const Icon(Icons.description),
+                              title: Text(document.nomOriginal ?? document.nom),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (document.description != null && document.description!.isNotEmpty)
+                                    Text(document.description!),
+                                  if (document.tags.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Wrap(
+                                        spacing: 6,
+                                        children: document.tags.map((tag) => Chip(
+                                          label: Text(tag['name'] ?? ''),
+                                          backgroundColor: _parseColor(tag['color']),
+                                          onDeleted: () async {
+                                            final authState = context.read<AuthStateService>();
+                                            final token = authState.token;
+                                            final entrepriseId = authState.entrepriseId;
+                                            if (token != null && entrepriseId != null && tag['name'] != null) {
+                                              final allTags = await _tagService.getAllTags(token, entrepriseId);
+                                              final tagObj = allTags.firstWhere((t) => t['name'] == tag['name'], orElse: () => null);
+                                              if (tagObj != null) {
+                                                final bool? removed = await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: const Text('Retirer le tag'),
+                                                    content: Text('Voulez-vous vraiment retirer le tag "${tag['name']}" de ce document ?'),
+                                                    actions: [
+                                                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+                                                      ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Retirer')),
+                                                    ],
+                                                  ),
+                                                );
+                                                if (removed == true) {
+                                                  await _tagService.removeTagFromFile(token, entrepriseId, int.parse(document.id), tagObj['tag_id']);
+                                                  await _loadDocuments();
+                                                  if (!mounted) return;
+                                                  _scaffoldMessengerKey.currentState?.showSnackBar(
+                                                    SnackBar(content: Text('Tag "${tag['name']}" retiré du document.')),
+                                                  );
+                                                }
+                                              }
                                             }
-                                          }
-                                        },
-                                      )).toList(),
+                                          },
+                                        )).toList(),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              trailing: PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  switch (value) {
+                                    case 'afficher':
+                                      _ouvrirOuTelechargerDocument(document);
+                                      break;
+                                    case 'telecharger':
+                                      _telechargerDocument(document);
+                                      break;
+                                    case 'modifier':
+                                      _modifierDocument(document);
+                                      break;
+                                    case 'supprimer':
+                                      _supprimerDocument(document);
+                                      break;
+                                    case 'assigner_tag':
+                                      _assignTagToFile(document);
+                                      break;
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'afficher',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.visibility),
+                                        SizedBox(width: 8),
+                                        Text('Afficher'),
+                                      ],
                                     ),
                                   ),
-                              ],
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                switch (value) {
-                                  case 'afficher':
-                                    _ouvrirOuTelechargerDocument(document);
-                                    break;
-                                  case 'telecharger':
-                                    _telechargerDocument(document);
-                                    break;
-                                  case 'modifier':
-                                    _modifierDocument(document);
-                                    break;
-                                  case 'supprimer':
-                                    _supprimerDocument(document);
-                                    break;
-                                  case 'assigner_tag':
-                                    _assignTagToFile(document);
-                                    break;
-                                }
+                                  const PopupMenuItem(
+                                    value: 'telecharger',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.download),
+                                        SizedBox(width: 8),
+                                        Text('Télécharger'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'modifier',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit),
+                                        SizedBox(width: 8),
+                                        Text('Modifier'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'supprimer',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete, color: Colors.red),
+                                        SizedBox(width: 8),
+                                        Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'assigner_tag',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.label, color: Colors.blue),
+                                        SizedBox(width: 8),
+                                        Text('Assigner un tag'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                _ouvrirOuTelechargerDocument(document);
                               },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'afficher',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.visibility),
-                                      SizedBox(width: 8),
-                                      Text('Afficher'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'telecharger',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.download),
-                                      SizedBox(width: 8),
-                                      Text('Télécharger'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'modifier',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit),
-                                      SizedBox(width: 8),
-                                      Text('Modifier'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'supprimer',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.delete, color: Colors.red),
-                                      SizedBox(width: 8),
-                                      Text('Supprimer', style: TextStyle(color: Colors.red)),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'assigner_tag',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.label, color: Colors.blue),
-                                      SizedBox(width: 8),
-                                      Text('Assigner un tag'),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ),
-                            onTap: () {
-                              _ouvrirOuTelechargerDocument(document);
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
+              ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _ajouterDocument,
-        child: const Icon(Icons.add),
-        tooltip: 'Ajouter un document',
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _ajouterDocument,
+          child: const Icon(Icons.add),
+          tooltip: 'Ajouter un document',
+        ),
       ),
     );
   }
