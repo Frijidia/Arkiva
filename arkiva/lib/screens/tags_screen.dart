@@ -188,7 +188,7 @@ class _TagsScreenState extends State<TagsScreen> {
       final authState = context.read<AuthStateService>();
       final token = authState.token;
       final entrepriseId = authState.entrepriseId;
-      final suggestions = await _tagService.getTagSuggestions(token!, entrepriseId!);
+      final suggestions = await _tagService.getPopularTags(token!, entrepriseId!);
       showDialog(
         context: context,
         builder: (context) => AlertDialog(

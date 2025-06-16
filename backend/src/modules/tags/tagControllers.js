@@ -267,7 +267,7 @@ export const getSuggestedTagsByFileId = async (req, res) => {
  */
 
 export const getPopularTags = async (req, res) => {
-    const { entreprise_id } = req.body;
+    const { entreprise_id } = req.query;
     const limit = 10;
 
     try {

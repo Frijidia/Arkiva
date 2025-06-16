@@ -473,6 +473,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
     if (token == null || entrepriseId == null) return;
     List<dynamic> tags = [];
     List<dynamic> suggestedTags = [];
+    List<dynamic> popularTags = [];
     String? selectedTag;
     String search = '';
     bool isLoading = true;
@@ -486,6 +487,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
             try {
               tags = await _tagService.getAllTags(token, entrepriseId);
               suggestedTags = await _tagService.getSuggestedTags(token, entrepriseId, document.id);
+              popularTags = await _tagService.getPopularTags(token, entrepriseId);
             } catch (e) {
               error = 'Erreur lors du chargement des tags';
             }
@@ -535,6 +537,35 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     backgroundColor: Colors.white,
                                     onPressed: () => Navigator.pop(context, tag['name']),
                                     tooltip: 'Cliquez pour assigner ce tag suggéré',
+                                  )).toList(),
+                                ),
+                              ),
+                              const Divider(height: 24),
+                            ],
+                            if (popularTags.isNotEmpty) ...[
+                              const Text(
+                                'Tags populaires',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: popularTags.map<Widget>((tag) => ActionChip(
+                                    avatar: const Icon(Icons.trending_up, size: 16, color: Colors.green),
+                                    label: Text(tag),
+                                    backgroundColor: Colors.white,
+                                    onPressed: () => Navigator.pop(context, tag),
+                                    tooltip: 'Cliquez pour assigner ce tag populaire',
                                   )).toList(),
                                 ),
                               ),
