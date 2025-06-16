@@ -1,4 +1,5 @@
 import pool from '../../config/database.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const createVersionsTableSQL = `
   DO $$
@@ -8,20 +9,24 @@ const createVersionsTableSQL = `
         CREATE TYPE type_version AS ENUM ('fichier', 'dossier', 'casier', 'armoire');
     END IF;
 
-    -- Crée la table des versions si elle n'existe pas
-    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'versions') THEN
-        CREATE TABLE versions (
-            id UUID PRIMARY KEY,
-            cible_id INTEGER NOT NULL,
-            type type_version NOT NULL,
-            version_number INTEGER NOT NULL,
-            storage_path TEXT NOT NULL,
-            metadata JSONB,
-            created_by INTEGER,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (created_by) REFERENCES utilisateurs(user_id)
-        );
-    END IF;
+    -- Supprime la table si elle existe déjà
+    DROP TABLE IF EXISTS versions;
+
+    -- Crée la table des versions
+    CREATE TABLE versions (
+        id UUID PRIMARY KEY,
+        cible_id INTEGER NOT NULL,
+        type type_version NOT NULL,
+        version_number NUMERIC(10,2) NOT NULL,
+        storage_path TEXT NOT NULL,
+        metadata JSONB,
+        created_by INTEGER,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users(user_id)
+    );
+
+    -- Crée un index sur cible_id pour améliorer les performances
+    CREATE INDEX IF NOT EXISTS idx_versions_cible_id ON versions(cible_id);
   END $$;
 `;
 
@@ -41,10 +46,7 @@ class VersionModel {
     }
 
     async createVersion(versionData) {
-        const client = await pool.connect();
         try {
-            await client.query('BEGIN');
-
             const query = `
                 INSERT INTO versions (
                     id,
@@ -70,50 +72,83 @@ class VersionModel {
                 new Date()
             ];
 
-            const result = await client.query(query, values);
-            await client.query('COMMIT');
+            const result = await pool.query(query, values);
             return result.rows[0];
 
         } catch (error) {
-            await client.query('ROLLBACK');
+            console.error('Erreur lors de la création de la version:', error);
             throw error;
-        } finally {
-            client.release();
         }
     }
 
-    async getVersionsByCibleId(cibleId) {
-        const query = `
-            SELECT *
-            FROM versions
-            WHERE cible_id = $1
-            ORDER BY created_at DESC
-        `;
+    async getVersionsByCibleId(cibleId, type) {
+        try {
+            console.log('Recherche des versions pour cible_id:', cibleId, 'et type:', type);
+            
+            // Vérifier d'abord si la table existe
+            const tableExists = await pool.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'versions'
+                );
+            `);
+            
+            if (!tableExists.rows[0].exists) {
+                console.log('La table versions n\'existe pas');
+                return [];
+            }
 
-        const result = await pool.query(query, [cibleId]);
-        return result.rows;
+            // Vérifier le contenu de la table
+            const countQuery = 'SELECT COUNT(*) FROM versions';
+            const countResult = await pool.query(countQuery);
+            console.log('Nombre total de versions dans la table:', countResult.rows[0].count);
+
+            const query = `
+                SELECT *
+                FROM versions
+                WHERE cible_id = $1 AND type = $2
+                ORDER BY created_at DESC
+            `;
+
+            const result = await pool.query(query, [cibleId, type]);
+            console.log('Résultat de la requête:', result.rows);
+            return result.rows;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des versions:', error);
+            throw error;
+        }
     }
 
     async getVersionById(versionId) {
-        const query = `
-            SELECT *
-            FROM versions
-            WHERE id = $1
-        `;
+        try {
+            const query = `
+                SELECT *
+                FROM versions
+                WHERE id = $1
+            `;
 
-        const result = await pool.query(query, [versionId]);
-        return result.rows[0];
+            const result = await pool.query(query, [versionId]);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la version:', error);
+            throw error;
+        }
     }
 
     async deleteVersion(versionId) {
-        const query = `
-            DELETE FROM versions
-            WHERE id = $1
-            RETURNING *
-        `;
+        try {
+            const query = `
+                DELETE FROM versions
+                WHERE id = $1
+                RETURNING *
+            `;
 
-        const result = await pool.query(query, [versionId]);
-        return result.rows[0];
+            const result = await pool.query(query, [versionId]);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Erreur lors de la suppression de la version:', error);
+            throw error;
+        }
     }
 }
 

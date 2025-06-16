@@ -18,25 +18,38 @@ if (!fs.existsSync(VERSIONS_STORAGE_DIR)) {
 }
 
 class VersionService {
-    async createNewVersion(cibleId, content, versionMetadata, utilisateur_id) {
+    async createNewVersion(cibleId, type, content, versionMetadata, utilisateur_id) {
+        let versionContentPath = null;
         try {
             const versionId = uuidv4();
             const cibleVersionDir = path.join(VERSIONS_STORAGE_DIR, cibleId.toString());
-            const versionContentPath = path.join(cibleVersionDir, `${versionId}_content`);
+            versionContentPath = path.join(cibleVersionDir, `${versionId}_content`);
 
             // Assurer que le répertoire existe
             if (!fs.existsSync(cibleVersionDir)) {
                 fs.mkdirSync(cibleVersionDir, { recursive: true });
             }
 
+            // Convertir le contenu en Buffer si nécessaire
+            let contentBuffer;
+            if (Buffer.isBuffer(content)) {
+                contentBuffer = content;
+            } else if (typeof content === 'string') {
+                contentBuffer = Buffer.from(content);
+            } else if (typeof content === 'object') {
+                contentBuffer = Buffer.from(JSON.stringify(content));
+            } else {
+                throw new Error('Type de contenu non supporté');
+            }
+
             // Stocker le contenu
-            await fs.promises.writeFile(versionContentPath, content);
+            await fs.promises.writeFile(versionContentPath, contentBuffer);
 
             // Insérer la nouvelle version dans la base de données
             const newVersion = await versionModel.createVersion({
                 id: versionId,
                 cible_id: cibleId,
-                type: versionMetadata.type,
+                type: type,
                 version_number: versionMetadata.version_number,
                 storage_path: versionContentPath,
                 metadata: versionMetadata,
@@ -52,7 +65,7 @@ class VersionService {
                     versionId,
                     {
                         version_id: versionId,
-                        type: versionMetadata.type,
+                        type: type,
                         date: new Date()
                     }
                 );
@@ -69,58 +82,65 @@ class VersionService {
         }
     }
 
-    async getVersionHistory(cibleId) {
-        return await versionModel.getVersionsByCibleId(cibleId);
+    async getVersionHistory(cibleId, type) {
+        try {
+            console.log('Récupération de l\'historique des versions pour cible_id:', cibleId, 'et type:', type);
+            const versions = await versionModel.getVersionsByCibleId(cibleId, type);
+            console.log('Versions trouvées:', versions);
+            return versions;
+        } catch (error) {
+            console.error('Erreur lors de la récupération de l\'historique:', error);
+            throw error;
+        }
     }
 
     async getVersionContent(versionId) {
         const version = await versionModel.getVersionById(versionId);
-
         if (!version) {
-            throw new Error(`Version ${versionId} non trouvée.`);
+            return null;
         }
 
-        if (!fs.existsSync(version.storage_path)) {
-            throw new Error(`Contenu de la version ${versionId} introuvable sur le disque.`);
+        try {
+            const content = await fs.promises.readFile(version.storage_path);
+            
+            // Tenter de parser le contenu comme JSON si c'est un objet
+            try {
+                const jsonContent = JSON.parse(content.toString());
+                return {
+                    ...version,
+                    content: jsonContent
+                };
+            } catch {
+                // Si ce n'est pas du JSON, retourner le contenu brut
+                return {
+                    ...version,
+                    content: content
+                };
+            }
+        } catch (error) {
+            console.error('Erreur lors de la lecture du contenu de la version:', error);
+            throw error;
         }
-
-        return {
-            ...version,
-            content: await fs.promises.readFile(version.storage_path)
-        };
     }
 
-    async deleteVersion(versionId, utilisateur_id) {
-        const version = await this.getVersionContent(versionId);
-        
-        // Supprimer la version de la base de données
-        const deletedVersion = await versionModel.deleteVersion(versionId);
-
-        if (!deletedVersion) {
-            throw new Error(`Version ${versionId} non trouvée.`);
+    async deleteVersion(versionId) {
+        const version = await versionModel.getVersionById(versionId);
+        if (!version) {
+            return null;
         }
 
-        // Supprimer le fichier physique
-        if (fs.existsSync(version.storage_path)) {
-            await fs.promises.unlink(version.storage_path);
-        }
+        try {
+            // Supprimer le fichier de stockage
+            if (fs.existsSync(version.storage_path)) {
+                await fs.promises.unlink(version.storage_path);
+            }
 
-        // Journaliser l'action
-        if (utilisateur_id) {
-            await logAction(
-                utilisateur_id,
-                'delete_version',
-                'version',
-                versionId,
-                {
-                    cible_id: version.cible_id,
-                    version_number: version.version_number,
-                },
-                new Date()
-            );
+            // Supprimer l'enregistrement de la base de données
+            return await versionModel.deleteVersion(versionId);
+        } catch (error) {
+            console.error('Erreur lors de la suppression de la version:', error);
+            throw error;
         }
-
-        return deletedVersion;
     }
 
     async compareVersions(versionId1, versionId2) {
