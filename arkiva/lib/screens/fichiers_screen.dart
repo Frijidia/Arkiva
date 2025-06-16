@@ -13,6 +13,8 @@ import 'package:http/http.dart' as http;
 import 'dart:html' as html;
 import 'package:arkiva/screens/tags_screen.dart';
 import 'package:arkiva/services/tag_service.dart';
+import 'package:arkiva/services/search_service.dart';
+import 'dart:convert';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -30,17 +32,46 @@ class _FichiersScreenState extends State<FichiersScreen> {
   final DocumentService _documentService = DocumentService();
   final UploadService _uploadService = UploadService();
   final TagService _tagService = TagService();
+  final SearchService _searchService = SearchService();
   List<Document> _documents = [];
+  List<Document> _allDocuments = [];
+  List<dynamic> _allTags = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   PlatformFile? _selectedFile;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  // Filtres avancés pour la recherche
+  String? _selectedArmoire;
+  String? _selectedCasier;
+  String? _selectedDossier;
+  dynamic _selectedTag;
+  DateTimeRange? _selectedDateRange;
+  List<dynamic> _allArmoires = [];
+  List<dynamic> _allCasiers = [];
+  List<dynamic> _allDossiers = [];
 
   @override
   void initState() {
     super.initState();
     _loadDocuments();
+    _loadTags();
+  }
+
+  Future<void> _loadTags() async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final tags = await _tagService.getAllTags(token, entrepriseId);
+        setState(() {
+          _allTags = tags;
+        });
+      }
+    } catch (e) {
+      // ignore erreur silencieusement
+    }
   }
 
   Future<void> _loadDocuments() async {
@@ -48,7 +79,6 @@ class _FichiersScreenState extends State<FichiersScreen> {
     try {
       final authStateService = context.read<AuthStateService>();
       final token = authStateService.token;
-
       if (token != null) {
         if (widget.dossier.dossierId == null) {
           _scaffoldMessengerKey.currentState?.showSnackBar(
@@ -59,6 +89,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         }
         final documents = await _documentService.getDocuments(token, widget.dossier.dossierId);
         setState(() {
+          _allDocuments = documents;
           _documents = documents;
           _isLoading = false;
         });
@@ -624,6 +655,353 @@ class _FichiersScreenState extends State<FichiersScreen> {
     return Colors.grey;
   }
 
+  void _searchLocal(String query) {
+    setState(() {
+      _searchQuery = query;
+      _documents = _allDocuments.where((doc) {
+        final lower = query.toLowerCase();
+        final inNom = doc.nom.toLowerCase().contains(lower);
+        final inDesc = (doc.description ?? '').toLowerCase().contains(lower);
+        final inTags = doc.tags.any((tag) => (tag['name'] ?? '').toLowerCase().contains(lower));
+        return inNom || inDesc || inTags;
+      }).toList();
+    });
+  }
+
+  Future<void> _loadArmoires() async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/armoire/$entrepriseId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          print('Armoires chargées: $data'); // Debug log
+          setState(() {
+            _allArmoires = data;
+          });
+        } else {
+          print('Erreur chargement armoires: ${response.statusCode} - ${response.body}'); // Debug log
+        }
+      }
+    } catch (e) {
+      print('Exception chargement armoires: $e'); // Debug log
+    }
+  }
+
+  Future<void> _loadCasiers(String armoireId) async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/casier/$armoireId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          print('Casiers chargés: $data'); // Debug log
+          setState(() {
+            _allCasiers = data;
+          });
+        } else {
+          print('Erreur chargement casiers: ${response.statusCode} - ${response.body}'); // Debug log
+        }
+      }
+    } catch (e) {
+      print('Exception chargement casiers: $e'); // Debug log
+    }
+  }
+
+  Future<void> _loadDossiers(String casierId) async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/dosier/$casierId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          print('Dossiers chargés: $data'); // Debug log
+          setState(() {
+            _allDossiers = data;
+          });
+        } else {
+          print('Erreur chargement dossiers: ${response.statusCode} - ${response.body}'); // Debug log
+        }
+      }
+    } catch (e) {
+      print('Exception chargement dossiers: $e'); // Debug log
+    }
+  }
+
+  void _openFiltersRechercheService() async {
+    final authState = context.read<AuthStateService>();
+    final token = authState.token;
+    final entrepriseId = authState.entrepriseId;
+    
+    // Charger les données si nécessaire
+    if (_allTags.isEmpty && token != null && entrepriseId != null) {
+      final tags = await _tagService.getAllTags(token, entrepriseId);
+      setState(() { _allTags = tags; });
+    }
+    if (_allArmoires.isEmpty) {
+      await _loadArmoires();
+    }
+    if (_selectedArmoire != null && _allCasiers.isEmpty) {
+      await _loadCasiers(_selectedArmoire!);
+    }
+    if (_selectedCasier != null && _allDossiers.isEmpty) {
+      await _loadDossiers(_selectedCasier!);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateSB) => SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 24, right: 24, top: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('Filtres avancés', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<dynamic>(
+                  value: _selectedArmoire,
+                  items: _allArmoires.map<DropdownMenuItem<dynamic>>((armoire) => DropdownMenuItem(
+                    value: armoire['armoire_id'].toString(),
+                    child: Text(armoire['nom']),
+                  )).toList(),
+                  onChanged: (value) async {
+                    setStateSB(() {
+                      _selectedArmoire = value;
+                      _selectedCasier = null;
+                      _selectedDossier = null;
+                      _allCasiers = [];
+                      _allDossiers = [];
+                    });
+                    if (value != null) {
+                      await _loadCasiers(value);
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Armoire',
+                    prefixIcon: Icon(Icons.warehouse),
+                  ),
+                  isExpanded: true,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<dynamic>(
+                  value: _selectedCasier,
+                  items: _allCasiers.map<DropdownMenuItem<dynamic>>((casier) => DropdownMenuItem(
+                    value: casier['casier_id'].toString(),
+                    child: Text('${casier['nom']}${casier['sous_titre'] != null && casier['sous_titre'].isNotEmpty ? ' - ${casier['sous_titre']}' : ''}'),
+                  )).toList(),
+                  onChanged: (value) async {
+                    setStateSB(() {
+                      _selectedCasier = value;
+                      _selectedDossier = null;
+                      _allDossiers = [];
+                    });
+                    if (value != null) {
+                      await _loadDossiers(value);
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Casier',
+                    prefixIcon: Icon(Icons.inventory_2),
+                  ),
+                  isExpanded: true,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<dynamic>(
+                  value: _selectedDossier,
+                  items: _allDossiers.map<DropdownMenuItem<dynamic>>((dossier) => DropdownMenuItem(
+                    value: dossier['dossier_id'].toString(),
+                    child: Text(dossier['nom']),
+                  )).toList(),
+                  onChanged: (value) => setStateSB(() => _selectedDossier = value),
+                  decoration: const InputDecoration(
+                    labelText: 'Dossier',
+                    prefixIcon: Icon(Icons.folder),
+                  ),
+                  isExpanded: true,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<dynamic>(
+                  value: _selectedTag,
+                  items: _allTags.map<DropdownMenuItem<dynamic>>((tag) => DropdownMenuItem(
+                    value: tag,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: _parseColor(tag['color']),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(tag['name']),
+                      ],
+                    ),
+                  )).toList(),
+                  onChanged: (value) => setState(() => _selectedTag = value),
+                  decoration: const InputDecoration(
+                    labelText: 'Tag',
+                    prefixIcon: Icon(Icons.label),
+                  ),
+                  isExpanded: true,
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.date_range),
+                            SizedBox(width: 8),
+                            Text('Période de création', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _selectedDateRange == null 
+                            ? 'Non sélectionnée' 
+                            : 'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
+                          style: TextStyle(
+                            color: _selectedDateRange == null ? Colors.grey : null,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final picked = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                              helpText: 'Sélectionner une période',
+                              cancelText: 'Annuler',
+                              confirmText: 'OK',
+                              saveText: 'Enregistrer',
+                              errorFormatText: 'Format invalide',
+                              errorInvalidText: 'Date invalide',
+                              errorInvalidRangeText: 'Plage de dates invalide',
+                              fieldStartHintText: 'Début',
+                              fieldEndHintText: 'Fin',
+                              fieldStartLabelText: 'Date de début',
+                              fieldEndLabelText: 'Date de fin',
+                            );
+                            if (picked != null) setState(() => _selectedDateRange = picked);
+                          },
+                          icon: const Icon(Icons.calendar_today),
+                          label: Text(_selectedDateRange == null ? 'Sélectionner une période' : 'Modifier la période'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _selectedArmoire = null;
+                          _selectedCasier = null;
+                          _selectedDossier = null;
+                          _selectedTag = null;
+                          _selectedDateRange = null;
+                        });
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Réinitialiser'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _performSearchRechercheService();
+                      },
+                      icon: const Icon(Icons.search),
+                      label: const Text('Rechercher'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performSearchRechercheService() async {
+    setState(() => _isLoading = true);
+    final authState = context.read<AuthStateService>();
+    final token = authState.token;
+    if (token == null) return;
+    try {
+      List<dynamic> results = [];
+      if (_selectedTag != null) {
+        results = await _searchService.getFilesByTag(token, _selectedTag['tag_id']);
+      } else if (_selectedDateRange != null) {
+        final debut = _selectedDateRange!.start.toIso8601String().substring(0, 10);
+        final fin = _selectedDateRange!.end.toIso8601String().substring(0, 10);
+        results = await _searchService.searchByDate(token, debut, fin);
+      } else if (_selectedArmoire != null || _selectedCasier != null || _selectedDossier != null || _searchController.text.isNotEmpty) {
+        results = await _searchService.searchFlexible(
+          token,
+          armoire: _selectedArmoire,
+          casier: _selectedCasier,
+          dossier: _selectedDossier,
+          nom: _searchController.text.isNotEmpty ? _searchController.text : null,
+        );
+      } else if (_searchController.text.isNotEmpty) {
+        results = await _searchService.searchByOcr(token, _searchController.text);
+      }
+      setState(() {
+        _documents = results.map((json) => Document.fromJson(json)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _documents = [];
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -652,21 +1030,37 @@ class _FichiersScreenState extends State<FichiersScreen> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un document...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Recherche OCR, nom, ...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchLocal('');
+                                });
+                              },
+                            )
+                          : null,
+                      ),
+                      onChanged: _searchLocal,
+                      onSubmitted: (value) => _performSearchRechercheService(),
+                    ),
                   ),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
+                  IconButton(
+                    icon: const Icon(Icons.filter_alt),
+                    onPressed: _openFiltersRechercheService,
+                    tooltip: 'Filtres avancés',
+                  ),
+                ],
               ),
             ),
             Expanded(
