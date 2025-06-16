@@ -472,6 +472,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
     final entrepriseId = authState.entrepriseId;
     if (token == null || entrepriseId == null) return;
     List<dynamic> tags = [];
+    List<dynamic> suggestedTags = [];
     String? selectedTag;
     String search = '';
     bool isLoading = true;
@@ -484,6 +485,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
             setStateSB(() { isLoading = true; error = null; });
             try {
               tags = await _tagService.getAllTags(token, entrepriseId);
+              suggestedTags = await _tagService.getSuggestedTags(token, entrepriseId, document.id);
             } catch (e) {
               error = 'Erreur lors du chargement des tags';
             }
@@ -493,34 +495,73 @@ class _FichiersScreenState extends State<FichiersScreen> {
           final filteredTags = tags.where((tag) => tag['name'].toLowerCase().contains(search.toLowerCase())).toList();
           return AlertDialog(
             title: const Text('Assigner un tag'),
-            content: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : error != null
-                    ? Text(error!, style: const TextStyle(color: Colors.red))
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Rechercher un tag',
+            content: SizedBox(
+              width: 400,
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : error != null
+                      ? Text(error!, style: const TextStyle(color: Colors.red))
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextField(
+                              decoration: const InputDecoration(
+                                labelText: 'Rechercher un tag',
+                              ),
+                              onChanged: (value) => setStateSB(() => search = value),
                             ),
-                            onChanged: (value) => setStateSB(() => search = value),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 180,
-                            width: 300,
-                            child: ListView(
-                              children: filteredTags.map<Widget>((tag) => ListTile(
-                                title: Text(tag['name']),
-                                onTap: () => setStateSB(() => selectedTag = tag['name']),
-                                selected: selectedTag == tag['name'],
-                                trailing: selectedTag == tag['name'] ? const Icon(Icons.check, color: Colors.blue) : null,
-                              )).toList(),
+                            const SizedBox(height: 12),
+                            if (suggestedTags.isNotEmpty) ...[
+                              const Text(
+                                'Tags suggérés',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: suggestedTags.map<Widget>((tag) => ActionChip(
+                                    avatar: const Icon(Icons.auto_awesome, size: 16, color: Colors.blue),
+                                    label: Text(tag['name']),
+                                    backgroundColor: Colors.white,
+                                    onPressed: () => Navigator.pop(context, tag['name']),
+                                    tooltip: 'Cliquez pour assigner ce tag suggéré',
+                                  )).toList(),
+                                ),
+                              ),
+                              const Divider(height: 24),
+                            ],
+                            const Text(
+                              'Tous les tags',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 180,
+                              child: ListView(
+                                children: filteredTags.map<Widget>((tag) => ListTile(
+                                  title: Text(tag['name']),
+                                  onTap: () => setStateSB(() => selectedTag = tag['name']),
+                                  selected: selectedTag == tag['name'],
+                                  trailing: selectedTag == tag['name'] ? const Icon(Icons.check, color: Colors.blue) : null,
+                                )).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+            ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
               ElevatedButton(

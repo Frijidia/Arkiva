@@ -111,4 +111,29 @@ class TagService {
       throw Exception('Erreur lors de la suppression de l\'association tag-fichier');
     }
   }
+
+  Future<List<dynamic>> getSuggestedTags(String token, int entrepriseId, String documentId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/tag/Tagsuggested'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'fichier_id': documentId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> tags = data['tags'] ?? [];
+        return tags.map((tag) => {'name': tag}).toList();
+      } else {
+        throw Exception('Erreur lors de la récupération des suggestions de tags');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des suggestions de tags: $e');
+    }
+  }
 } 
