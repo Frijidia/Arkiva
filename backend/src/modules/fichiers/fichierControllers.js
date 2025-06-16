@@ -127,21 +127,21 @@ export const getFichierById = async (req, res) => {
 
 // generer un lien signé
 
-async function genererLienSigne(chemin) {
+// async function genererLienSigne(chemin) {
 
-  const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-  const key = chemin.replace(s3BaseUrl, '');
-  const contentType = mime.lookup(chemin) || 'application/octet-stream';
+//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+//   const key = chemin.replace(s3BaseUrl, '');
+//   const contentType = mime.lookup(chemin) || 'application/octet-stream';
 
-  const command = new GetObjectCommand({
-    Bucket: 'arkiva-storage',
-    Key: key,
-    ResponseContentType: contentType,
-  });
+//   const command = new GetObjectCommand({
+//     Bucket: 'arkiva-storage',
+//     Key: key,
+//     ResponseContentType: contentType,
+//   });
 
-  const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
-  return url;
-}
+//   const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
+//   return url;
+// }
 
 
 
@@ -209,8 +209,6 @@ export const displayFichier = async (req, res) => {
 };
 
 
-
-
 export const getFichierCountByDossierId = async (req, res) => {
   const { dossier_id } = req.params;
 
@@ -229,68 +227,3 @@ export const getFichierCountByDossierId = async (req, res) => {
   }
 };
 
-
-// export const partagerFichier = async (req, res) => {
-//   const { fichier_id } = req.params;
-//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-
-//   try {
-//     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
-//     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
-
-//     const chemin = rows[0].chemin;
-//     const key = chemin.replace(s3BaseUrl, '');
-   
-//     const contentType = mime.lookup(fichier.nom) || 'application/octet-stream';
-
-//     const command = new GetObjectCommand({
-//       Bucket: bucket,
-//       Key: key,
-//       ResponseContentType: contentType,
-//       ResponseContentDisposition: 'inline', // 🔁 Affichage direct dans navigateur
-//     });
-
-//     const url = await getSignedUrl(s3, command, { expiresIn: 60 * 60 }); // 1h de validité
-
-//     res.json({ lien: url }); // Tu renvoies le lien public temporaire
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Erreur lors du partage du fichier" });
-//   }
-// };
-
-
-//telecharger le fichier
-
-// export const telechargerFichier = async (req, res) => {
-//   const { fichier_id } = req.params;
-//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-
-//   try {
-//     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
-//     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
-
-//     const chemin = rows[0].chemin;
-
-//     const key = chemin.replace(s3BaseUrl, '');
-//     const contentType = mime.lookup(chemin) || 'application/octet-stream';
-
-//     const command = new GetObjectCommand({
-//       Bucket: 'arkiva-storage',
-//       Key: key,
-//       ResponseContentType: contentType,
-//       ResponseContentDisposition: 'attachment', // <-- ceci force le téléchargement
-
-//     });
-
-//     const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
-//     console.log("URL signée:", url);
-
-//     // res.redirect(url); 
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: 'Erreur lors du téléchargement' });
-//   }
-// };

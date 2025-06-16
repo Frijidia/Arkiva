@@ -16,11 +16,19 @@ export async function createTag(req, res) {
             'INSERT INTO tags (name, color, description, entreprise_id) VALUES ($1, $2, $3, $4) RETURNING *',
             [name, color, description || '', entreprise_id]
         );
+
         res.status(201).json({
             message: 'Tag créé avec succès',
             tag: result.rows[0],
         });
     } catch (error) {
+        if (error.code === '23505') {
+            // Violation de contrainte UNIQUE
+            return res.status(400).json({
+                error: 'Un tag avec ce nom existe déjà pour cette entreprise.',
+            });
+        }
+
         console.error('Erreur lors de la création du tag:', error.message);
         res.status(500).json({
             error: 'Une erreur est survenue lors de la création du tag',
