@@ -3,16 +3,16 @@ import "./dosierModels.js";
 
 
 export const CreateDossier = async (req, res) => {
-  const { casier_id, nom, user_id } = req.body;
+  const { cassier_id, nom, user_id } = req.body;
 
-  if (!casier_id || !nom) {
-    return res.status(400).json({ error: 'casier_id et nom sont requis' });
+  if (!cassier_id || !nom) {
+    return res.status(400).json({ error: 'cassier_id et nom sont requis' });
   }
 
   try {
     const result = await pool.query(
-      'INSERT INTO dossiers (casier_id, nom, description, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
-      [casier_id, nom, " ", user_id]
+      'INSERT INTO dossiers (cassier_id, nom, description, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [cassier_id, nom, " ", user_id]
     );
 
     res.status(201).json({ message: 'Dossier créé', dossier: result.rows[0] });
@@ -24,12 +24,12 @@ export const CreateDossier = async (req, res) => {
 
 
 export const GetDossiersByCasier = async (req, res) => {
-  const { casier_id } = req.params;
+  const { cassier_id } = req.params;
 
   try {
     const result = await pool.query(
-      'SELECT * FROM dossiers WHERE casier_id = $1 ORDER BY dossier_id ASC',
-      [casier_id]
+      'SELECT * FROM dossiers WHERE cassier_id = $1 ORDER BY dossier_id ASC',
+      [cassier_id]
     );
 
     res.status(200).json(result.rows);
@@ -107,17 +107,17 @@ export const getDossierById = async (req, res) => {
 
 
 export const getDossierCountByCasierId = async (req, res) => {
-  const { casier_id } = req.params;
+  const { cassier_id } = req.params;
 
-  if (!casier_id) return res.status(400).json({ error: "ID du casier requis" });
+  if (!cassier_id) return res.status(400).json({ error: "ID du casier requis" });
 
   try {
     const result = await pool.query(
-      'SELECT COUNT(*) FROM dossiers WHERE casier_id = $1',
-      [casier_id]
+      'SELECT COUNT(*) FROM dossiers WHERE cassier_id = $1',
+      [cassier_id]
     );
 
-    res.status(200).json({ casier_id, nombre_dossiers: parseInt(result.rows[0].count) });
+    res.status(200).json({ cassier_id, nombre_dossiers: parseInt(result.rows[0].count) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors du comptage des dossiers" });

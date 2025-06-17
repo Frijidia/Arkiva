@@ -3,7 +3,7 @@ import pool from '../../config/database.js';
 const createTabledosier = `
  CREATE TABLE IF NOT EXISTS dossiers (
   dossier_id SERIAL PRIMARY KEY,
-  casier_id INTEGER REFERENCES casiers(cassier_id) ON DELETE CASCADE,
+  cassier_id INTEGER REFERENCES casiers(cassier_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   nom VARCHAR(100),
   description TEXT,

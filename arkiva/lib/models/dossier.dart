@@ -19,7 +19,7 @@ class Dossier {
 
   factory Dossier.fromJson(Map<String, dynamic> json) {
     final int? parsedDossierId = json['dossier_id'] as int?;
-    final int? parsedCasierId = json['casier_id'] as int?;
+    final int? parsedCasierId = json['cassier_id'] as int?;
 
     if (parsedDossierId == null) {
       throw FormatException('Dossier ID is missing or null in JSON: $json');
@@ -41,7 +41,7 @@ class Dossier {
   Map<String, dynamic> toJson() {
     return {
       'dossier_id': dossierId,
-      'casier_id': casierId,
+      'cassier_id': casierId,
       'nom': nom,
       'description': description,
       'created_at': createdAt.toIso8601String(),

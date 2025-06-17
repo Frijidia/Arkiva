@@ -304,17 +304,25 @@ class _CasiersScreenState extends State<CasiersScreen> {
                   ],
                 ),
               )
-            : GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, // 3 casiers par ligne
-                  childAspectRatio: 0.9, // Réduire le rapport d'aspect pour diminuer la largeur relative
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: _casiers.length,
-                itemBuilder: (context, index) {
-                  return _buildCasierCard(_casiers[index], index);
+            : Builder(
+                builder: (context) {
+                  print('Nombre de casiers à afficher : \\${_casiers.length}');
+                  for (var casier in _casiers) {
+                    print('Casier: \\${casier.casierId} - \\${casier.nom}');
+                  }
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 3 casiers par ligne
+                      childAspectRatio: 0.9, // Réduire le rapport d'aspect pour diminuer la largeur relative
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: _casiers.length,
+                    itemBuilder: (context, index) {
+                      return _buildCasierCard(_casiers[index], index);
+                    },
+                  );
                 },
               ),
       ),

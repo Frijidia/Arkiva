@@ -807,6 +807,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                     });
                     if (value != null) {
                       await _loadCasiers(value);
+                      setStateSB(() {});
                     }
                   },
                   decoration: const InputDecoration(
@@ -819,7 +820,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                 DropdownButtonFormField<dynamic>(
                   value: _selectedCasier,
                   items: _allCasiers.map<DropdownMenuItem<dynamic>>((casier) => DropdownMenuItem(
-                    value: casier['casier_id'].toString(),
+                    value: casier['cassier_id'].toString(),
                     child: Text('${casier['nom']}${casier['sous_titre'] != null && casier['sous_titre'].isNotEmpty ? ' - ${casier['sous_titre']}' : ''}'),
                   )).toList(),
                   onChanged: (value) async {
@@ -830,6 +831,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                     });
                     if (value != null) {
                       await _loadDossiers(value);
+                      setStateSB(() {});
                     }
                   },
                   decoration: const InputDecoration(
