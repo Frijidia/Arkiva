@@ -10,7 +10,7 @@ class CasierService {
   Future<List<Casier>> getCasiersByArmoire(int armoireId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/casier/$armoireId'),
+        Uri.parse('$baseUrl/api/casier/$armoireId'),
         headers: await ApiConfig.getHeaders(),
       );
 
@@ -29,7 +29,7 @@ class CasierService {
   Future<Casier> createCasier(int armoireId, int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/casier'),
+        Uri.parse('$baseUrl/api/casier'),
         headers: await ApiConfig.getHeaders(),
         body: json.encode({
           'armoire_id': armoireId,
@@ -53,7 +53,7 @@ class CasierService {
   Future<Casier> renameCasier(int casierId, String sousTitre) async {
      try {
       final response = await http.put(
-        Uri.parse('$baseUrl/casier/$casierId'),
+        Uri.parse('$baseUrl/api/casier/$casierId'),
         headers: await ApiConfig.getHeaders(),
         body: json.encode({
           'sous_titre': sousTitre,
@@ -75,7 +75,7 @@ class CasierService {
   Future<void> deleteCasier(int casierId) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/casier/$casierId'),
+        Uri.parse('$baseUrl/api/casier/$casierId'),
         headers: await ApiConfig.getHeaders(),
       );
 

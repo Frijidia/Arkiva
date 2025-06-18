@@ -8,7 +8,7 @@ class TagService {
 
   Future<List<dynamic>> getAllTags(String token, int entrepriseId) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/tag?entreprise_id=$entrepriseId'),
+      Uri.parse('$baseUrl/api/tag?entreprise_id=$entrepriseId'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -20,7 +20,7 @@ class TagService {
 
   Future<Map<String, dynamic>> createTag(String token, int entrepriseId, String name, String color, String description) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/tag'),
+      Uri.parse('$baseUrl/api/tag'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       body: json.encode({
         'name': name,
@@ -38,7 +38,7 @@ class TagService {
 
   Future<void> renameTag(String token, int entrepriseId, int tagId, String newName) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/tag/$tagId'),
+      Uri.parse('$baseUrl/api/tag/$tagId'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       body: json.encode({
         'newName': newName,
@@ -52,7 +52,7 @@ class TagService {
 
   Future<void> deleteTag(String token, int entrepriseId, int tagId) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl/tag/deletetag/$tagId'),
+      Uri.parse('$baseUrl/api/tag/deletetag/$tagId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json'
@@ -66,7 +66,7 @@ class TagService {
 
   Future<List<String>> getPopularTags(String token, int entrepriseId, {int limit = 10}) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/tag/tagsPopular?entreprise_id=$entrepriseId'),
+      Uri.parse('$baseUrl/api/tag/tagsPopular?entreprise_id=$entrepriseId'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -79,7 +79,7 @@ class TagService {
 
   Future<void> addTagToFile(String token, int entrepriseId, int fichierId, String nomTag) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/tag/addTagToFile'),
+      Uri.parse('$baseUrl/api/tag/addTagToFile'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       body: json.encode({
         'fichier_id': fichierId,
@@ -94,7 +94,7 @@ class TagService {
 
   Future<void> removeTagFromFile(String token, int entrepriseId, int fichierId, int tagId) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl/tag/removeTagFromFile'),
+      Uri.parse('$baseUrl/api/tag/removeTagFromFile'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       body: json.encode({
         'fichier_id': fichierId,
@@ -110,7 +110,7 @@ class TagService {
   Future<List<dynamic>> getSuggestedTags(String token, int entrepriseId, String documentId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/tag/Tagsuggested'),
+        Uri.parse('$baseUrl/api/tag/Tagsuggested'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

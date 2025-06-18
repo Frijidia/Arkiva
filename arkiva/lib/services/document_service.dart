@@ -9,7 +9,7 @@ class DocumentService {
       throw Exception('Dossier ID cannot be null for fetching documents.');
     }
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/fichier/$dossierId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/fichier/$dossierId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -37,7 +37,7 @@ class DocumentService {
       throw Exception('Dossier ID cannot be null for creating a document.');
     }
     final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/fichier'),
+      Uri.parse('${ApiConfig.baseUrl}/api/fichier'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ class DocumentService {
       throw Exception('Document ID cannot be null for update.');
     }
     final response = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}/fichier/$documentId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/fichier/$documentId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ class DocumentService {
       throw Exception('Document ID cannot be null for delete.');
     }
     final response = await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}/fichier/$documentId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/fichier/$documentId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ class DocumentService {
 
   Future<int> fetchDocumentsCount(String token) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/documents/count'),
+      Uri.parse('${ApiConfig.baseUrl}/api/documents/count'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

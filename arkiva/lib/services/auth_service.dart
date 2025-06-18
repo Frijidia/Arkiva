@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/entreprise.dart';
 import 'dart:io';
+import 'package:arkiva/config/api_config.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:3000/api'; // À ajuster selon votre configuration
-
   Future<Map<String, dynamic>> registerAdmin({
     required String email,
     required String password,
@@ -18,7 +17,7 @@ class AuthService {
     print('   - Password: ********');
 
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/register'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
@@ -59,7 +58,7 @@ class AuthService {
     print('🔑 Envoi du token: ${token.substring(0, 10)}...');
 
     final response = await http.post(
-      Uri.parse('$baseUrl/entreprise'),
+      Uri.parse('${ApiConfig.baseUrl}/api/entreprise'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -94,7 +93,7 @@ class AuthService {
      print('   - Fichier logo: ${logoFile.path.split('/').last}');
      print('🔑 Envoi du token: ${token.substring(0, 10)}...');
 
-     final uri = Uri.parse('$baseUrl/entreprise');
+     final uri = Uri.parse('${ApiConfig.baseUrl}/api/entreprise');
      final request = http.MultipartRequest('POST', uri)
        ..headers['Authorization'] = 'Bearer $token';
 
@@ -133,7 +132,7 @@ class AuthService {
     print('🔑 Envoi du token: ${token.substring(0, 10)}...');
 
     final response = await http.get(
-      Uri.parse('$baseUrl/auth/me'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/me'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -166,7 +165,7 @@ class AuthService {
     print('🏢 ID Entreprise: $entrepriseId');
 
     final response = await http.get(
-      Uri.parse('$baseUrl/entreprise/$entrepriseId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/entreprise/$entrepriseId'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -198,10 +197,10 @@ class AuthService {
     print('📤 Données envoyées: $updatedData');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/entreprise/$entrepriseId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/entreprise/$entrepriseId'),
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
       },
       body: jsonEncode(updatedData),
     );
@@ -211,11 +210,10 @@ class AuthService {
     print('   - Body: ${response.body}');
 
     if (response.statusCode != 200) {
-      print('❌ Échec de la mise à jour entreprise:');
+      print('❌ Échec de la mise à jour de l\'entreprise:');
       print('   - Erreur: ${response.body}');
       throw Exception('Échec de la mise à jour de l\'entreprise: ${response.body}');
     }
-     print('✅ Infos entreprise mises à jour avec succès');
   }
 
   Future<Map<String, dynamic>> login({
@@ -228,7 +226,7 @@ class AuthService {
     print('   - Password: ********');
 
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
@@ -264,7 +262,7 @@ class AuthService {
     print('📤 Données envoyées: ${userData['email']}, ${userData['username']}, Role: ${userData['role']}'); // Ne pas logger le mot de passe
 
     final response = await http.post(
-      Uri.parse('$baseUrl/entreprise/$entrepriseId/users'),
+      Uri.parse('${ApiConfig.baseUrl}/api/entreprise/$entrepriseId/users'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

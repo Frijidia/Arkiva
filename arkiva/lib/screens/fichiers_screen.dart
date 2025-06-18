@@ -14,6 +14,8 @@ import 'dart:html' as html;
 import 'package:arkiva/screens/tags_screen.dart';
 import 'package:arkiva/services/tag_service.dart';
 import 'package:arkiva/services/search_service.dart';
+import 'package:arkiva/services/favoris_service.dart';
+import 'package:arkiva/widgets/favori_button.dart';
 import 'dart:convert';
 
 class FichiersScreen extends StatefulWidget {
@@ -33,6 +35,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
   final UploadService _uploadService = UploadService();
   final TagService _tagService = TagService();
   final SearchService _searchService = SearchService();
+  final FavorisService _favorisService = FavorisService();
   List<Document> _documents = [];
   List<Document> _allDocuments = [];
   List<dynamic> _allTags = [];
@@ -996,11 +999,61 @@ class _FichiersScreenState extends State<FichiersScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _documents = [];
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      setState(() => _isLoading = false);
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Erreur lors de la recherche: $e')),
+      );
+    }
+  }
+
+  // Méthodes pour gérer les favoris
+  Future<void> _toggleFavori(Document document) async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final userId = authState.userId;
+      final entrepriseId = authState.entrepriseId;
+
+      if (token == null || userId == null || entrepriseId == null) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Erreur: Informations d\'authentification manquantes')),
+        );
+        return;
+      }
+
+      final isFavori = await _favorisService.isFavori(token, int.parse(userId), int.parse(document.id));
+      
+      if (isFavori) {
+        // Retirer des favoris
+        await _favorisService.removeFavori(token, int.parse(userId), int.parse(document.id));
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Document retiré des favoris')),
+        );
+      } else {
+        // Ajouter aux favoris
+        await _favorisService.addFavori(token, int.parse(userId), int.parse(document.id), entrepriseId!);
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Document ajouté aux favoris')),
+        );
+      }
+    } catch (e) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Erreur lors de la gestion des favoris: $e')),
+      );
+    }
+  }
+
+  Future<bool> _isDocumentFavori(Document document) async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final userId = authState.userId;
+
+      if (token == null || userId == null) return false;
+
+      return await _favorisService.isFavori(token, int.parse(userId), int.parse(document.id));
+    } catch (e) {
+      return false;
     }
   }
 
@@ -1157,76 +1210,101 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     ),
                                 ],
                               ),
-                              trailing: PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  switch (value) {
-                                    case 'afficher':
-                                      _ouvrirOuTelechargerDocument(document);
-                                      break;
-                                    case 'telecharger':
-                                      _telechargerDocument(document);
-                                      break;
-                                    case 'modifier':
-                                      _modifierDocument(document);
-                                      break;
-                                    case 'supprimer':
-                                      _supprimerDocument(document);
-                                      break;
-                                    case 'assigner_tag':
-                                      _assignTagToFile(document);
-                                      break;
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'afficher',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.visibility),
-                                        SizedBox(width: 8),
-                                        Text('Afficher'),
-                                      ],
-                                    ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  FavoriButton(
+                                    document: document,
+                                    size: 20,
+                                    onToggle: () {
+                                      // Optionnel : rafraîchir la liste si nécessaire
+                                    },
                                   ),
-                                  const PopupMenuItem(
-                                    value: 'telecharger',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.download),
-                                        SizedBox(width: 8),
-                                        Text('Télécharger'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'modifier',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.edit),
-                                        SizedBox(width: 8),
-                                        Text('Modifier'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'supprimer',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.delete, color: Colors.red),
-                                        SizedBox(width: 8),
-                                        Text('Supprimer', style: TextStyle(color: Colors.red)),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'assigner_tag',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.label, color: Colors.blue),
-                                        SizedBox(width: 8),
-                                        Text('Assigner un tag'),
-                                      ],
-                                    ),
+                                  PopupMenuButton<String>(
+                                    onSelected: (value) {
+                                      switch (value) {
+                                        case 'afficher':
+                                          _ouvrirOuTelechargerDocument(document);
+                                          break;
+                                        case 'telecharger':
+                                          _telechargerDocument(document);
+                                          break;
+                                        case 'modifier':
+                                          _modifierDocument(document);
+                                          break;
+                                        case 'supprimer':
+                                          _supprimerDocument(document);
+                                          break;
+                                        case 'assigner_tag':
+                                          _assignTagToFile(document);
+                                          break;
+                                        case 'favoris':
+                                          _toggleFavori(document);
+                                          break;
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'afficher',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.visibility),
+                                            SizedBox(width: 8),
+                                            Text('Afficher'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'telecharger',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.download),
+                                            SizedBox(width: 8),
+                                            Text('Télécharger'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'modifier',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit),
+                                            SizedBox(width: 8),
+                                            Text('Modifier'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'favoris',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.favorite_border),
+                                            SizedBox(width: 8),
+                                            Text('Ajouter/Retirer des favoris'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'assigner_tag',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.label, color: Colors.blue),
+                                            SizedBox(width: 8),
+                                            Text('Assigner un tag'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'supprimer',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.delete, color: Colors.red),
+                                            SizedBox(width: 8),
+                                            Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

@@ -8,7 +8,7 @@ class SearchService {
   // Recherche par tag
   Future<List<dynamic>> getFilesByTag(String token, int tagId) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/search/$tagId/tag'),
+      Uri.parse('$baseUrl/api/search/$tagId/tag'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -21,7 +21,7 @@ class SearchService {
   // Recherche par contenu OCR ou nom
   Future<List<dynamic>> searchByOcr(String token, String searchTerm) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/search/$searchTerm/ocr'),
+      Uri.parse('$baseUrl/api/search/$searchTerm/ocr'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -34,7 +34,7 @@ class SearchService {
   // Recherche par date
   Future<List<dynamic>> searchByDate(String token, String debut, String fin) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/search/seachbydate?debut=$debut&fin=$fin'),
+      Uri.parse('$baseUrl/api/search/seachbydate?debut=$debut&fin=$fin'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -52,7 +52,7 @@ class SearchService {
     if (dossier != null) params['dossier'] = dossier;
     if (nom != null) params['nom'] = nom;
 
-    final uri = Uri.parse('$baseUrl/search/seachbyname').replace(queryParameters: params);
+    final uri = Uri.parse('$baseUrl/api/search/seachbyname').replace(queryParameters: params);
     final response = await http.get(
       uri,
       headers: {'Authorization': 'Bearer $token'},

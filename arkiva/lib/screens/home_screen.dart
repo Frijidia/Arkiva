@@ -3,6 +3,7 @@ import 'package:arkiva/screens/scan_screen.dart';
 import 'package:arkiva/screens/upload_screen.dart';
 import 'package:arkiva/screens/armoires_screen.dart';
 import 'package:arkiva/screens/casiers_screen.dart';
+import 'package:arkiva/screens/favoris_screen.dart';
 import 'package:arkiva/models/armoire.dart';
 import 'package:arkiva/services/animation_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
@@ -357,7 +358,7 @@ class HomeScreen extends StatelessWidget {
                           title: Text('Documents favoris', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
                           trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
                           onTap: () {
-                            print('Tapped on Documents favoris');
+                            _navigateToScreen(context, const FavorisScreen());
                           },
                         ),
                       ),

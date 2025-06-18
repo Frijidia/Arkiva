@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart'; // Import pour kDebugMode
 class DossierService {
   Future<List<Dossier>> getDossiers(String token, int casierId) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/dosier/$casierId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ class DossierService {
     int userId,
   ) async {
     final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/dosier'),
+      Uri.parse('${ApiConfig.baseUrl}/api/dosier'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ class DossierService {
       throw Exception('Dossier ID cannot be null for update.');
     }
     final response = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}/dosier/$dossierId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/dosier/$dossierId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ class DossierService {
       throw Exception('Dossier ID cannot be null for delete.');
     }
     final response = await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}/dosier/$dossierId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/dosier/$dossierId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

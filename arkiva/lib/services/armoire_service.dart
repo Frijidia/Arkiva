@@ -9,7 +9,7 @@ class ArmoireService {
   Future<List<Armoire>> getAllArmoires(int entrepriseId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/armoire/$entrepriseId'),
+        Uri.parse('$baseUrl/api/armoire/$entrepriseId'),
         headers: await ApiConfig.getHeaders(),
       );
 
@@ -27,7 +27,7 @@ class ArmoireService {
   Future<Armoire> createArmoire(int userId, int entrepriseId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/armoire'),
+        Uri.parse('$baseUrl/api/armoire'),
         headers: await ApiConfig.getHeaders(),
         body: json.encode({
           'user_id': userId,
@@ -49,7 +49,7 @@ class ArmoireService {
   Future<Armoire> renameArmoire(int armoireId, String sousTitre) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/armoire/$armoireId'),
+        Uri.parse('$baseUrl/api/armoire/$armoireId'),
         headers: await ApiConfig.getHeaders(),
         body: json.encode({
           'sous_titre': sousTitre,
@@ -70,7 +70,7 @@ class ArmoireService {
   Future<void> deleteArmoire(int armoireId) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/armoire/$armoireId'),
+        Uri.parse('$baseUrl/api/armoire/$armoireId'),
         headers: await ApiConfig.getHeaders(),
       );
 
