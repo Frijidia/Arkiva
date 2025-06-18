@@ -1223,9 +1223,6 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                   PopupMenuButton<String>(
                                     onSelected: (value) {
                                       switch (value) {
-                                        case 'afficher':
-                                          _ouvrirOuTelechargerDocument(document);
-                                          break;
                                         case 'telecharger':
                                           _telechargerDocument(document);
                                           break;
@@ -1245,16 +1242,6 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     },
                                     itemBuilder: (context) => [
                                       const PopupMenuItem(
-                                        value: 'afficher',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.visibility),
-                                            SizedBox(width: 8),
-                                            Text('Afficher'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
                                         value: 'telecharger',
                                         child: Row(
                                           children: [
@@ -1270,7 +1257,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                           children: [
                                             Icon(Icons.edit),
                                             SizedBox(width: 8),
-                                            Text('Modifier'),
+                                            Text('Renommer'),
                                           ],
                                         ),
                                       ),

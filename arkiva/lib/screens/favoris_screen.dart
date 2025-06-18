@@ -689,9 +689,6 @@ class _FavorisScreenState extends State<FavorisScreen> {
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) {
                             switch (value) {
-                              case 'afficher':
-                                _openDocument(document);
-                                break;
                               case 'telecharger':
                                 _telechargerDocument(document);
                                 break;
@@ -713,12 +710,6 @@ class _FavorisScreenState extends State<FavorisScreen> {
                             }
                           },
                           itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'afficher',
-                              child: Row(
-                                children: [Icon(Icons.visibility), SizedBox(width: 8), Text('Afficher')],
-                              ),
-                            ),
                             const PopupMenuItem(
                               value: 'telecharger',
                               child: Row(
