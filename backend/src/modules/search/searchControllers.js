@@ -49,7 +49,7 @@ export const searchFichiersByOcrContent = async (req, res) => {
         dossiers.nom AS dossier
       FROM fichiers
       JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
-      JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+      JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
       JOIN armoires ON casiers.armoire_id = armoires.armoire_id 
       WHERE fichiers.nom ILIKE '%' || $1 || '%' OR fichiers.contenu_ocr ILIKE '%' || $1 || '%'
 
@@ -108,7 +108,7 @@ export const searchFichiersByFlexibleLocation = async (req, res) => {
     const query = `
       SELECT fichiers.*, 
         armoires.nom AS armoire_nom,
-        casiers.nom AS casier_nom,
+        cassiers.nom AS casier_nom,
         dossiers.nom AS dossier_nom
       FROM fichiers
       JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id

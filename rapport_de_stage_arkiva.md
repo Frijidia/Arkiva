@@ -137,7 +137,7 @@ backend/src/
 - Intégration de l'IA pour la classification automatique
 
 ### 10. Conclusion
-Le projet Arkiva représente une expérience enrichissante dans le domaine du développement d'applications modernes. Il a permis d'acquérir des compétences techniques solides et une meilleure compréhension des enjeux du développement multiplateforme. 
+Le projet Arkiva représente une expérience enrichissante dans le domaine du développement d'applications modernes. Il a permis d'acquérir des compétences techniques solides et une meilleure compréhension des enjeux du développement multiplateforme.
 
 **Les nouvelles fonctionnalités de favoris et de recherche avancée ont considérablement amélioré l'expérience utilisateur, transformant Arkiva en une solution complète et moderne de gestion documentaire.**
 
@@ -147,5 +147,5 @@ Le projet démontre la capacité à développer des applications complexes avec 
 - Documentation technique complète
 - Guide d'utilisation des favoris
 - Captures d'écran de l'application
-- Diagrammes d'architecture
+- Diagrammes d'architecture 
 - Code source commenté 

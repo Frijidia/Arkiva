@@ -9,17 +9,17 @@ class FavorisService {
   // Récupérer tous les favoris d'un utilisateur
   Future<List<Document>> getFavoris(String token, int userId) async {
     try {
-      final response = await http.get(
+    final response = await http.get(
         Uri.parse('$_baseUrl/api/favoris/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-      if (response.statusCode == 200) {
+    if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Document.fromJson(json)).toList();
-      } else {
+      return data.map((json) => Document.fromJson(json)).toList();
+    } else {
         throw Exception('Erreur lors de la récupération des favoris: ${response.statusCode}');
       }
     } catch (e) {
@@ -30,18 +30,18 @@ class FavorisService {
   // Ajouter un fichier aux favoris
   Future<bool> addFavori(String token, int userId, int fichierId, int entrepriseId) async {
     try {
-      final response = await http.post(
+    final response = await http.post(
         Uri.parse('$_baseUrl/api/favoris'),
-        headers: {
+      headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        'Authorization': 'Bearer $token',
+      },
         body: jsonEncode({
-          'user_id': userId,
-          'fichier_id': fichierId,
-          'entreprise_id': entrepriseId,
-        }),
-      );
+        'user_id': userId,
+        'fichier_id': fichierId,
+        'entreprise_id': entrepriseId,
+      }),
+    );
 
       if (response.statusCode == 200) {
         return true;
@@ -56,12 +56,12 @@ class FavorisService {
   // Retirer un fichier des favoris
   Future<bool> removeFavori(String token, int userId, int fichierId) async {
     try {
-      final response = await http.delete(
+    final response = await http.delete(
         Uri.parse('$_baseUrl/api/favoris/$userId/$fichierId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
       if (response.statusCode == 200) {
         return true;

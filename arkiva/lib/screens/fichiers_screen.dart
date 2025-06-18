@@ -682,7 +682,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/armoire/$entrepriseId'),
+          Uri.parse('${ApiConfig.baseUrl}/api/armoire/$entrepriseId'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -710,7 +710,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/casier/$armoireId'),
+          Uri.parse('${ApiConfig.baseUrl}/api/casier/$armoireId'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -738,7 +738,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/dosier/$casierId'),
+          Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',

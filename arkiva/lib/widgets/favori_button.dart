@@ -42,10 +42,10 @@ class _FavoriButtonState extends State<FavoriButton> {
       if (token != null && userId != null) {
         final isFavori = await _favorisService.isFavori(token, int.parse(userId), int.parse(widget.document.id));
         if (mounted) {
-          setState(() {
-            _isFavori = isFavori;
-            _isLoading = false;
-          });
+      setState(() {
+        _isFavori = isFavori;
+        _isLoading = false;
+      });
         }
       }
     } catch (e) {
@@ -97,9 +97,9 @@ class _FavoriButtonState extends State<FavoriButton> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      setState(() => _isLoading = false);
     }
+  }
   }
 
   @override
@@ -116,9 +116,9 @@ class _FavoriButtonState extends State<FavoriButton> {
       onPressed: _toggleFavori,
       icon: Icon(
         _isFavori ? Icons.favorite : Icons.favorite_border,
-        size: widget.size,
+              size: widget.size,
         color: _isFavori ? (widget.color ?? Colors.red) : widget.color,
-      ),
+            ),
       tooltip: _isFavori ? 'Retirer des favoris' : 'Ajouter aux favoris',
     );
   }
