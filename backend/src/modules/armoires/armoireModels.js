@@ -5,7 +5,7 @@ const createTableArmoires = `
   armoire_id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   sous_titre VARCHAR(255),
-  nom VARCHAR(50) UNIQUE,
+  nom VARCHAR(50),
   is_deleted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,

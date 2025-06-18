@@ -39,7 +39,7 @@ function isAllowedExtension(filename) {
 
 const convertToPdf = async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase();
-  if (!['.doc', '.docx'].includes(fileExt)) return null;
+  if (!['.doc', '.docx', '.txt'].includes(fileExt)) return null;
 
   const file = fs.readFileSync(filePath);
   const outputPath = filePath.replace(fileExt, '.pdf');
@@ -89,6 +89,7 @@ export const uploadFileBufferToS3 = async (fileBuffer, originalName) => {
 // Upload avec dossier_id
 export const uploadFiles = async (req, res) => {
   const { dossier_id, entreprise_id } = req.body;
+  let originalFileName = "";
 
   if (!dossier_id) return res.status(400).json({ error: "ID du dossier requis" });
   if (!entreprise_id) return res.status(400).json({ error: "ID de l'entreprise requis" });
@@ -117,7 +118,14 @@ export const uploadFiles = async (req, res) => {
 
       const finalBuffer = fs.readFileSync(finalPath);
 
-      const contenu_ocr = await extractSmartText(finalPath);
+      let contenu_ocr = '';
+      try {
+        contenu_ocr = await extractSmartText(finalPath);
+      } catch (error) {
+        console.warn(`Erreur lors de l'extraction du texte : ${error.message}`);
+        // Continue l'upload même si l'OCR échoue
+      }
+
       const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, finalName, entreprise_id);
       const jsonString = encryptedBuffer.toString('utf8');
       const s3Data = await uploadFileBufferToS3(encryptedBuffer, finalName + '.enc');
@@ -129,7 +137,7 @@ export const uploadFiles = async (req, res) => {
         s3Data.size,
         dossier_id,
         contenu_ocr,
-        // jsonString
+        originalFileName = finalName
       ]);
 
       if (isConverted) {
@@ -142,13 +150,13 @@ export const uploadFiles = async (req, res) => {
     }
 
     const placeholders = uploaded.map((_, i) =>
-      `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`
+      `($${i * 7 + 1}, $${i * 7 + 2}, $${i * 7 + 3}, $${i * 7 + 4}, $${i * 7 + 5}, $${i * 7 + 6},  $${i * 7 + 7})`
     ).join(', ');
 
     const query = `
-      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr)
+      INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr, originalfilename)
       VALUES ${placeholders}
-      RETURNING *;
+      RETURNING *
     `;
 
     const flatValues = uploaded.flat();
@@ -157,7 +165,7 @@ export const uploadFiles = async (req, res) => {
     res.status(200).json({ fichiers: result.rows });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erreur détaillée lors du téléversement des fichiers :", err);
     res.status(500).json({ error: 'Erreur lors du téléversement des fichiers' });
   }
 };

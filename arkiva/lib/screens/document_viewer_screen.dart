@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:arkiva/models/document.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/config/api_config.dart';
+import 'package:provider/provider.dart';
+import 'dart:html' as html;
+import 'package:http/http.dart' as http;
 
 class DocumentViewerScreen extends StatefulWidget {
   final Document document;
@@ -13,14 +18,49 @@ class DocumentViewerScreen extends StatefulWidget {
 
 class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   Future<void> _ouvrirDocument() async {
-    // TODO: Remplacer par l'URL réelle du document
-    final Uri url = Uri.parse('https://example.com/documents/${widget.document.id}');
-    
-    if (!await launchUrl(url)) {
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final entrepriseId = authStateService.entrepriseId;
+    if (token == null || entrepriseId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Impossible d\'ouvrir le document'),
+            content: Text('Erreur: Token ou ID entreprise manquant'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final fileName = widget.document.nomOriginal ?? widget.document.nom;
+      final mimeType = _getMimeType(fileName);
+      print('DEBUG: nom=$fileName, mimeType=$mimeType');
+      final blob = html.Blob([response.bodyBytes], mimeType);
+      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+      if (mimeType.startsWith('application/pdf')) {
+        html.window.open(blobUrl, '_blank');
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ce type de fichier n\'est pas prévisualisable. Il va être téléchargé.')),
+          );
+        }
+        final anchor = html.AnchorElement(href: blobUrl)
+          ..setAttribute('download', fileName)
+          ..click();
+        html.Url.revokeObjectUrl(blobUrl);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de l\'ouverture du document'),
             backgroundColor: Colors.red,
           ),
         );
@@ -29,13 +69,43 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   }
 
   Future<void> _telechargerDocument() async {
-    // TODO: Implémenter le téléchargement
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Téléchargement en cours...'),
-        ),
-      );
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final entrepriseId = authStateService.entrepriseId;
+    if (token == null || entrepriseId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur: Token ou ID entreprise manquant'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final fileName = widget.document.nomOriginal ?? widget.document.nom;
+      final mimeType = _getMimeType(fileName);
+      final blob = html.Blob([response.bodyBytes], mimeType);
+      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: blobUrl)
+        ..setAttribute('download', fileName)
+        ..click();
+      html.Url.revokeObjectUrl(blobUrl);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors du téléchargement du document'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -47,6 +117,48 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           content: Text('Partage en cours...'),
         ),
       );
+    }
+  }
+
+  Future<void> _ouvrirPDFWeb() async {
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final url = _fileUrl;
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final blob = html.Blob([response.bodyBytes], 'application/pdf');
+    final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+    html.window.open(blobUrl, '_blank');
+  }
+
+  // Construction de l'URL pour afficher le fichier déchiffré via la route backend
+  // /api/fichier/:fichier_id/:entreprise_id
+  String get _fileUrl {
+    final authStateService = context.read<AuthStateService>();
+    final entrepriseId = authStateService.entrepriseId;
+    return '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+  }
+
+  String _getMimeType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf': return 'application/pdf';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'gif': return 'image/gif';
+      case 'doc': return 'application/msword';
+      case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls': return 'application/vnd.ms-excel';
+      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt': return 'application/vnd.ms-powerpoint';
+      case 'pptx': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      case 'txt': return 'text/plain';
+      case 'zip': return 'application/zip';
+      case 'rar': return 'application/x-rar-compressed';
+      default: return 'application/octet-stream';
     }
   }
 
@@ -119,7 +231,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
             ],
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: _ouvrirDocument,
+              onPressed: _ouvrirPDFWeb,
               icon: const Icon(Icons.open_in_new),
               label: const Text('Ouvrir le document'),
             ),
@@ -129,7 +241,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     );
   }
 
-  String _formatTaille(int octets) {
+  String _formatTaille(int? octets) {
+    if (octets == null) {
+      return 'N/A';
+    }
     if (octets < 1024) {
       return '$octets octets';
     } else if (octets < 1024 * 1024) {

@@ -24,7 +24,9 @@ import versionRoutes from './modules/versions/versionRoutes.js'; // versions
 import restoreRoutes from './modules/restore/restoreRoutes.js'; // restaurations
 import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
 import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
-
+import searchRoutes from './modules/search/searchRoute.js'; // routes de recherche
+import favorisRoutes from './modules/favoris/favorisRoutes.js'; // favoris
+// app.use('/api/search', searchRoutes);
 
 const app = express();
 
@@ -53,6 +55,9 @@ app.use('/api/versions', versionRoutes);
 app.use('/api/restaurations', restoreRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ocr', ocrRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/favoris', favorisRoutes);
+// app.use('/api/search', searchRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

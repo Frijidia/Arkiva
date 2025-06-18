@@ -22,9 +22,28 @@ class AdminService {
     }
   }
 
-  // Récupérer la liste des utilisateurs
-  Future<List<Map<String, dynamic>>> getUsers(String token) async {
+  // Récupérer la liste des utilisateurs de l'entreprise
+  Future<List<Map<String, dynamic>>> getUsers(String token, int entrepriseId) async {
     print('🔄 Récupération de la liste des utilisateurs...');
+    
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/entreprise/$entrepriseId/users'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data['users']);
+    } else {
+      throw Exception('Échec de la récupération des utilisateurs: ${response.body}');
+    }
+  }
+
+  // Récupérer tous les utilisateurs (admin uniquement)
+  Future<List<Map<String, dynamic>>> getAllUsers(String token) async {
+    print('🔄 Récupération de tous les utilisateurs...');
     
     final response = await http.get(
       Uri.parse('$baseUrl/auth/users'),

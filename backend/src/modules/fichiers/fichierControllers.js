@@ -1,7 +1,7 @@
 import "./fichierModels.js";
 import pool from '../../config/database.js';
 import s3 from '../../config/aws.js';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mime from "mime-types";
 import encryptionService from '../encryption/encryptionService.js';
@@ -19,7 +19,19 @@ export const getFichiersByDossierId = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM fichiers WHERE dossier_id = $1 ORDER BY fichier_id DESC',
+      `SELECT f.*, 
+        COALESCE(
+          ARRAY_AGG(
+            DISTINCT jsonb_build_object('name', t.name, 'color', t.color)
+          ) FILTER (WHERE t.tag_id IS NOT NULL), 
+          '{}'
+        ) AS tags
+      FROM fichiers f
+      LEFT JOIN fichier_tags ft ON ft.fichier_id = f.fichier_id
+      LEFT JOIN tags t ON t.tag_id = ft.tag_id
+      WHERE f.dossier_id = $1
+      GROUP BY f.fichier_id
+      ORDER BY f.fichier_id DESC`,
       [dossier_id]
     );
 
@@ -36,15 +48,20 @@ export const deleteFichier = async (req, res) => {
   const { fichier_id } = req.params;
 
   try {
-    const result = await pool.query('SELECT chemin FROM fichiers WHERE fichier_id = $1', [id]);
+    const result = await pool.query('SELECT chemin FROM fichiers WHERE fichier_id = $1', [fichier_id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Fichier non trouvé" });
     }
 
     const filePath = result.rows[0].chemin;
+    const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+    const key = filePath.replace(s3BaseUrl, '');
 
-    // Supprimer le fichier physique
-    await fs.unlink(filePath);
+    // Supprimer le fichier physique de S3
+    await s3.send(new DeleteObjectCommand({
+      Bucket: 'arkiva-storage',
+      Key: key,
+    }));
 
     // Supprimer de la base
     await pool.query('DELETE FROM fichiers WHERE fichier_id = $1', [fichier_id]);
@@ -60,17 +77,17 @@ export const deleteFichier = async (req, res) => {
 
 export const renameFichier = async (req, res) => {
   const { fichier_id } = req.params;
-  const { nouveauNom } = req.body;
+  const { nouveauoriginalfilename } = req.body;
 
-  if (!nouveauNom) {
+  if (!nouveauoriginalfilename) {
     return res.status(400).json({ error: "Le nouveau nom est requis" });
   }
 
   try {
     // Mise à jour du champ "nom" dans la base
     const result = await pool.query(
-      'UPDATE fichiers SET nom = $1 WHERE fichier_id = $2 RETURNING *',
-      [nouveauNom, fichier_id]
+      'UPDATE fichiers SET originalfilename = $1 WHERE fichier_id = $2 RETURNING *',
+      [nouveauoriginalfilename, fichier_id]
     );
 
     if (result.rowCount === 0) {
@@ -109,21 +126,21 @@ export const getFichierById = async (req, res) => {
 
 // generer un lien signé
 
-async function genererLienSigne(chemin) {
+// async function genererLienSigne(chemin) {
 
-  const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-  const key = chemin.replace(s3BaseUrl, '');
-  const contentType = mime.lookup(chemin) || 'application/octet-stream';
+//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+//   const key = chemin.replace(s3BaseUrl, '');
+//   const contentType = mime.lookup(chemin) || 'application/octet-stream';
 
-  const command = new GetObjectCommand({
-    Bucket: 'arkiva-storage',
-    Key: key,
-    ResponseContentType: contentType,
-  });
+//   const command = new GetObjectCommand({
+//     Bucket: 'arkiva-storage',
+//     Key: key,
+//     ResponseContentType: contentType,
+//   });
 
-  const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
-  return url;
-}
+//   const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
+//   return url;
+// }
 
 
 
@@ -176,7 +193,7 @@ export const displayFichier = async (req, res) => {
 
     // Étape 3 : Détecter le bon type MIME
     const mimeType = mime.lookup(originalFileName) || 'application/octet-stream';
-    let Name = "toto"
+    let Name = originalFileName
     console.log(originalFileName)
 
     // Étape 4 : Répondre avec le fichier déchiffré
@@ -189,8 +206,6 @@ export const displayFichier = async (req, res) => {
     res.status(500).json({ error: 'Erreur lors de l\'affichage du fichier' });
   }
 };
-
-
 
 
 export const getFichierCountByDossierId = async (req, res) => {
@@ -211,68 +226,3 @@ export const getFichierCountByDossierId = async (req, res) => {
   }
 };
 
-
-// export const partagerFichier = async (req, res) => {
-//   const { fichier_id } = req.params;
-//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-
-//   try {
-//     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
-//     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
-
-//     const chemin = rows[0].chemin;
-//     const key = chemin.replace(s3BaseUrl, '');
-   
-//     const contentType = mime.lookup(fichier.nom) || 'application/octet-stream';
-
-//     const command = new GetObjectCommand({
-//       Bucket: bucket,
-//       Key: key,
-//       ResponseContentType: contentType,
-//       ResponseContentDisposition: 'inline', // 🔁 Affichage direct dans navigateur
-//     });
-
-//     const url = await getSignedUrl(s3, command, { expiresIn: 60 * 60 }); // 1h de validité
-
-//     res.json({ lien: url }); // Tu renvoies le lien public temporaire
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Erreur lors du partage du fichier" });
-//   }
-// };
-
-
-//telecharger le fichier
-
-// export const telechargerFichier = async (req, res) => {
-//   const { fichier_id } = req.params;
-//   const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-
-//   try {
-//     const { rows } = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
-//     if (rows.length === 0) return res.status(404).json({ error: 'Fichier introuvable' });
-
-//     const chemin = rows[0].chemin;
-
-//     const key = chemin.replace(s3BaseUrl, '');
-//     const contentType = mime.lookup(chemin) || 'application/octet-stream';
-
-//     const command = new GetObjectCommand({
-//       Bucket: 'arkiva-storage',
-//       Key: key,
-//       ResponseContentType: contentType,
-//       ResponseContentDisposition: 'attachment', // <-- ceci force le téléchargement
-
-//     });
-
-//     const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1h
-//     console.log("URL signée:", url);
-
-//     // res.redirect(url); 
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: 'Erreur lors du téléchargement' });
-//   }
-// };

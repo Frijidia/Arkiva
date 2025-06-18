@@ -15,7 +15,7 @@ router.post('/', CreateDossier);
 router.put('/:dossier_id', RenameDossier);
 // router.get('/getcasiers', GetAllCasiers);
 router.delete('/:dossier_id', DeleteDossier);
-router.get('/:casier_id', GetDossiersByCasier);
+router.get('/:cassier_id', GetDossiersByCasier);
 
 
 

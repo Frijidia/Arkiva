@@ -4,12 +4,14 @@ class Document {
   final String? description;
   final String type;
   final String chemin;
-  final int taille;
+  final int? taille;
   final DateTime dateCreation;
   final DateTime dateModification;
-  final List<String> tags;
+  final List<Map<String, dynamic>> tags;
   final bool estChiffre;
   final DateTime dateAjout;
+  final String? contenuOcr;
+  final String? nomOriginal;
 
   Document({
     required this.id,
@@ -17,12 +19,14 @@ class Document {
     this.description,
     required this.type,
     required this.chemin,
-    required this.taille,
+    this.taille,
     required this.dateCreation,
     required this.dateModification,
     required this.dateAjout,
-    List<String>? tags,
+    List<Map<String, dynamic>>? tags,
     this.estChiffre = false,
+    this.contenuOcr,
+    this.nomOriginal,
   }) : tags = tags ?? [];
 
   Map<String, dynamic> toJson() {
@@ -38,22 +42,26 @@ class Document {
       'dateAjout': dateAjout.toIso8601String(),
       'tags': tags,
       'estChiffre': estChiffre,
+      'contenu_ocr': contenuOcr,
+      'nom_original': nomOriginal,
     };
   }
 
   factory Document.fromJson(Map<String, dynamic> json) {
     return Document(
-      id: json['id'],
-      nom: json['nom'],
-      description: json['description'],
-      type: json['type'],
-      chemin: json['chemin'],
-      taille: json['taille'],
-      dateCreation: DateTime.parse(json['dateCreation']),
-      dateModification: DateTime.parse(json['dateModification']),
-      dateAjout: DateTime.parse(json['dateAjout']),
-      tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
-      estChiffre: json['estChiffre'] ?? false,
+      id: json['fichier_id'].toString(),
+      nom: json['nom'] as String,
+      description: json['description'] as String?,
+      type: json['type'] as String,
+      chemin: json['chemin'] as String,
+      taille: json['taille'] as int?,
+      dateCreation: DateTime.parse(json['created_at'] as String),
+      dateModification: DateTime.parse(json['created_at'] as String),
+      dateAjout: DateTime.parse(json['created_at'] as String),
+      tags: (json['tags'] as List?)?.map((t) => Map<String, dynamic>.from(t)).toList() ?? [],
+      estChiffre: json['est_chiffre'] as bool? ?? false,
+      contenuOcr: json['contenu_ocr'] as String?,
+      nomOriginal: json['originalfilename'] as String?,
     );
   }
 
@@ -66,9 +74,11 @@ class Document {
     int? taille,
     DateTime? dateCreation,
     DateTime? dateModification,
-    List<String>? tags,
+    List<Map<String, dynamic>>? tags,
     bool? estChiffre,
     DateTime? dateAjout,
+    String? contenuOcr,
+    String? nomOriginal,
   }) {
     return Document(
       id: id ?? this.id,
@@ -82,6 +92,8 @@ class Document {
       dateAjout: dateAjout ?? this.dateAjout,
       tags: tags ?? this.tags,
       estChiffre: estChiffre ?? this.estChiffre,
+      contenuOcr: contenuOcr ?? this.contenuOcr,
+      nomOriginal: nomOriginal ?? this.nomOriginal,
     );
   }
 } 

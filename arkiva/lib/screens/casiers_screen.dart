@@ -4,13 +4,20 @@ import 'package:arkiva/models/casier.dart';
 import 'package:arkiva/screens/dossiers_screen.dart';
 import 'package:arkiva/screens/upload_screen.dart';
 import 'package:arkiva/screens/scan_screen.dart';
+import 'package:arkiva/services/casier_service.dart';
+import 'package:arkiva/services/auth_state_service.dart';
+import 'package:provider/provider.dart';
 
 class CasiersScreen extends StatefulWidget {
-  final Armoire armoire;
+  final int armoireId;
+  final String armoireNom;
+  final int entrepriseId;
 
   const CasiersScreen({
     super.key,
-    required this.armoire,
+    required this.armoireId,
+    required this.armoireNom,
+    required this.entrepriseId,
   });
 
   @override
@@ -18,13 +25,30 @@ class CasiersScreen extends StatefulWidget {
 }
 
 class _CasiersScreenState extends State<CasiersScreen> {
-  late List<Casier> _casiers;
-  bool _isLoading = false;
+  final CasierService _casierService = CasierService();
+  List<Casier> _casiers = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _casiers = widget.armoire.casiers;
+    _loadCasiers();
+  }
+
+  Future<void> _loadCasiers() async {
+    setState(() => _isLoading = true);
+    try {
+      final casiers = await _casierService.getCasiersByArmoire(widget.armoireId);
+      setState(() {
+        _casiers = casiers;
+        _isLoading = false;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -82,88 +106,44 @@ class _CasiersScreenState extends State<CasiersScreen> {
     );
 
     if (result != null) {
-      // TODO: Mettre à jour le casier dans le backend
-      setState(() {
-        final index = _casiers.indexWhere((c) => c.id == casier.id);
-        if (index != -1) {
-          _casiers[index] = Casier(
-            id: casier.id,
-            nom: result['nom']!,
-            armoireId: casier.armoireId,
-            description: result['description'] ?? '',
-            dossiers: casier.dossiers,
-            dateCreation: casier.dateCreation,
-            dateModification: DateTime.now(),
-          );
-        }
-      });
+      try {
+        final updatedCasier = await _casierService.renameCasier(casier.casierId, result['description'] ?? '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sous-titre du casier mis à jour avec succès')),
+        );
+        await _loadCasiers();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la mise à jour: ${e.toString()}')),
+        );
+      }
     }
   }
 
   Future<void> _creerCasier() async {
-    final TextEditingController nomController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
+    final authStateService = context.read<AuthStateService>();
+    final userId = authStateService.userId;
 
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nouveau casier'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomController,
-              decoration: const InputDecoration(
-                labelText: 'Nom du casier',
-                hintText: 'Ex: Casier 1',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Description du casier',
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nomController.text.isNotEmpty) {
-                Navigator.pop(context, {
-                  'nom': nomController.text,
-                  'description': descriptionController.text,
-                });
-              }
-            },
-            child: const Text('Créer'),
-          ),
-        ],
-      ),
-    );
+    if (userId == null) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: Informations utilisateur manquantes')),
+      );
+      return;
+    }
 
-    if (result != null) {
-      // TODO: Créer le casier dans le backend
-      setState(() {
-        _casiers.add(
-          Casier(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            nom: result['nom']!,
-            armoireId: widget.armoire.id,
-            description: result['description'] ?? '',
-            dossiers: [],
-            dateCreation: DateTime.now(),
-            dateModification: DateTime.now(),
-          ),
-        );
-      });
+    try {
+       await _casierService.createCasier(
+         widget.armoireId,
+         int.parse(userId),
+       );
+       await _loadCasiers();
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(content: Text('Casier créé avec succès')),
+       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
+      );
     }
   }
 
@@ -179,14 +159,6 @@ class _CasiersScreenState extends State<CasiersScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: nomController,
-              decoration: const InputDecoration(
-                labelText: 'Nom du casier',
-                hintText: 'Ex: Casier 1',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
               controller: descriptionController,
               decoration: const InputDecoration(
                 labelText: 'Description',
@@ -203,12 +175,9 @@ class _CasiersScreenState extends State<CasiersScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (nomController.text.isNotEmpty) {
-                Navigator.pop(context, {
-                  'nom': nomController.text,
-                  'description': descriptionController.text,
-                });
-              }
+              Navigator.pop(context, {
+                'description': descriptionController.text,
+              });
             },
             child: const Text('Enregistrer'),
           ),
@@ -217,21 +186,13 @@ class _CasiersScreenState extends State<CasiersScreen> {
     );
 
     if (result != null) {
-      // TODO: Mettre à jour le casier dans le backend
-      setState(() {
-        final index = _casiers.indexWhere((c) => c.id == casier.id);
-        if (index != -1) {
-          _casiers[index] = Casier(
-            id: casier.id,
-            nom: result['nom']!,
-            armoireId: casier.armoireId,
-            description: result['description'] ?? '',
-            dossiers: casier.dossiers,
-            dateCreation: casier.dateCreation,
-            dateModification: DateTime.now(),
-          );
-        }
-      });
+      try {
+        await _casierService.renameCasier(casier.casierId, result['description'] ?? '');
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la mise à jour: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -256,15 +217,28 @@ class _CasiersScreenState extends State<CasiersScreen> {
     );
 
     if (confirm == true) {
-      // TODO: Supprimer le casier dans le backend
-      setState(() {
-        _casiers.removeWhere((c) => c.id == casier.id);
-      });
+      try {
+        await _casierService.deleteCasier(casier.casierId);
+        await _loadCasiers();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Casier supprimé avec succès')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la suppression: ${e.toString()}')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -273,7 +247,7 @@ class _CasiersScreenState extends State<CasiersScreen> {
             Navigator.pop(context);
           },
         ),
-        title: Text(widget.armoire.nom),
+        title: Text(widget.armoireNom),
         centerTitle: true,
         actions: [
           IconButton(
@@ -290,61 +264,73 @@ class _CasiersScreenState extends State<CasiersScreen> {
               // TODO: Naviguer vers l'écran de scan
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _creerCasier,
+          ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _casiers.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.folder_open,
-                        size: 64,
-                        color: Colors.grey,
+      body: RefreshIndicator(
+        onRefresh: _loadCasiers,
+        child: _casiers.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.folder_open,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Aucun casier dans cette armoire',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Aucun casier dans cette armoire',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Créez votre premier casier',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: _creerCasier,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Créer un casier'),
-                      ),
-                    ],
-                  ),
-                )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // 3 casiers par ligne
-                    childAspectRatio: 0.9, // Réduire le rapport d'aspect pour diminuer la largeur relative
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _casiers.length,
-                  itemBuilder: (context, index) {
-                    return _buildCasierCard(_casiers[index], index);
-                  },
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Créez votre premier casier',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _creerCasier,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Créer un casier'),
+                    ),
+                  ],
                 ),
-      floatingActionButton: _casiers.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _creerCasier,
-              child: const Icon(Icons.add),
-            )
-          : null,
+              )
+            : Builder(
+                builder: (context) {
+                  print('Nombre de casiers à afficher : \\${_casiers.length}');
+                  for (var casier in _casiers) {
+                    print('Casier: \\${casier.casierId} - \\${casier.nom}');
+                  }
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 3 casiers par ligne
+                      childAspectRatio: 0.9, // Réduire le rapport d'aspect pour diminuer la largeur relative
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: _casiers.length,
+                    itemBuilder: (context, index) {
+                      return _buildCasierCard(_casiers[index], index);
+                    },
+                  );
+                },
+              ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _creerCasier,
+        child: const Icon(Icons.add),
+        tooltip: 'Créer un nouveau casier',
+      ),
     );
   }
 
@@ -358,15 +344,15 @@ class _CasiersScreenState extends State<CasiersScreen> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          print('Clic sur le casier: ${casier.nom}');
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => DossiersScreen(casier: casier),
+              builder: (context) => DossiersScreen(
+                casier: casier,
+              ),
             ),
           );
         },
-        onLongPress: () => _modifierCasier(casier),
         borderRadius: BorderRadius.circular(12),
         child: Stack(
           children: [
@@ -376,14 +362,14 @@ class _CasiersScreenState extends State<CasiersScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (isFirstCasier) ...[
-                    Icon(Icons.folder_open, size: 48, color: Colors.blue[700]),
-                    const SizedBox(height: 16),
+                    Icon(Icons.folder_open, size: 40, color: Colors.orange[700]),
+                    const SizedBox(height: 12),
                   ],
                   Expanded(
                     child: Text(
-                      isFirstCasier ? 'C${casierIndex + 1}' : 'C${casierIndex + 1}',
+                      casier.nom,
                       style: TextStyle(
-                        fontSize: isFirstCasier ? 24 : 20,
+                        fontSize: isFirstCasier ? 20 : 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[900],
                       ),
@@ -394,7 +380,7 @@ class _CasiersScreenState extends State<CasiersScreen> {
                   const SizedBox(height: 8),
                   Container(
                     height: 4,
-                    width: isFirstCasier ? 60 : 40,
+                    width: isFirstCasier ? 40 : 20,
                     decoration: BoxDecoration(
                       color: Colors.grey[400],
                       borderRadius: BorderRadius.circular(2),
@@ -415,39 +401,20 @@ class _CasiersScreenState extends State<CasiersScreen> {
               ),
             ),
             Positioned(
-              top: 8,
-              right: 8,
-              child: PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'modifier':
-                      _modifierCasier(casier);
-                      break;
-                    case 'supprimer':
-                      _supprimerCasier(casier);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'modifier',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Modifier'),
-                      ],
-                    ),
+              top: 4,
+              right: 4,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    tooltip: 'Modifier le casier',
+                    onPressed: () => _modifierCasier(casier),
                   ),
-                  const PopupMenuItem(
-                    value: 'supprimer',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Supprimer', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                    tooltip: 'Supprimer le casier',
+                    onPressed: () => _supprimerCasier(casier),
                   ),
                 ],
               ),
