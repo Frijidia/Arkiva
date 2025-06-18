@@ -382,7 +382,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       if (entrepriseId == null) {
         throw 'ID de l\'entreprise manquant';
       }
-      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId');
       if (!await launchUrl(url)) {
         throw 'Could not launch $url';
       }
@@ -406,7 +406,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
       if (entrepriseId == null) {
         throw 'ID de l\'entreprise manquant';
       }
-      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      final token = authStateService.token;
+      if (token == null) {
+        throw 'Token manquant';
+      }
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token');
       if (!await launchUrl(url)) {
         throw 'Could not launch $url';
       }
@@ -432,7 +436,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       }
       return;
     }
-    final url = '${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId';
+    final url = '${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token';
     http.get(
       Uri.parse(url),
       headers: {'Authorization': 'Bearer $token'},
@@ -1057,6 +1061,44 @@ class _FichiersScreenState extends State<FichiersScreen> {
     }
   }
 
+  Future<void> _ouvrirDansNouvelOnglet(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour l\'ouverture.')),
+      );
+      return;
+    }
+    
+    final authStateService = context.read<AuthStateService>();
+    final token = authStateService.token;
+    final entrepriseId = authStateService.entrepriseId;
+    
+    if (token == null || entrepriseId == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: Token ou ID entreprise manquant')),
+      );
+      return;
+    }
+
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Document ouvert dans un nouvel onglet')),
+        );
+      } else {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Impossible d\'ouvrir le document dans un nouvel onglet')),
+        );
+      }
+    } catch (e) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -1238,6 +1280,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                         case 'favoris':
                                           _toggleFavori(document);
                                           break;
+                                        case 'ouvrir_nouvel_onglet':
+                                          _ouvrirDansNouvelOnglet(document);
+                                          break;
                                       }
                                     },
                                     itemBuilder: (context) => [
@@ -1258,6 +1303,16 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                             Icon(Icons.edit),
                                             SizedBox(width: 8),
                                             Text('Renommer'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'ouvrir_nouvel_onglet',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.open_in_new),
+                                            SizedBox(width: 8),
+                                            Text('Ouvrir dans un nouvel onglet'),
                                           ],
                                         ),
                                       ),

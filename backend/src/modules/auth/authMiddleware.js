@@ -3,7 +3,11 @@ import pool from '../../config/database.js';
 
 // Middleware pour vérifier le token JWT
 export const verifyToken = async (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    let token = req.headers.authorization?.split(' ')[1];
+    // Ajout : accepte aussi le token dans la query string
+    if (!token && req.query.token) {
+        token = req.query.token;
+    }
 
     if (!token) {
         return res.status(401).json({ message: 'Token manquant' });

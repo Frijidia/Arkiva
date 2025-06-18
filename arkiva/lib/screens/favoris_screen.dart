@@ -245,7 +245,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
     }
 
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token');
       if (await canLaunchUrl(url)) {
         await launchUrl(url);
       } else {
@@ -276,7 +276,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
       if (entrepriseId == null || token == null) {
         throw 'ID de l\'entreprise ou token manquant';
       }
-      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token');
       if (!await launchUrl(url)) {
         throw 'Could not launch $url';
       }
