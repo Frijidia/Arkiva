@@ -31,7 +31,8 @@ class DocumentService {
     String nom,
     String description,
     String type,
-    int taille,
+    int? taille,
+    String chemin,
   ) async {
     if (dossierId == null) {
       throw Exception('Dossier ID cannot be null for creating a document.');
@@ -48,6 +49,7 @@ class DocumentService {
         'description': description,
         'type': type,
         'taille': taille,
+        'chemin': chemin,
       }),
     );
 

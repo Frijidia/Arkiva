@@ -226,15 +226,28 @@ class _FavorisScreenState extends State<FavorisScreen> {
   }
 
   Future<void> _openDocument(Document document) async {
+    if (document.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour l\'ouverture.')),
+      );
+      return;
+    }
+    
     final authState = context.read<AuthStateService>();
     final token = authState.token;
+    final entrepriseId = authState.entrepriseId;
     
-    if (token == null) return;
+    if (token == null || entrepriseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur: Token ou ID entreprise manquant')),
+      );
+      return;
+    }
 
     try {
-      final url = '${document.chemin}?token=$token';
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
+      final url = Uri.parse('${ApiConfig.baseUrl}/fichier/${document.id}/$entrepriseId');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

@@ -10,7 +10,7 @@ class UploadService {
     int entrepriseId,
     PlatformFile selectedFile,
   ) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/upload');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/upload');
     var request = http.MultipartRequest('POST', url);
 
     request.headers.addAll({
