@@ -163,7 +163,7 @@ export const getStats = async (req, res) => {
                 (SELECT COUNT(*) FROM users WHERE entreprise_id = $1) as nombre_utilisateurs,
                 (SELECT COUNT(*) FROM armoires WHERE user_id IN (SELECT user_id FROM users WHERE entreprise_id = $1)) as nombre_armoires,
                 (SELECT COUNT(*) FROM fichiers WHERE dossier_id IN (
-                    SELECT dossier_id FROM dossiers WHERE casier_id IN (
+                    SELECT dossier_id FROM dossiers WHERE cassier_id IN (
                         SELECT cassier_id FROM casiers WHERE armoire_id IN (
                             SELECT armoire_id FROM armoires WHERE user_id IN (
                                 SELECT user_id FROM users WHERE entreprise_id = $1
