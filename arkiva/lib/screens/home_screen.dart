@@ -18,6 +18,9 @@ import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/tag_service.dart';
 import 'dart:html' as html;
 import 'package:arkiva/screens/fichier_view_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:arkiva/config/api_config.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +31,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _quickSearchController = TextEditingController();
+  final TextEditingController _armoireController = TextEditingController();
+  final TextEditingController _casierController = TextEditingController();
+  final TextEditingController _dossierController = TextEditingController();
   final SearchService _searchService = SearchService();
   final TagService _tagService = TagService();
   bool _isSearching = false;
@@ -35,14 +41,42 @@ class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> _allTags = [];
   DateTimeRange? _selectedDateRange;
   Map<String, dynamic>? _selectedTag;
-  Map<String, dynamic>? _selectedArmoire;
-  Map<String, dynamic>? _selectedCasier;
-  Map<String, dynamic>? _selectedDossier;
+
+  // Dropdown dépendants
+  List<dynamic> _allArmoires = [];
+  List<dynamic> _allCasiers = [];
+  List<dynamic> _allDossiers = [];
+  String? _selectedArmoire;
+  String? _selectedCasier;
+  String? _selectedDossier;
+
+  // Ajout des listes pour la sélection multiple
+  List<String> _selectedArmoiresMulti = [];
+  List<String> _selectedCasiersMulti = [];
+  List<String> _selectedDossiersMulti = [];
+
+  // Ajout des variables d'état pour les filtres principaux
+  bool _filterArmoires = true;
+  bool _filterCasiers = true;
+  bool _filterDossiers = true;
+  bool _filterFichiers = true;
 
   @override
   void initState() {
     super.initState();
     _loadTags();
+    _loadArmoires();
+    _loadAllCasiers();
+    _loadAllDossiers();
+  }
+
+  @override
+  void dispose() {
+    _quickSearchController.dispose();
+    _armoireController.dispose();
+    _casierController.dispose();
+    _dossierController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTags() async {
@@ -61,6 +95,131 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadArmoires() async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/api/armoire/$entrepriseId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          setState(() {
+            _allArmoires = data;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur chargement armoires: $e');
+    }
+  }
+
+  Future<void> _loadCasiers(String armoireId) async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/api/casier/$armoireId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          setState(() {
+            _allCasiers = data;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur chargement casiers: $e');
+    }
+  }
+
+  Future<void> _loadDossiers(String casierId) async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          setState(() {
+            _allDossiers = data;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur chargement dossiers: $e');
+    }
+  }
+
+  Future<void> _loadAllCasiers() async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/api/casier/all/$entrepriseId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          setState(() {
+            _allCasiers = data;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur chargement tous les casiers: $e');
+    }
+  }
+
+  Future<void> _loadAllDossiers() async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      final entrepriseId = authState.entrepriseId;
+      if (token != null && entrepriseId != null) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/api/dosier/all/$entrepriseId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          setState(() {
+            _allDossiers = data;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur chargement tous les dossiers: $e');
+    }
+  }
+
   Future<void> _performQuickSearch() async {
     setState(() { _isSearching = true; });
     final authState = context.read<AuthStateService>();
@@ -69,60 +228,88 @@ class _HomeScreenState extends State<HomeScreen> {
     if (token == null || entrepriseId == null) return;
     try {
       List<dynamic> results = [];
-      
-      // 1. Recherche par tag (priorité 1)
-      if (_selectedTag != null && _selectedTag!['tag_id'] != null) {
-        print('DEBUG: Recherche rapide par tag sélectionné: $_selectedTag');
-        print('DEBUG: tag_id = ${_selectedTag!['tag_id']}');
-        results = await _searchService.getFilesByTag(token, _selectedTag!['tag_id'], entrepriseId);
-        print('DEBUG: Résultats de la recherche rapide par tag reçus: ${results.length} éléments');
+      // Déterminer les filtres cochés dans l'ordre
+      final List<String> filtres = [];
+      if (_filterArmoires) filtres.add('armoire');
+      if (_filterCasiers) filtres.add('casier');
+      if (_filterDossiers) filtres.add('dossier');
+      if (_filterFichiers) filtres.add('nom');
+      final input = _quickSearchController.text.trim();
+      final parts = input.split(RegExp(r'[ ,;]+'));
+      if (parts.length < filtres.length) {
+        setState(() { _isSearching = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Merci de saisir un nom pour chaque filtre sélectionné.')),
+        );
+        return;
       }
-      // 2. Recherche par date (priorité 2)
-      else if (_selectedDateRange != null) {
-        final debut = _selectedDateRange!.start.toIso8601String().substring(0, 10);
-        final fin = _selectedDateRange!.end.toIso8601String().substring(0, 10);
-        results = await _searchService.searchByDate(token, debut, fin, entrepriseId);
+      // Construire les paramètres pour l'API
+      Map<String, String?> params = {};
+      for (int i = 0; i < filtres.length; i++) {
+        params[filtres[i]] = parts[i];
       }
-      // 3. Recherche par texte (OCR ou nom) - priorité 3
-      else if (_quickSearchController.text.isNotEmpty) {
-        print('DEBUG: Recherche rapide par texte: "${_quickSearchController.text}"');
-        // D'abord essayer la recherche OCR
-        try {
-          results = await _searchService.searchByOcr(token, _quickSearchController.text, entrepriseId);
-          print('DEBUG: Résultats de la recherche OCR: ${results.length} éléments');
-        } catch (e) {
-          print('DEBUG: Erreur recherche OCR, essai recherche flexible: $e');
-          // Si OCR échoue, essayer la recherche flexible
-          results = await _searchService.searchFlexible(
-            token,
-            entrepriseId,
-            armoire: _selectedArmoire?['nom'],
-            casier: _selectedCasier?['nom'],
-            dossier: _selectedDossier?['nom'],
-            nom: _quickSearchController.text,
-          );
-          print('DEBUG: Résultats de la recherche flexible: ${results.length} éléments');
-        }
-      }
-      
-      print('DEBUG: Avant setState - results.length = ${results.length}');
-      print('DEBUG: Premier résultat (si existe): ${results.isNotEmpty ? results.first : "Aucun"}');
-      
+      params['entreprise_id'] = entrepriseId.toString();
+      // Appel API
+      results = await _searchService.searchFlexible(
+        token,
+        entrepriseId,
+        armoire: params['armoire'],
+        casier: params['casier'],
+        dossier: params['dossier'],
+        nom: params['nom'],
+      );
       setState(() {
         _quickResults = results;
         _isSearching = false;
       });
-      
-      print('DEBUG: Après setState - _quickResults.length = ${_quickResults.length}');
-      
-      _showQuickResultsDialog();
     } catch (e) {
-      print('DEBUG: Erreur lors de la recherche rapide: $e');
       setState(() { _isSearching = false; });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors de la recherche : $e')),
       );
     }
+  }
+
+  Widget _buildQuickResultsList() {
+    if (_isSearching) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_quickResults.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: Text('Aucun document trouvé', style: TextStyle(fontSize: 16))),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: _quickResults.length,
+      itemBuilder: (context, index) {
+        final doc = _quickResults[index];
+        final nomAffiche = doc['originalfilename'] ?? doc['nom'] ?? 'Document';
+        final cheminAffiche = doc['chemin'] ??
+          [doc['armoire_nom'] ?? doc['armoire'], doc['casier_nom'] ?? doc['casier'], doc['dossier_nom'] ?? doc['dossier']]
+            .where((e) => e != null && e.toString().isNotEmpty).join(' > ');
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+          child: ListTile(
+            leading: const Icon(Icons.description),
+            title: Text(nomAffiche),
+            subtitle: Text(cheminAffiche),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => FichierViewScreen(doc: doc),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   void _showQuickResultsDialog() {
@@ -172,143 +359,338 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showQuickSearchFilters() {
+  void _showMultiSelectFilters() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateSB) => SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 24, right: 24, top: 24,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('Filtres de recherche rapide', 
-                  textAlign: TextAlign.center, 
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)
-                ),
-                const SizedBox(height: 20),
-                
-                // Sélection de tag
-                DropdownButtonFormField<dynamic>(
-                  value: _selectedTag,
-                  items: _allTags.map<DropdownMenuItem<dynamic>>((tag) => DropdownMenuItem(
-                    value: tag,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: _parseTagColor(tag['color']),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(tag['name']),
-                      ],
-                    ),
-                  )).toList(),
-                  onChanged: (value) => setState(() => _selectedTag = value),
-                  decoration: const InputDecoration(
-                    labelText: 'Tag',
-                    prefixIcon: Icon(Icons.label),
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSB) => Center(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: 420,
+                minWidth: 320,
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              margin: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 24,
+                    offset: Offset(0, 8),
                   ),
-                  isExpanded: true,
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Sélection de date
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Filtres multi-sélection',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.blueGrey)),
+                      IconButton(
+                        icon: Icon(Icons.close, color: Colors.grey[600]),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Section Rechercher par
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        const Text('Rechercher par :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Row(
                           children: [
-                            Icon(Icons.date_range),
-                            SizedBox(width: 8),
-                            Text('Période de création', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Checkbox(
+                              value: _filterArmoires,
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  _filterArmoires = v!;
+                                  _updateTousSB();
+                                });
+                              },
+                            ),
+                            const Text('Armoires'),
+                            Checkbox(
+                              value: _filterCasiers,
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  _filterCasiers = v!;
+                                  _updateTousSB();
+                                });
+                              },
+                            ),
+                            const Text('Casiers'),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _selectedDateRange == null 
-                            ? 'Non sélectionnée' 
-                            : 'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
-                          style: TextStyle(
-                            color: _selectedDateRange == null ? Colors.grey : null,
-                          ),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _filterDossiers,
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  _filterDossiers = v!;
+                                  _updateTousSB();
+                                });
+                              },
+                            ),
+                            const Text('Dossiers'),
+                            Checkbox(
+                              value: _filterFichiers,
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  _filterFichiers = v!;
+                                  _updateTousSB();
+                                });
+                              },
+                            ),
+                            const Text('Fichiers'),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDateRangePicker(
-                              context: context,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                              helpText: 'Sélectionner une période',
-                              cancelText: 'Annuler',
-                              confirmText: 'OK',
-                              saveText: 'Enregistrer',
-                              errorFormatText: 'Format invalide',
-                              errorInvalidText: 'Date invalide',
-                              errorInvalidRangeText: 'Plage de dates invalide',
-                              fieldStartHintText: 'Début',
-                              fieldEndHintText: 'Fin',
-                              fieldStartLabelText: 'Date de début',
-                              fieldEndLabelText: 'Date de fin',
-                            );
-                            if (picked != null) setState(() => _selectedDateRange = picked);
-                          },
-                          icon: const Icon(Icons.calendar_today),
-                          label: Text(_selectedDateRange == null ? 'Sélectionner une période' : 'Modifier la période'),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _filterArmoires && _filterCasiers && _filterDossiers && _filterFichiers,
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  _filterArmoires = v!;
+                                  _filterCasiers = v;
+                                  _filterDossiers = v;
+                                  _filterFichiers = v;
+                                });
+                              },
+                            ),
+                            const Text('Tous', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _selectedTag = null;
-                          _selectedDateRange = null;
-                        });
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réinitialiser'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _quickSearchController,
+                    decoration: InputDecoration(
+                      labelText: 'Nom du fichier ou mot-clé',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _performQuickSearch();
-                      },
-                      icon: const Icon(Icons.search),
-                      label: const Text('Rechercher'),
+                  ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_filterArmoires) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Armoires', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[900])),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _selectedArmoiresMulti.length == _allArmoires.length && _allArmoires.isNotEmpty,
+                                      onChanged: (v) {
+                                        setStateSB(() {
+                                          if (v == true) {
+                                            _selectedArmoiresMulti = _allArmoires.map<String>((a) => a['armoire_id'].toString()).toList();
+                                          } else {
+                                            _selectedArmoiresMulti.clear();
+                                          }
+                                        });
+                                      },
+                                      activeColor: Colors.blue[700],
+                                    ),
+                                    Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            ..._allArmoires.map<Widget>((armoire) => CheckboxListTile(
+                              value: _selectedArmoiresMulti.contains(armoire['armoire_id'].toString()),
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  if (v == true) {
+                                    _selectedArmoiresMulti.add(armoire['armoire_id'].toString());
+                                  } else {
+                                    _selectedArmoiresMulti.remove(armoire['armoire_id'].toString());
+                                  }
+                                });
+                              },
+                              title: Text(armoire['nom']),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: Colors.blue[700],
+                              dense: true,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            )),
+                            const SizedBox(height: 14),
+                          ],
+                          if (_filterCasiers) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Casiers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[900])),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _selectedCasiersMulti.length == _allCasiers.length && _allCasiers.isNotEmpty,
+                                      onChanged: (v) {
+                                        setStateSB(() {
+                                          if (v == true) {
+                                            _selectedCasiersMulti = _allCasiers.map<String>((c) => c['cassier_id'].toString()).toList();
+                                          } else {
+                                            _selectedCasiersMulti.clear();
+                                          }
+                                        });
+                                      },
+                                      activeColor: Colors.blue[700],
+                                    ),
+                                    Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            ..._allCasiers.map<Widget>((casier) => CheckboxListTile(
+                              value: _selectedCasiersMulti.contains(casier['cassier_id'].toString()),
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  if (v == true) {
+                                    _selectedCasiersMulti.add(casier['cassier_id'].toString());
+                                  } else {
+                                    _selectedCasiersMulti.remove(casier['cassier_id'].toString());
+                                  }
+                                });
+                              },
+                              title: Text(casier['nom']),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: Colors.blue[700],
+                              dense: true,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            )),
+                            const SizedBox(height: 14),
+                          ],
+                          if (_filterDossiers) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Dossiers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[900])),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _selectedDossiersMulti.length == _allDossiers.length && _allDossiers.isNotEmpty,
+                                      onChanged: (v) {
+                                        setStateSB(() {
+                                          if (v == true) {
+                                            _selectedDossiersMulti = _allDossiers.map<String>((d) => d['dossier_id'].toString()).toList();
+                                          } else {
+                                            _selectedDossiersMulti.clear();
+                                          }
+                                        });
+                                      },
+                                      activeColor: Colors.blue[700],
+                                    ),
+                                    Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            ..._allDossiers.map<Widget>((dossier) => CheckboxListTile(
+                              value: _selectedDossiersMulti.contains(dossier['dossier_id'].toString()),
+                              onChanged: (v) {
+                                setStateSB(() {
+                                  if (v == true) {
+                                    _selectedDossiersMulti.add(dossier['dossier_id'].toString());
+                                  } else {
+                                    _selectedDossiersMulti.remove(dossier['dossier_id'].toString());
+                                  }
+                                });
+                              },
+                              title: Text(dossier['nom']),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: Colors.blue[700],
+                              dense: true,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            )),
+                            const SizedBox(height: 14),
+                          ],
+                          // Fichiers : rien à afficher, c'est juste le champ texte
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _performQuickSearch();
+                            setState(() {});
+                          },
+                          icon: Icon(Icons.check),
+                          label: Text('Valider'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue[600],
+                            foregroundColor: Colors.white,
+                            minimumSize: Size(0, 48),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          setStateSB(() {
+                            _selectedArmoiresMulti.clear();
+                            _selectedCasiersMulti.clear();
+                            _selectedDossiersMulti.clear();
+                            _quickSearchController.clear();
+                            _filterArmoires = true;
+                            _filterCasiers = true;
+                            _filterDossiers = true;
+                            _filterFichiers = true;
+                          });
+                        },
+                        child: Text('Réinitialiser'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[200],
+                          foregroundColor: Colors.blueGrey,
+                          minimumSize: Size(0, 48),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  // Fonction utilitaire pour gérer la logique de la case Tous
+  void _updateTousSB() {
+    // Cette fonction est appelée à chaque changement d'une case individuelle
+    // Elle met à jour la case "Tous" automatiquement si besoin
+    // (rien à faire ici car la case "Tous" dépend directement des autres)
   }
 
   Color _parseTagColor(String? colorString) {
@@ -525,88 +907,40 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   SizedBox(height: 16),
-
+                  TextField(
+                    controller: _quickSearchController,
+                    decoration: InputDecoration(
+                      hintText: 'Nom du fichier ou mot-clé',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onSubmitted: (text) => _performQuickSearch(),
+                  ),
+                  SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _quickSearchController,
-                          decoration: InputDecoration(
-                            hintText: '🔍 Rechercher un document, un dossier ou un mot-clé...',
-                            hintStyle: TextStyle(color: Colors.grey[600]),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.0),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                            prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-                          ),
-                          onSubmitted: (text) => _performQuickSearch(),
+                      ElevatedButton.icon(
+                        onPressed: _showMultiSelectFilters,
+                        icon: Icon(Icons.filter_list),
+                        label: Text('Filtrer'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[100],
+                          foregroundColor: Colors.blue[900],
                         ),
                       ),
-                      SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: _showQuickSearchFilters,
-                        child: Icon(Icons.filter_alt),
+                      SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        onPressed: _performQuickSearch,
+                        icon: Icon(Icons.search),
+                        label: Text('Rechercher'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[600],
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                  
-                  // Affichage des filtres sélectionnés
-                  if (_selectedTag != null || _selectedDateRange != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Filtres actifs:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              if (_selectedTag != null)
-                                Chip(
-                                  avatar: Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: _parseTagColor(_selectedTag!['color']),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  label: Text('Tag: ${_selectedTag!['name']}'),
-                                  onDeleted: () => setState(() => _selectedTag = null),
-                                ),
-                              if (_selectedDateRange != null)
-                                Chip(
-                                  avatar: Icon(Icons.date_range, size: 16),
-                                  label: Text('Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}'),
-                                  onDeleted: () => setState(() => _selectedDateRange = null),
-                                ),
-                            ],
-                          ),
-                          SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: _performQuickSearch,
-                            icon: Icon(Icons.search),
-                            label: Text('Lancer la recherche'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[600],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // Affichage des résultats sous la barre de recherche
+                  _buildQuickResultsList(),
                 ],
               ),
             ),

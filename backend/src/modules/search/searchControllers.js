@@ -91,17 +91,17 @@ export const searchFichiersByFlexibleLocation = async (req, res) => {
     let index = 1;
 
     if (armoire) {
-      conditions.push(`armoires.nom = $${index++}`);
+      conditions.push(`armoires.nom ILIKE $${index++}`);
       values.push(armoire);
     }
 
     if (casier) {
-      conditions.push(`casiers.nom = $${index++}`);
+      conditions.push(`casiers.nom ILIKE $${index++}`);
       values.push(casier);
     }
 
     if (dossier) {
-      conditions.push(`dossiers.nom = $${index++}`);
+      conditions.push(`dossiers.nom ILIKE $${index++}`);
       values.push(dossier);
     }
 

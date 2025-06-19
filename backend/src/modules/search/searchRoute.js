@@ -17,7 +17,4 @@ router.get('/seachbyname', searchFichiersByFlexibleLocation);
 
 
 
-
-
-
 export default router;
