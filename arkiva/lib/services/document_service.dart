@@ -76,7 +76,7 @@ class DocumentService {
         'Content-Type': 'application/json',
       },
       body: json.encode({
-        'nouveauNom': nom,
+        'nouveauoriginalfilename': nom,
         'description': description,
       }),
     );
