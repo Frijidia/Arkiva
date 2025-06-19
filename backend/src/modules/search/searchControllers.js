@@ -6,23 +6,30 @@ import pool from '../../config/database.js';
  */
 
 export async function getFilesByTag(req, res) {
-  const { tag_id} = req.params;
+  const { tag_id } = req.params;
+  const { entreprise_id } = req.query;
 
   try {
+    console.log('Recherche fichiers par tag_id:', tag_id, 'et entreprise_id:', entreprise_id);
     const query = `
-     SELECT fichiers.*, tags.name AS tag_nom
+     SELECT fichiers.*, tags.name AS tag_nom, armoires.nom AS armoire, casiers.nom AS casier, dossiers.nom AS dossier
         FROM fichiers
         JOIN fichier_tags ON fichiers.fichier_id = fichier_tags.fichier_id
         JOIN tags ON fichier_tags.tag_id = tags.tag_id
+        JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
+        JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
+        JOIN armoires ON casiers.armoire_id = armoires.armoire_id
         WHERE fichier_tags.tag_id = $1
+          AND armoires.entreprise_id = $2
         ORDER BY fichiers.nom;
     `;
-    const result = await pool.query(query, [tag_id]);
+    const result = await pool.query(query, [tag_id, entreprise_id]);
+    console.log('Résultats trouvés:', result.rows.length);
     res.json(result.rows);
   } catch (error) {
     console.error('Erreur lors de la récupération des fichiers par tag :', error);
     res.status(500).json({
-      error: 'Erreur serveur lors de la récupération des fichiers', details: error.message  // Ajout du détail de l'erreur ici
+      error: 'Erreur serveur lors de la récupération des fichiers', details: error.message
     });
   }
 }
@@ -34,9 +41,10 @@ export async function getFilesByTag(req, res) {
 
 export const searchFichiersByOcrContent = async (req, res) => {
   const { searchTerm } = req.params;
+  const { entreprise_id } = req.query;
 
-  if (!searchTerm) {
-    return res.status(400).json({ error: "Le paramètre 'searchTerm' est obligatoire." });
+  if (!searchTerm || !entreprise_id) {
+    return res.status(400).json({ error: "Le paramètre 'searchTerm' et 'entreprise_id' sont obligatoires." });
   }
 
   try {
@@ -50,11 +58,11 @@ export const searchFichiersByOcrContent = async (req, res) => {
       JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
       JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
       JOIN armoires ON casiers.armoire_id = armoires.armoire_id 
-      WHERE fichiers.nom ILIKE '%' || $1 || '%' OR fichiers.contenu_ocr ILIKE '%' || $1 || '%'
-
+      WHERE (fichiers.nom ILIKE '%' || $1 || '%' OR fichiers.contenu_ocr ILIKE '%' || $1 || '%')
+        AND armoires.entreprise_id = $2
     `;
 
-    const { rows } = await pool.query(query, [searchTerm]);
+    const { rows } = await pool.query(query, [searchTerm, entreprise_id]);
 
     // Ajouter chemin de localisation dans chaque fichier
     const fichiersAvecChemin = rows.map(row => ({
@@ -75,7 +83,7 @@ export const searchFichiersByOcrContent = async (req, res) => {
  * 3. recuperer les fichiers par nom des element
  */
 export const searchFichiersByFlexibleLocation = async (req, res) => {
-  const { armoire, casier, dossier, nom } = req.query;
+  const { armoire, casier, dossier, nom, entreprise_id } = req.query;
 
   try {
     let conditions = [];
@@ -101,6 +109,10 @@ export const searchFichiersByFlexibleLocation = async (req, res) => {
       conditions.push(`fichiers.nom ILIKE $${index++}`);
       values.push(`%${nom}%`); // recherche partielle
     }
+
+    // Toujours filtrer sur l'entreprise
+    conditions.push(`armoires.entreprise_id = $${index++}`);
+    values.push(entreprise_id);
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : '';
 
@@ -145,16 +157,22 @@ export const searchFichiersByFlexibleLocation = async (req, res) => {
 */
 
 export const getFichiersByDate = async (req, res) => {
-  const { debut, fin } = req.query;
-  if (!debut || !fin) {
-    return res.status(400).json({ error: "Les dates 'debut' et 'fin' sont obligatoires." });
+  const { debut, fin, entreprise_id } = req.query;
+  if (!debut || !fin || !entreprise_id) {
+    return res.status(400).json({ error: "Les dates 'debut', 'fin' et 'entreprise_id' sont obligatoires." });
   }
 
   try {
-    const result = await pool.query(`
-      SELECT * FROM fichiers WHERE created_at BETWEEN $1 AND $2
-    `, [debut, fin]);
-
+    const query = `
+      SELECT fichiers.*, armoires.nom AS armoire, casiers.nom AS casier, dossiers.nom AS dossier
+      FROM fichiers
+      JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
+      JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
+      JOIN armoires ON casiers.armoire_id = armoires.armoire_id
+      WHERE fichiers.created_at BETWEEN $1 AND $2
+        AND armoires.entreprise_id = $3
+    `;
+    const result = await pool.query(query, [debut, fin, entreprise_id]);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('Erreur filtre date :', error);

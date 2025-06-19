@@ -987,18 +987,23 @@ class _FichiersScreenState extends State<FichiersScreen> {
     setState(() => _isLoading = true);
     final authState = context.read<AuthStateService>();
     final token = authState.token;
-    if (token == null) return;
+    final entrepriseId = authState.entrepriseId;
+    if (token == null || entrepriseId == null) return;
     try {
       List<dynamic> results = [];
       if (_selectedTag != null) {
-        results = await _searchService.getFilesByTag(token, _selectedTag['tag_id']);
+        print('DEBUG: Recherche par tag sélectionné: $_selectedTag');
+        print('DEBUG: tag_id = ${_selectedTag['tag_id']}');
+        results = await _searchService.getFilesByTag(token, _selectedTag['tag_id'], entrepriseId);
+        print('DEBUG: Résultats de la recherche par tag reçus: ${results.length} éléments');
       } else if (_selectedDateRange != null) {
         final debut = _selectedDateRange!.start.toIso8601String().substring(0, 10);
         final fin = _selectedDateRange!.end.toIso8601String().substring(0, 10);
-        results = await _searchService.searchByDate(token, debut, fin);
+        results = await _searchService.searchByDate(token, debut, fin, entrepriseId);
       } else if (_selectedArmoire != null || _selectedCasier != null || _selectedDossier != null) {
         results = await _searchService.searchFlexible(
           token,
+          entrepriseId,
           armoire: _selectedArmoire,
           casier: _selectedCasier,
           dossier: _selectedDossier,
@@ -1007,8 +1012,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
       } else if (_searchController.text.isNotEmpty) {
         // Recherche OCR uniquement si aucun filtre avancé n'est actif
         print('DEBUG: Déclenchement de la recherche OCR pour: "${_searchController.text}"');
-        results = await _searchService.searchByOcr(token, _searchController.text);
+        results = await _searchService.searchByOcr(token, _searchController.text, entrepriseId);
       }
+      
+      print('DEBUG: Avant setState - results.length = ${results.length}');
+      print('DEBUG: Premier résultat (si existe): ${results.isNotEmpty ? results.first : "Aucun"}');
       
       // Mettre à jour _searchQuery pour que _filteredDocuments fonctionne correctement
       setState(() {
@@ -1024,6 +1032,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       print('DEBUG: _filteredDocuments.length = ${_filteredDocuments.length}');
       
     } catch (e) {
+      print('DEBUG: Erreur lors de la recherche: $e');
       setState(() => _isLoading = false);
       _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Erreur lors de la recherche: $e')),
