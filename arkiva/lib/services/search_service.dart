@@ -20,13 +20,24 @@ class SearchService {
 
   // Recherche par contenu OCR ou nom
   Future<List<dynamic>> searchByOcr(String token, String searchTerm) async {
+    print('DEBUG: Appel searchByOcr avec searchTerm: "$searchTerm"');
+    final url = '$baseUrl/api/search/$searchTerm/ocr';
+    print('DEBUG: URL de recherche OCR: $url');
+    
     final response = await http.get(
-      Uri.parse('$baseUrl/api/search/$searchTerm/ocr'),
+      Uri.parse(url),
       headers: {'Authorization': 'Bearer $token'},
     );
+    
+    print('DEBUG: Status code de la réponse OCR: ${response.statusCode}');
+    print('DEBUG: Corps de la réponse OCR: ${response.body}');
+    
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final results = json.decode(response.body);
+      print('DEBUG: Résultats OCR décodés: $results');
+      return results;
     } else {
+      print('DEBUG: Erreur lors de la recherche OCR: ${response.statusCode} - ${response.body}');
       throw Exception('Erreur lors de la recherche OCR');
     }
   }

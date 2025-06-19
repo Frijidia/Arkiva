@@ -1,4 +1,3 @@
-
 import pool from '../../config/database.js';
 
 
@@ -108,11 +107,11 @@ export const searchFichiersByFlexibleLocation = async (req, res) => {
     const query = `
       SELECT fichiers.*, 
         armoires.nom AS armoire_nom,
-        cassiers.nom AS casier_nom,
+        casiers.nom AS casier_nom,
         dossiers.nom AS dossier_nom
       FROM fichiers
       JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
-      JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+      JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
       JOIN armoires ON casiers.armoire_id = armoires.armoire_id 
       ${whereClause}
     `;

@@ -499,8 +499,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
       return _documents;
     }
     return _documents.where((doc) {
-      return doc.nom.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (doc.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+      final query = _searchQuery.toLowerCase();
+      return doc.nom.toLowerCase().contains(query) ||
+          (doc.description?.toLowerCase().contains(query) ?? false) ||
+          (doc.contenuOcr?.toLowerCase().contains(query) ?? false) ||
+          doc.tags.any((tag) => (tag['name'] ?? '').toLowerCase().contains(query));
     }).toList();
   }
 
@@ -669,8 +672,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
         final lower = query.toLowerCase();
         final inNom = doc.nom.toLowerCase().contains(lower);
         final inDesc = (doc.description ?? '').toLowerCase().contains(lower);
+        final inOcr = (doc.contenuOcr ?? '').toLowerCase().contains(lower);
         final inTags = doc.tags.any((tag) => (tag['name'] ?? '').toLowerCase().contains(lower));
-        return inNom || inDesc || inTags;
+        return inNom || inDesc || inOcr || inTags;
       }).toList();
     });
   }
@@ -975,6 +979,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
   }
 
   Future<void> _performSearchRechercheService() async {
+    // Ne faire la recherche serveur que s'il y a du texte
+    if (_searchController.text.isEmpty) {
+      return;
+    }
+    
     setState(() => _isLoading = true);
     final authState = context.read<AuthStateService>();
     final token = authState.token;
@@ -987,7 +996,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         final debut = _selectedDateRange!.start.toIso8601String().substring(0, 10);
         final fin = _selectedDateRange!.end.toIso8601String().substring(0, 10);
         results = await _searchService.searchByDate(token, debut, fin);
-      } else if (_selectedArmoire != null || _selectedCasier != null || _selectedDossier != null || _searchController.text.isNotEmpty) {
+      } else if (_selectedArmoire != null || _selectedCasier != null || _selectedDossier != null) {
         results = await _searchService.searchFlexible(
           token,
           armoire: _selectedArmoire,
@@ -996,12 +1005,24 @@ class _FichiersScreenState extends State<FichiersScreen> {
           nom: _searchController.text.isNotEmpty ? _searchController.text : null,
         );
       } else if (_searchController.text.isNotEmpty) {
+        // Recherche OCR uniquement si aucun filtre avancé n'est actif
+        print('DEBUG: Déclenchement de la recherche OCR pour: "${_searchController.text}"');
         results = await _searchService.searchByOcr(token, _searchController.text);
       }
+      
+      // Mettre à jour _searchQuery pour que _filteredDocuments fonctionne correctement
       setState(() {
+        _searchQuery = _searchController.text;
         _documents = results.map((json) => Document.fromJson(json)).toList();
         _isLoading = false;
       });
+      
+      // Debug: afficher le nombre de résultats
+      print('DEBUG: Recherche terminée avec ${results.length} résultats');
+      print('DEBUG: _searchQuery = "$_searchQuery"');
+      print('DEBUG: _documents.length = ${_documents.length}');
+      print('DEBUG: _filteredDocuments.length = ${_filteredDocuments.length}');
+      
     } catch (e) {
       setState(() => _isLoading = false);
       _scaffoldMessengerKey.currentState?.showSnackBar(
@@ -1148,7 +1169,19 @@ class _FichiersScreenState extends State<FichiersScreen> {
                             )
                           : null,
                       ),
-                      onChanged: _searchLocal,
+                      onChanged: (value) {
+                        // Si on tape dans la barre, faire une recherche locale
+                        if (value.isEmpty) {
+                          // Si la barre est vide, recharger tous les documents
+                          setState(() {
+                            _searchQuery = '';
+                            _documents = _allDocuments;
+                          });
+                        } else {
+                          // Sinon, faire une recherche locale
+                          _searchLocal(value);
+                        }
+                      },
                       onSubmitted: (value) => _performSearchRechercheService(),
                     ),
                   ),
@@ -1200,6 +1233,10 @@ class _FichiersScreenState extends State<FichiersScreen> {
                         itemCount: _filteredDocuments.length,
                         itemBuilder: (context, index) {
                           final document = _filteredDocuments[index];
+                          // Debug: afficher les informations du document
+                          print('DEBUG: Affichage document ${index + 1}/${_filteredDocuments.length}: ${document.nom}');
+                          print('DEBUG: contenuOcr = "${document.contenuOcr}"');
+                          
                           return Card(
                             child: ListTile(
                               leading: const Icon(Icons.description),
@@ -1209,6 +1246,23 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                 children: [
                                   if (document.description != null && document.description!.isNotEmpty)
                                     Text(document.description!),
+                                  if (document.contenuOcr != null && document.contenuOcr!.isNotEmpty)
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 4.0),
+                                      padding: const EdgeInsets.all(8.0),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4.0),
+                                      ),
+                                      child: Text(
+                                        'OCR: ${document.contenuOcr!.length > 100 ? '${document.contenuOcr!.substring(0, 100)}...' : document.contenuOcr!}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ),
                                   if (document.tags.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0),

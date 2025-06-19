@@ -48,6 +48,9 @@ class Document {
   }
 
   factory Document.fromJson(Map<String, dynamic> json) {
+    print('Document JSON reçu: $json'); // DEBUG
+    final contenuOcr = json['contenu_ocr'] as String? ?? json['contenuOcr'] as String?;
+    print('DEBUG: contenuOcr = "$contenuOcr"'); // DEBUG
     return Document(
       id: json['fichier_id'].toString(),
       nom: json['nom'] as String,
@@ -60,7 +63,7 @@ class Document {
       dateAjout: DateTime.parse(json['created_at'] as String),
       tags: (json['tags'] as List?)?.map((t) => Map<String, dynamic>.from(t)).toList() ?? [],
       estChiffre: json['est_chiffre'] as bool? ?? false,
-      contenuOcr: json['contenu_ocr'] as String?,
+      contenuOcr: contenuOcr,
       nomOriginal: json['originalfilename'] as String?,
     );
   }
