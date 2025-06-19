@@ -1326,78 +1326,78 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     },
                                   ),
                                   PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      switch (value) {
-                                        case 'telecharger':
-                                          _telechargerDocument(document);
-                                          break;
-                                        case 'modifier':
-                                          _modifierDocument(document);
-                                          break;
-                                        case 'supprimer':
-                                          _supprimerDocument(document);
-                                          break;
-                                        case 'assigner_tag':
-                                          _assignTagToFile(document);
-                                          break;
+                                onSelected: (value) {
+                                  switch (value) {
+                                    case 'telecharger':
+                                      _telechargerDocument(document);
+                                      break;
+                                    case 'modifier':
+                                      _modifierDocument(document);
+                                      break;
+                                    case 'supprimer':
+                                      _supprimerDocument(document);
+                                      break;
+                                    case 'assigner_tag':
+                                      _assignTagToFile(document);
+                                      break;
                                         case 'favoris':
                                           _toggleFavori(document);
                                           break;
                                         case 'ouvrir_nouvel_onglet':
                                           _ouvrirDansNouvelOnglet(document);
                                           break;
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
                                         value: 'telecharger',
-                                        child: Row(
-                                          children: [
+                                    child: Row(
+                                      children: [
                                             Icon(Icons.download),
-                                            SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                             Text('Télécharger'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
                                         value: 'modifier',
-                                        child: Row(
-                                          children: [
+                                    child: Row(
+                                      children: [
                                             Icon(Icons.edit),
-                                            SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                             Text('Renommer'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
                                         value: 'ouvrir_nouvel_onglet',
-                                        child: Row(
-                                          children: [
+                                    child: Row(
+                                      children: [
                                             Icon(Icons.open_in_new),
-                                            SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                             Text('Ouvrir dans un nouvel onglet'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
                                         value: 'favoris',
-                                        child: Row(
-                                          children: [
+                                    child: Row(
+                                      children: [
                                             Icon(Icons.favorite_border),
-                                            SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                             Text('Ajouter/Retirer des favoris'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'assigner_tag',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.label, color: Colors.blue),
-                                            SizedBox(width: 8),
-                                            Text('Assigner un tag'),
-                                          ],
-                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'assigner_tag',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.label, color: Colors.blue),
+                                        SizedBox(width: 8),
+                                        Text('Assigner un tag'),
+                                      ],
+                                    ),
                                       ),
                                       const PopupMenuItem(
                                         value: 'supprimer',

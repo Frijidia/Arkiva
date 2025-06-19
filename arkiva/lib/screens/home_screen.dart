@@ -243,21 +243,42 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         return;
       }
-      // Construire les paramètres pour l'API
-      Map<String, String?> params = {};
-      for (int i = 0; i < filtres.length; i++) {
-        params[filtres[i]] = parts[i];
+      // Gestion de la sélection multiple
+      Set<dynamic> allResults = {};
+      if (_selectedArmoiresMulti.isNotEmpty || _selectedCasiersMulti.isNotEmpty || _selectedDossiersMulti.isNotEmpty) {
+        // Pour chaque combinaison sélectionnée, faire une requête
+        for (var armoireNom in _selectedArmoiresMulti.isNotEmpty ? _selectedArmoiresMulti : [null]) {
+          for (var casierNom in _selectedCasiersMulti.isNotEmpty ? _selectedCasiersMulti : [null]) {
+            for (var dossierNom in _selectedDossiersMulti.isNotEmpty ? _selectedDossiersMulti : [null]) {
+              final res = await _searchService.searchFlexible(
+                token,
+                entrepriseId,
+                armoire: armoireNom,
+                casier: casierNom,
+                dossier: dossierNom,
+                nom: filtres.contains('nom') ? parts[filtres.indexOf('nom')] : null,
+              );
+              allResults.addAll(res);
+            }
+          }
+        }
+        results = allResults.toList();
+      } else {
+        // Cas classique : un seul filtre par champ
+        Map<String, String?> params = {};
+        for (int i = 0; i < filtres.length; i++) {
+          params[filtres[i]] = parts[i];
+        }
+        params['entreprise_id'] = entrepriseId.toString();
+        results = await _searchService.searchFlexible(
+          token,
+          entrepriseId,
+          armoire: params['armoire'],
+          casier: params['casier'],
+          dossier: params['dossier'],
+          nom: params['nom'],
+        );
       }
-      params['entreprise_id'] = entrepriseId.toString();
-      // Appel API
-      results = await _searchService.searchFlexible(
-        token,
-        entrepriseId,
-        armoire: params['armoire'],
-        casier: params['casier'],
-        dossier: params['dossier'],
-        nom: params['nom'],
-      );
       setState(() {
         _quickResults = results;
         _isSearching = false;
@@ -300,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: Text(nomAffiche),
             subtitle: Text(cheminAffiche),
             onTap: () {
-              Navigator.of(context).push(
+    Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => FichierViewScreen(doc: doc),
                 ),
@@ -507,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onChanged: (v) {
                                         setStateSB(() {
                                           if (v == true) {
-                                            _selectedArmoiresMulti = _allArmoires.map<String>((a) => a['armoire_id'].toString()).toList();
+                                            _selectedArmoiresMulti = _allArmoires.map<String>((a) => a['nom']).toList();
                                           } else {
                                             _selectedArmoiresMulti.clear();
                                           }
@@ -521,13 +542,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                             ..._allArmoires.map<Widget>((armoire) => CheckboxListTile(
-                              value: _selectedArmoiresMulti.contains(armoire['armoire_id'].toString()),
+                              value: _selectedArmoiresMulti.contains(armoire['nom']),
                               onChanged: (v) {
                                 setStateSB(() {
                                   if (v == true) {
-                                    _selectedArmoiresMulti.add(armoire['armoire_id'].toString());
+                                    _selectedArmoiresMulti.add(armoire['nom']);
                                   } else {
-                                    _selectedArmoiresMulti.remove(armoire['armoire_id'].toString());
+                                    _selectedArmoiresMulti.remove(armoire['nom']);
                                   }
                                 });
                               },
