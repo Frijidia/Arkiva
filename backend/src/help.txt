@@ -110,25 +110,25 @@ Tu dois concevoir un endpoint ou une logique côté desktop (à discuter avec le
 
         GET /sauvegardes → liste
 
-        POST /sauvegardes/:id/restaurer → restauration (admin uniquement)
+        ❌ POST /sauvegardes/:id/restaurer → restauration (admin uniquement)
 
-    Ne pas écraser les fichiers restaurés → créer nouvelle version
+    ❌ Ne pas écraser les fichiers restaurés → créer nouvelle version
 
-    Ajouter logs de restauration
+    ❌ Ajouter logs de restauration
 
 🟢 ÉTAPE 6 – Gestion des versions
 
-    Lorsqu’un fichier est restauré ou modifié :
+    ❌Lorsqu’un fichier est restauré ou modifié :
 
-        Archiver l’ancienne version
+    ❌    Archiver l’ancienne version
 
-        Créer une nouvelle version dans table versions_fichiers
+    ❌    Créer une nouvelle version dans table versions_fichiers
 
-    API :
+    ❌API :
 
-        GET /fichiers/:id/versions
+    ❌    GET /fichiers/:id/versions
 
-        POST /fichiers/:id/version
+    ❌    POST /fichiers/:id/version
 
 🟠 ÉTAPE 7 – Abonnement & paiement
 

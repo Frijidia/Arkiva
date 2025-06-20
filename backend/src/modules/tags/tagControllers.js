@@ -176,11 +176,6 @@ export async function addTagToFile(req, res) {
     }
 }
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 1d854bd24746493f69b0283bb9453fd4f3a80410
 /**
  * 4. enlever un tag a un fichier
  */
