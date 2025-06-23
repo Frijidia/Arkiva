@@ -25,5 +25,4 @@ router.get('/getinfofile/:fichier_id', getFichierById);
 
 
 
-
 export default router;

@@ -22,18 +22,55 @@ export const TARGET_TYPES = {
     FOLDER: 'folder',
     CASIER: 'casier',
     ARMOIRE: 'armoire',
-    ENTREPRISE: 'entreprise'
+    ENTREPRISE: 'entreprise',
+    VERSION: 'version'
 };
+
+// Script pour mettre à jour la structure de la table
+const updateJournalActiviteTable = `
+    DO $$
+    BEGIN
+        -- Vérifier si la colonne id_cible est de type INTEGER
+        IF EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_name = 'journal_activite' 
+            AND column_name = 'id_cible' 
+            AND data_type = 'integer'
+        ) THEN
+            -- Convertir la colonne en TEXT
+            ALTER TABLE journal_activite 
+            ALTER COLUMN id_cible TYPE TEXT;
+        END IF;
+    END $$;
+`;
+
+// Initialiser la structure de la table
+const initTable = async () => {
+    try {
+        await pool.query(updateJournalActiviteTable);
+        console.log('Structure de la table journal_activite mise à jour avec succès');
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour de la structure de la table:', error);
+        throw error;
+    }
+};
+
+// Exécuter l'initialisation
+initTable();
 
 // Enregistrer une action dans le journal
 export const logAction = async (userId, action, targetType, targetId, details = {}) => {
     try {
+        // Convertir l'ID en chaîne de caractères
+        const targetIdStr = targetId.toString();
+
         const result = await pool.query(
             `INSERT INTO journal_activite 
              (user_id, action, type_cible, id_cible, details) 
              VALUES ($1, $2, $3, $4, $5) 
              RETURNING *`,
-            [userId, action, targetType, targetId, details]
+            [userId, action, targetType, targetIdStr, details]
         );
         return result.rows[0];
     } catch (error) {
@@ -62,6 +99,9 @@ export const getUserLogs = async (userId, limit = 50, offset = 0) => {
 // Obtenir les logs d'une cible spécifique
 export const getTargetLogs = async (targetType, targetId, limit = 50, offset = 0) => {
     try {
+        // Convertir l'ID en chaîne de caractères
+        const targetIdStr = targetId.toString();
+
         const result = await pool.query(
             `SELECT ja.*, u.email as user_email, u.username 
              FROM journal_activite ja
@@ -69,7 +109,7 @@ export const getTargetLogs = async (targetType, targetId, limit = 50, offset = 0
              WHERE type_cible = $1 AND id_cible = $2 
              ORDER BY created_at DESC 
              LIMIT $3 OFFSET $4`,
-            [targetType, targetId, limit, offset]
+            [targetType, targetIdStr, limit, offset]
         );
         return result.rows;
     } catch (error) {

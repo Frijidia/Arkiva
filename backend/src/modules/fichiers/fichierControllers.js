@@ -124,7 +124,6 @@ export const getFichierById = async (req, res) => {
 };
 
 
-
 // generer un lien signé
 
 // async function genererLienSigne(chemin) {

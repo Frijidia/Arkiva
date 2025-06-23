@@ -1,99 +1,109 @@
 import db from '../../config/database.js';
-import restoreService from './restoreService.js';
 
 const createBackupsTableSQL = `
   DO $$
   BEGIN
     -- Crée le type ENUM type_sauvegarde s'il n'existe pas
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'type_sauvegarde') THEN
-        CREATE TYPE type_sauvegarde AS ENUM ('fichier', 'dossier', 'système');
+        CREATE TYPE type_sauvegarde AS ENUM ('fichier', 'dossier', 'casier', 'armoire', 'système');
     END IF;
 
-    -- Crée la table sauvegardes si elle n'existe pas
-    CREATE TABLE IF NOT EXISTS sauvegardes (
-      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      type type_sauvegarde NOT NULL, -- Utilise le type ENUM
-      cible_id UUID, -- ID du fichier ou dossier sauvegardé (nullable si système)
-      chemin_sauvegarde TEXT, -- Chemin vers l'archive (ZIP, JSON, dossier)
-      contenu_json JSONB, -- Résumé des données sauvegardées
-      declenche_par_id UUID, -- utilisateur (FK) ayant lancé la sauvegarde
-      date_creation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      -- CONSTRAINT fk_utilisateur
-      --   FOREIGN KEY(declenche_par_id)
-      --     REFERENCES utilisateurs(id) -- Assurez-vous que la table utilisateurs existe et a une colonne id de type UUID
-    );
+    -- Supprime et recrée les colonnes avec le bon type
+    ALTER TABLE sauvegardes DROP COLUMN IF EXISTS cible_id;
+    ALTER TABLE sauvegardes DROP COLUMN IF EXISTS entreprise_id;
+    ALTER TABLE sauvegardes DROP COLUMN IF EXISTS declenche_par_id;
 
-    -- Altère la colonne type pour utiliser le type ENUM si elle est encore VARCHAR
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 'type' AND data_type = 'character varying') THEN
-      ALTER TABLE sauvegardes
-      ALTER COLUMN type TYPE type_sauvegarde
-      USING type::type_sauvegarde;
+    ALTER TABLE sauvegardes 
+      ADD COLUMN cible_id INTEGER,
+      ADD COLUMN entreprise_id INTEGER,
+      ADD COLUMN declenche_par_id INTEGER;
+
+    -- Ajoute les colonnes manquantes si elles n'existent pas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 'type') THEN
+        ALTER TABLE sauvegardes ADD COLUMN type type_sauvegarde;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 'chemin_sauvegarde') THEN
+        ALTER TABLE sauvegardes ADD COLUMN chemin_sauvegarde TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 'contenu_json') THEN
+        ALTER TABLE sauvegardes ADD COLUMN contenu_json JSONB;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 'date_creation') THEN
+        ALTER TABLE sauvegardes ADD COLUMN date_creation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
     END IF;
 
   END $$;
 `;
 
-db.query(createBackupsTableSQL)
-  .then(() => {
-    console.log('Table sauvegardes et type ENUM créés/mis à jour avec succès');
-  })
-  .catch(error => {
-    console.error('Erreur lors de la création/mise à jour de la table sauvegardes et du type ENUM:', error);
-  });
-
-// Méthodes CRUD
-
-const createBackup = async (data) => {
-    try {
-        const { type, cible_id, chemin_sauvegarde, contenu_json, declenche_par_id } = data;
-        const result = await db.query(
-            'INSERT INTO sauvegardes (type, cible_id, chemin_sauvegarde, contenu_json, declenche_par_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [type, cible_id, chemin_sauvegarde, contenu_json, declenche_par_id]
-        );
-        return result.rows[0];
-    } catch (error) {
-        console.error('Erreur lors de la création de la sauvegarde:', error);
-        throw error;
+class BackupModel {
+    constructor() {
+        this.init();
     }
-};
 
-const getAllBackups = async () => {
-    try {
-        const result = await db.query('SELECT * FROM sauvegardes ORDER BY date_creation DESC');
-        return result.rows;
-    } catch (error) {
-        console.error('Erreur lors de la récupération des sauvegardes:', error);
-        throw error;
-    }
-};
-
-const getBackupById = async (id) => {
-    try {
-        const result = await db.query('SELECT * FROM sauvegardes WHERE id = $1', [id]);
-        return result.rows[0];
-    } catch (error) {
-        console.error('Erreur lors de la récupération de la sauvegarde par ID:', error);
-        throw error;
-    }
-};
-
-// Délègue la restauration au service dédié
-const restoreBackup = async (backupId, utilisateur_id) => {
-    try {
-        const backup = await getBackupById(backupId);
-        if (!backup) {
-            throw new Error('Sauvegarde non trouvée.');
+    async init() {
+        try {
+            await db.query(createBackupsTableSQL);
+            console.log('Table sauvegardes mise à jour avec succès');
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation de la table sauvegardes:', error);
+            throw error;
         }
-        return await restoreService.restoreBackup(backupId, utilisateur_id);
-    } catch (error) {
-        console.error(`Erreur dans backupModel.restoreBackup pour sauvegarde ID ${backupId}:`, error);
-        throw error;
     }
-};
 
-export default {
-    createBackup,
-    getAllBackups,
-    getBackupById,
-    restoreBackup
-}; 
+    async createBackup(data) {
+        try {
+            const { type, cible_id, entreprise_id, chemin_sauvegarde, contenu_json, declenche_par_id } = data;
+            const query = `
+                INSERT INTO sauvegardes 
+                (type, cible_id, entreprise_id, chemin_sauvegarde, contenu_json, declenche_par_id) 
+                VALUES ($1, $2, $3, $4, $5, $6) 
+                RETURNING *
+            `;
+            const result = await db.query(query, [
+                type, 
+                cible_id, 
+                entreprise_id, 
+                chemin_sauvegarde, 
+                contenu_json, 
+                declenche_par_id
+            ]);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Erreur lors de la création de la sauvegarde:', error);
+            throw error;
+        }
+    }
+
+    async getAllBackups() {
+        try {
+            const query = `
+                SELECT * FROM sauvegardes 
+                ORDER BY date_creation DESC
+            `;
+            const result = await db.query(query);
+            return result.rows;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des sauvegardes:', error);
+            throw error;
+        }
+    }
+
+    async getBackupById(id) {
+        try {
+            const query = `
+                SELECT * FROM sauvegardes 
+                WHERE id = $1
+            `;
+            const result = await db.query(query, [id]);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la sauvegarde par ID:', error);
+            throw error;
+        }
+    }
+}
+
+export default new BackupModel(); 

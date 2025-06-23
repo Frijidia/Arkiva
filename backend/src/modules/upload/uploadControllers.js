@@ -86,7 +86,6 @@ export const uploadFileBufferToS3 = async (fileBuffer, originalName) => {
 };
 
 
-
 // Upload avec dossier_id
 export const uploadFiles = async (req, res) => {
   const { dossier_id, entreprise_id } = req.body;

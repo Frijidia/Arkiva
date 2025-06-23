@@ -28,6 +28,4 @@ router.post('/addTagToFile', addTagToFile);
 router.get('/:fichier_id/tags', getTagsForFile);
 router.post('/Tagsuggested', getSuggestedTagsByFileId);
 
-
-
 export default router;

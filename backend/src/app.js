@@ -19,11 +19,14 @@ import fichierRoutes from './modules/fichiers/fichierRoutes.js'; // fichiers
 import tagRoutes from './modules/tags/tagRoutes.js'; // tags
 import auditRoutes from './modules/audit/auditRoutes.js'; // journal_activite
 import encryptionRoutes from './modules/encryption/encryptionRoutes.js'; // encryption_keys
-//import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes, versions
+import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes
+import versionRoutes from './modules/versions/versionRoutes.js'; // versions
+import restoreRoutes from './modules/restore/restoreRoutes.js'; // restaurations
 import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
 import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
 import searchRoutes from './modules/search/searchRoute.js'; // routes de recherche
 import favorisRoutes from './modules/favoris/favorisRoutes.js'; // favoris
+import payments from './modules/payments/paymentsRoutes.js'; // payments et abonnements
 // app.use('/api/search', searchRoutes);
 
 const app = express();
@@ -48,12 +51,15 @@ app.use('/api/fichier', fichierRoutes);
 app.use('/api/tag', tagRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/encryption', encryptionRoutes);
-//app.use('/api/sauvegardes', backupRoutes);
+app.use('/api/sauvegardes', backupRoutes);
+app.use('/api/versions', versionRoutes);
+app.use('/api/restaurations', restoreRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/favoris', favorisRoutes);
 // app.use('/api/search', searchRoutes);
+app.use('/api/payments', payments);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

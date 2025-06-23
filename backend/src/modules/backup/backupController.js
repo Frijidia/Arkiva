@@ -1,115 +1,217 @@
 import backupModel from './backupModel.js';
-import auditService from '../audit/auditService.js'; // Supposant l'existence de ce service
+import * as fileService from '../fichiers/fichierControllers.js';
+import * as dossierService from '../dosiers/dosierControllers.js';
+import * as casierService from '../cassiers/cassierContollers.js';
+import * as armoireService from '../armoires/armoireControllers.js';
 import fs from 'fs';
 import path from 'path';
-import archiver from 'archiver'; // Assurez-vous que ce package est installé (npm install archiver)
-import unzipper from 'unzipper'; // Assurez-vous que ce package est installé (npm install unzipper)
-// Importer les services ou modèles pour récupérer les données des fichiers/dossiers si nécessaire
-import fileService from '../fichiers/fichierService.js'; // Supposant l'existence de ce service
-import folderService from '../dosiers/folderService.js'; // Supposant l'existence de ce service pour les dossiers
-import systemService from '../system/systemService.js'; // Supposant l'existence de ce service pour la sauvegarde système
-import backupService from './backupService.js';
+import { fileURLToPath } from 'url';
+import archiver from 'archiver';
+import pool from '../../config/database.js';
+import { v4 as uuidv4 } from 'uuid';
 
-// Chemin où stocker les sauvegardes (vous pouvez configurer cela via une variable d'environnement)
-const BACKUP_DIR = path.join(__dirname, '../../uploads/backups'); // Exemple : un sous-dossier dans uploads
+// Obtenir le chemin du répertoire actuel pour les modules ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Chemin où stocker les sauvegardes
+const BACKUP_DIR = path.join(__dirname, '../../uploads/backups');
 
 // S'assurer que le répertoire de sauvegarde existe
 if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
-class BackupController {
-    // Endpoint pour déclencher une sauvegarde (POST /sauvegardes)
-    static async createBackup(req, res) {
-        try {
-            const { type, cible_id, mode } = req.body;
-            const declenche_par_id = req.user ? req.user.id : null;
+// Fonctions utilitaires pour récupérer les données
+const getDossierById = async (dossierId) => {
+    const result = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [dossierId]);
+    return result.rows[0];
+};
 
-            // Valider le type de sauvegarde
-            if (!['fichier', 'dossier', 'système'].includes(type)) {
-                return res.status(400).json({ error: 'Type de sauvegarde invalide.' });
-            }
+const getFichiersByDossierId = async (dossierId) => {
+    const result = await pool.query(
+        'SELECT * FROM fichiers WHERE dossier_id = $1 ORDER BY fichier_id DESC',
+        [dossierId]
+    );
+    return result.rows;
+};
 
-            // Déléguer la création de la sauvegarde au service
-            const newBackup = await backupService.createBackup({
-                type,
-                cible_id,
-                mode,
-                declenche_par_id,
-                res // Passer l'objet res pour permettre au service de gérer les réponses HTTP
-            });
+const getCasierById = async (casierId) => {
+    const result = await pool.query('SELECT * FROM casiers WHERE casier_id = $1', [casierId]);
+    return result.rows[0];
+};
 
-            // Si la sauvegarde a réussi et que la réponse n'a pas encore été envoyée
-            if (!res.headersSent) {
-                res.status(201).json({
-                    message: `Sauvegarde de type ${type} déclenchée avec succès.`,
-                    backup: newBackup
-                });
-            }
-        } catch (error) {
-            console.error('Erreur lors du déclenchement de la sauvegarde:', error);
-            if (!res.headersSent) {
-                res.status(500).json({
-                    error: 'Erreur lors du déclenchement de la sauvegarde',
-                    details: error.message
-                });
-            }
+const getDossiersByCasier = async (casierId) => {
+    const result = await pool.query(
+        'SELECT * FROM dossiers WHERE casier_id = $1 ORDER BY dossier_id ASC',
+        [casierId]
+    );
+    return result.rows;
+};
+
+const getArmoireById = async (armoireId) => {
+    const result = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [armoireId]);
+    return result.rows[0];
+};
+
+const getCasiersByArmoire = async (armoireId) => {
+    const result = await pool.query(
+        'SELECT * FROM casiers WHERE armoire_id = $1 ORDER BY casier_id ASC',
+        [armoireId]
+    );
+    return result.rows;
+};
+
+// Contrôleurs pour les sauvegardes
+export const createBackup = async (req, res) => {
+    try {
+        const { type, cible_id, entreprise_id } = req.body;
+
+        if (!type || !cible_id || !entreprise_id) {
+            return res.status(400).json({ error: 'Type, cible_id et entreprise_id sont requis' });
         }
-    }
 
-    // Endpoint pour lister les sauvegardes (GET /sauvegardes)
-    static async listBackups(req, res) {
-        try {
-            const backups = await backupModel.getAllBackups();
+        // Créer un nom de fichier unique pour la sauvegarde
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupFileName = `backup-${type}-${cible_id}-${timestamp}.zip`;
+        const backupPath = path.join(BACKUP_DIR, backupFileName);
 
-            const formattedBackups = backups.map(backup => ({
-                id: backup.id,
-                type: backup.type,
-                contenu: backup.contenu_json,
-                date_creation: backup.date_creation
-            }));
+        // Créer un fichier zip pour la sauvegarde
+        const output = fs.createWriteStream(backupPath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Compression maximale
+        });
 
-            res.json(formattedBackups);
-        } catch (error) {
-            console.error('Erreur lors de la liste des sauvegardes:', error);
-            res.status(500).json({
-                error: 'Erreur lors de la récupération des sauvegardes',
-                details: error.message
-            });
-        }
-    }
+        output.on('close', async () => {
+            try {
+                // Créer l'entrée dans la base de données
+                const backupData = {
+                    type,
+                    cible_id,
+                    entreprise_id,
+                    chemin_sauvegarde: backupPath,
+                    contenu_json: JSON.stringify({
+                        taille: archive.pointer(),
+                        date_creation: new Date(),
+                        description: `Sauvegarde de ${type} ${cible_id}`
+                    }),
+                    declenche_par_id: req.user?.user_id || null
+                };
 
-    // Endpoint pour restaurer une sauvegarde (POST /sauvegardes/:id/restaurer)
-    // NOTE: Cette route devrait être protégée par un middleware pour les administrateurs uniquement.
-    static async restoreBackup(req, res) {
-        try {
-            const backupId = req.params.id;
-            const utilisateur_id = req.user ? req.user.id : null;
-
-            // Assurez-vous que l'utilisateur est un admin (middleware checkRole('admin')) est appliqué à cette route
-
-            // La logique de restauration est maintenant dans le modèle.
-            const result = await backupModel.restoreBackup(backupId, utilisateur_id);
-
-            // Envoyer la réponse une fois la logique du modèle terminée
-            res.json(result); // Le modèle retourne un objet avec un message
-
-        } catch (error) {
-            console.error(`Erreur lors de la restauration de la sauvegarde ID ${req.params.id} dans le contrôleur:`, error);
-            // Gérer les erreurs remontées par le modèle ou d'autres erreurs du contrôleur
-            if (!res.headersSent) {
-                res.status(500).json({
-                    error: 'Erreur lors de la restauration de la sauvegarde',
-                    details: error.message
-                });
+                const backup = await backupModel.createBackup(backupData);
+                res.status(201).json(backup);
+            } catch (error) {
+                console.error('Erreur lors de la création de la sauvegarde:', error);
+                res.status(500).json({ error: error.message });
             }
+        });
+
+        archive.on('error', (err) => {
+            throw err;
+        });
+
+        archive.pipe(output);
+
+        // Récupérer et ajouter le contenu selon le type
+        switch (type) {
+            case 'armoire':
+                const armoire = await getArmoireById(cible_id);
+                if (!armoire) {
+                    return res.status(404).json({ error: 'Armoire non trouvée' });
+                }
+                // Ajouter les métadonnées de l'armoire
+                archive.append(JSON.stringify(armoire, null, 2), { name: 'metadata.json' });
+                // Ajouter les casiers
+                const casiers = await getCasiersByArmoire(cible_id);
+                for (const casier of casiers) {
+                    archive.append(JSON.stringify(casier, null, 2), { name: `casiers/${casier.casier_id}.json` });
+                }
+                break;
+
+            case 'casier':
+                const casier = await getCasierById(cible_id);
+                if (!casier) {
+                    return res.status(404).json({ error: 'Casier non trouvé' });
+                }
+                // Ajouter les métadonnées du casier
+                archive.append(JSON.stringify(casier, null, 2), { name: 'metadata.json' });
+                // Ajouter les dossiers
+                const dossiers = await getDossiersByCasier(cible_id);
+                for (const dossier of dossiers) {
+                    archive.append(JSON.stringify(dossier, null, 2), { name: `dossiers/${dossier.dossier_id}.json` });
+                }
+                break;
+
+            case 'dossier':
+                const dossier = await getDossierById(cible_id);
+                if (!dossier) {
+                    return res.status(404).json({ error: 'Dossier non trouvé' });
+                }
+                // Ajouter les métadonnées du dossier
+                archive.append(JSON.stringify(dossier, null, 2), { name: 'metadata.json' });
+                // Ajouter les fichiers
+                const fichiers = await getFichiersByDossierId(cible_id);
+                for (const fichier of fichiers) {
+                    archive.append(JSON.stringify(fichier, null, 2), { name: `fichiers/${fichier.fichier_id}.json` });
+                }
+                break;
+
+            case 'fichier':
+                const fichier = await fileService.getFichierById(cible_id);
+                if (!fichier) {
+                    return res.status(404).json({ error: 'Fichier non trouvé' });
+                }
+                // Ajouter les métadonnées du fichier
+                archive.append(JSON.stringify(fichier, null, 2), { name: 'metadata.json' });
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Type de sauvegarde invalide' });
         }
+
+        // Finaliser l'archive
+        await archive.finalize();
+
+    } catch (error) {
+        console.error('Erreur lors de la création de la sauvegarde:', error);
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
-// Nécessaire pour utiliser __dirname et __filename avec les modules ES
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Fonction utilitaire pour convertir un ID en UUID
+const convertToUuid = async (id) => {
+    try {
+        // Si l'ID est déjà un UUID valide, le retourner tel quel
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+            return id;
+        }
+        // Sinon, générer un nouvel UUID
+        return uuidv4();
+    } catch (error) {
+        console.error('Erreur lors de la conversion en UUID:', error);
+        throw error;
+    }
+};
 
-export default BackupController; 
+export const getAllBackups = async (req, res) => {
+    try {
+        const backups = await backupModel.getAllBackups();
+        res.json(backups);
+    } catch (error) {
+        console.error('Erreur lors de la récupération des sauvegardes:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getBackupById = async (req, res) => {
+    try {
+        const backup = await backupModel.getBackupById(req.params.id);
+        if (!backup) {
+            return res.status(404).json({ error: 'Sauvegarde non trouvée' });
+        }
+        res.json(backup);
+    } catch (error) {
+        console.error('Erreur lors de la récupération de la sauvegarde:', error);
+        res.status(500).json({ error: error.message });
+    }
+}; 
