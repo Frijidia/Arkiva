@@ -2,27 +2,34 @@ import express from 'express';
 import { verifyToken, checkRole} from '../auth/authMiddleware.js';
 import {
     chooseSubscription,
-    // paySubscription,
+    processPayment,
     getSubscriptions,
-    // getinvoice
+    getSubscriptionHistory,
+    getCurrentSubscription,
+    feexPayWebhook
 } from './paymentsController.js';
 
 const router = express.Router();
 
+// Routes protégées par authentification
 router.use(verifyToken);
-router.use(checkRole(['admin']));
 
-// Route pour choisir un abonnement
-router.post('/chooseSubscription', chooseSubscription);
+// Route pour récupérer les abonnements disponibles
+router.get('/subscriptions', getSubscriptions);
 
-// Route pour payer l'abonnement
-// router.post('/subscribe', verifyToken, paySubscription);
+// Route pour vérifier le statut de l'abonnement actuel
+router.get('/current-subscription', getCurrentSubscription);
 
-// Route pour récupérer les informations sur l'abonnement actif ou la liste des offres
-router.get('/getsubscribtion', verifyToken, getSubscriptions);
+// Route pour récupérer l'historique des abonnements
+router.get('/history', getSubscriptionHistory);
 
-// // Route pour récupérer les factures de l'utilisateur
-// router.get('/invoice', verifyToken, getinvoice);
+// Route pour choisir un abonnement (calcul du coût)
+router.post('/choose-subscription', chooseSubscription);
 
+// Route pour effectuer le paiement
+router.post('/process-payment', processPayment);
+
+// Webhook FeexPay (pas besoin d'authentification)
+router.post('/webhook', feexPayWebhook);
 
 export default router; 
