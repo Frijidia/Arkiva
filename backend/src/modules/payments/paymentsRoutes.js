@@ -8,8 +8,21 @@ import {
     getCurrentSubscription,
     feexPayWebhook
 } from './paymentsController.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+
+// Route pour servir le frontend de test (pas besoin d'authentification)
+router.get('/test', (req, res) => {
+    res.sendFile(path.join(__dirname, 'payment-test-frontend.html'));
+});
+
+// Webhook FeexPay (pas besoin d'authentification) - doit être avant le middleware d'auth
+router.post('/webhook', feexPayWebhook);
 
 // Routes protégées par authentification
 router.use(verifyToken);
@@ -28,8 +41,5 @@ router.post('/choose-subscription', chooseSubscription);
 
 // Route pour effectuer le paiement
 router.post('/process-payment', processPayment);
-
-// Webhook FeexPay (pas besoin d'authentification)
-router.post('/webhook', feexPayWebhook);
 
 export default router; 

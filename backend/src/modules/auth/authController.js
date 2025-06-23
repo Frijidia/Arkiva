@@ -119,10 +119,10 @@ export const logout = async (req, res) => {
     try {
         // Logger la déconnexion
         await logAction(
-            req.user.userId,
+            req.user.user_id,
             ACTIONS.LOGOUT,
             TARGET_TYPES.USER,
-            req.user.userId,
+            req.user.user_id,
             { ip: req.ip }
         );
 
@@ -203,7 +203,7 @@ export const updateUserRole = async (req, res) => {
 
         // Logger le changement de rôle
         await logAction(
-            req.user.userId,
+            req.user.user_id,
             ACTIONS.CHANGE_ROLE,
             TARGET_TYPES.USER,
             id,
@@ -221,7 +221,7 @@ export const updateUserRole = async (req, res) => {
 // Activer la 2FA
 export const enable2FA = async (req, res) => {
     const { method } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.user_id;
 
     if (!['email', 'otp'].includes(method)) {
         return res.status(400).json({ message: 'Méthode 2FA invalide' });
@@ -245,7 +245,7 @@ export const enable2FA = async (req, res) => {
             note: method === 'email' ? 'Un code a été envoyé à votre adresse email' : 'Utilisez votre application OTP'
         });
     } catch (error) {
-        console.error(error);
+        console.error('Erreur lors de l\'activation de la 2FA:', error);
         res.status(500).json({ message: 'Erreur lors de l\'activation de la 2FA' });
     }
 };

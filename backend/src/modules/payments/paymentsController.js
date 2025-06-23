@@ -125,102 +125,70 @@ export const processPayment = async (req, res) => {
 
     const payment = paymentResult.rows[0];
 
-    // 2. Préparer la requête FeexPay selon leur documentation
-    const feexpayPayload = {
+    // 2. Générer une clé de transaction aléatoire de 15 caractères
+    const trans_key = Math.random().toString(36).substring(2, 17);
+
+    // 3. Préparer les données pour le SDK FeexPay Flutter
+    const feexpayData = {
+      // Données requises par le SDK FeexPay
       id: FEEXPAY_CONFIG.shopId,
-      amount: payment.montant,
       token: FEEXPAY_CONFIG.apiKey,
-      callback: `${process.env.BASE_URL}/api/payments/webhook`,
-      callback_url: `${process.env.FRONTEND_URL}/payment/success`,
-      callback_info: JSON.stringify({ payment_id, entreprise_id: entrepriseId }),
+      amount: payment.montant,
+      trans_key: trans_key,
+      redirecturl: `${process.env.FRONTEND_URL}/payment/success`,
+      callback_info: JSON.stringify({ 
+        payment_id, 
+        entreprise_id: entrepriseId,
+        custom_id: custom_id || `ARKIVA_${payment_id}_${Date.now()}`
+      }),
+      
+      // Données supplémentaires pour le suivi
+      payment_id: payment_id,
+      entreprise_id: entrepriseId,
+      moyen_paiement: moyen_paiement,
+      numero_telephone: numero_telephone,
       custom_id: custom_id || `ARKIVA_${payment_id}_${Date.now()}`,
-      description: `Abonnement Arkiva - ${payment.armoires_souscrites} armoires`,
-      mode: FEEXPAY_CONFIG.mode
+      
+      // Configuration selon le mode
+      mode: FEEXPAY_CONFIG.mode,
+      description: `Abonnement Arkiva - ${payment.armoires_souscrites} armoires`
     };
 
-    // 3. Adapter selon le moyen de paiement selon leur documentation
-    switch (moyen_paiement) {
-      case 'MTN_MOBILE_MONEY':
-        feexpayPayload.case = 'MOBILE';
-        feexpayPayload.defaultValueField = { 
-          'country_iban': 'CI', 
-          'network': 'MTN' 
-        };
-        if (numero_telephone) {
-          feexpayPayload.defaultValueField.phone = numero_telephone;
-        }
-        break;
-      case 'MOOV_MONEY':
-        feexpayPayload.case = 'MOBILE';
-        feexpayPayload.defaultValueField = { 
-          'country_iban': 'CI', 
-          'network': 'MOOV' 
-        };
-        if (numero_telephone) {
-          feexpayPayload.defaultValueField.phone = numero_telephone;
-        }
-        break;
-      case 'CELTIIS_CASH':
-        feexpayPayload.case = 'MOBILE';
-        feexpayPayload.defaultValueField = { 
-          'country_iban': 'CI', 
-          'network': 'CELTIIS' 
-        };
-        if (numero_telephone) {
-          feexpayPayload.defaultValueField.phone = numero_telephone;
-        }
-        break;
-      case 'CARTE_BANCAIRE':
-        feexpayPayload.case = 'CARD';
-        break;
-      default:
-        return res.status(400).json({ error: "Moyen de paiement non supporté." });
-    }
+    // 4. Mettre à jour le paiement avec la clé de transaction
+    await pool.query(
+      `UPDATE payments 
+       SET feexpay_trans_key = $1, moyen_paiement = $2, custom_id = $3
+       WHERE payment_id = $4`,
+      [trans_key, moyen_paiement, feexpayData.custom_id, payment_id]
+    );
 
-    // 4. Appeler l'API FeexPay selon leur documentation
-    const feexpayResponse = await callFeexPayAPI(feexpayPayload);
+    // 5. Logger l'action
+    await pool.query(
+      `INSERT INTO subscription_history (entreprise_id, payment_id, type_action, ancien_statut, nouveau_statut, details)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [entrepriseId, payment_id, 'initiation_paiement', 'en_attente', 'en_attente', 
+       JSON.stringify({ trans_key, moyen_paiement, montant: payment.montant })]
+    );
 
-    if (feexpayResponse.success) {
-      // 5. Mettre à jour le paiement
-      await pool.query(
-        `UPDATE payments 
-         SET statut = $1, feexpay_reference = $2, moyen_paiement = $3, reference_transaction = $4
-         WHERE payment_id = $5`,
-        ['succès', feexpayResponse.reference, moyen_paiement, feexpayResponse.transaction_id, payment_id]
-      );
-
-      // 6. Générer la facture
-      const invoice = await generateInvoice(payment_id, entrepriseId);
-
-      // 7. Envoyer la facture par email
-      await sendInvoiceEmail(invoice, entrepriseId);
-
-      // 8. Logger l'action
-      await pool.query(
-        `INSERT INTO subscription_history (entreprise_id, payment_id, type_action, ancien_statut, nouveau_statut, details)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [entrepriseId, payment_id, 'paiement', 'en_attente', 'succès', 
-         JSON.stringify({ moyen_paiement, feexpay_reference: feexpayResponse.reference })]
-      );
-
-      return res.status(200).json({
-        message: "Paiement effectué avec succès",
-        transaction_id: feexpayResponse.transaction_id,
-        invoice: invoice,
-        feexpay_data: feexpayResponse
-      });
-    } else {
-      // Échec du paiement
-      await pool.query(
-        `UPDATE payments SET statut = $1 WHERE payment_id = $2`,
-        ['échec', payment_id]
-      );
-
-      return res.status(400).json({ 
-        error: "Échec du paiement. Veuillez réessayer.",
-        details: feexpayResponse.error
-      });
-    }
+    // 6. Retourner les données pour le SDK Flutter
+    return res.status(200).json({
+      success: true,
+      message: "Paiement initié. Utilisez ces données avec le SDK FeexPay Flutter.",
+      feexpay_data: {
+        id: feexpayData.id,
+        token: feexpayData.token,
+        amount: feexpayData.amount,
+        trans_key: feexpayData.trans_key,
+        redirecturl: feexpayData.redirecturl,
+        callback_info: feexpayData.callback_info
+      },
+      payment_info: {
+        payment_id: payment_id,
+        montant: payment.montant,
+        armoires_souscrites: payment.armoires_souscrites,
+        date_expiration: payment.date_expiration
+      }
+    });
 
   } catch (err) {
     console.error("Erreur dans processPayment:", err);
@@ -230,11 +198,20 @@ export const processPayment = async (req, res) => {
 
 // Webhook FeexPay pour confirmer les paiements
 export const feexPayWebhook = async (req, res) => {
-  const { reference, status, transaction_id, custom_id } = req.body;
-
   try {
+    // Vérifier que le body existe
+    if (!req.body) {
+      console.error("Webhook FeexPay: req.body est undefined");
+      return res.status(400).json({ error: "Body de la requête manquant" });
+    }
+
+    const { reference, status, transaction_id, custom_id } = req.body;
+
+    console.log("Webhook FeexPay reçu:", { reference, status, transaction_id, custom_id });
+
     // Vérifier la signature FeexPay (à implémenter selon leur documentation)
     if (!verifyFeexPaySignature(req)) {
+      console.error("Webhook FeexPay: Signature invalide");
       return res.status(401).json({ error: "Signature invalide" });
     }
 
@@ -242,6 +219,7 @@ export const feexPayWebhook = async (req, res) => {
     const paymentId = custom_id ? custom_id.split('_')[1] : null;
 
     if (!paymentId) {
+      console.error("Webhook FeexPay: Payment ID introuvable dans custom_id:", custom_id);
       return res.status(400).json({ error: "Payment ID introuvable dans custom_id" });
     }
 
@@ -250,11 +228,13 @@ export const feexPayWebhook = async (req, res) => {
         `UPDATE payments SET statut = $1, reference_transaction = $2 WHERE payment_id = $3`,
         ['succès', transaction_id, paymentId]
       );
+      console.log(`Paiement ${paymentId} marqué comme succès`);
     } else {
       await pool.query(
         `UPDATE payments SET statut = $1 WHERE payment_id = $2`,
         ['échec', paymentId]
       );
+      console.log(`Paiement ${paymentId} marqué comme échec`);
     }
 
     res.status(200).json({ message: "Webhook traité avec succès" });
