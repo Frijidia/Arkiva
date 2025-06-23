@@ -1,18 +1,22 @@
 // payment_config.js
 export const PAYMENT_CONFIG = {
-  // Configuration FeexPay
+  // Configuration FeexPay selon votre .env
   FEEXPAY: {
     API_KEY: process.env.FEEXPAY_API_KEY,
-    SECRET_KEY: process.env.FEEXPAY_SECRET_KEY,
-    BASE_URL: process.env.FEEXPAY_BASE_URL || 'https://api.feexpay.com',
+    SHOP_ID: process.env.FEEXPAY_SHOP_ID,
+    BASE_URL: 'https://api.feexpay.me',
+    MODE: process.env.NODE_ENV === 'production' ? 'LIVE' : 'SANDBOX',
     WEBHOOK_SECRET: process.env.FEEXPAY_WEBHOOK_SECRET
   },
 
-  // Configuration Email
+  // Configuration Email selon votre .env
   EMAIL: {
-    USER: process.env.EMAIL_USER,
-    PASS: process.env.EMAIL_PASS,
-    FROM: process.env.EMAIL_FROM || 'noreply@arkiva.com'
+    HOST: process.env.SMTP_HOST,
+    PORT: process.env.SMTP_PORT,
+    SECURE: process.env.SMTP_SECURE === 'true',
+    USER: process.env.SMTP_USER,
+    PASS: process.env.SMTP_PASSWORD,
+    FROM: process.env.SMTP_FROM
   },
 
   // Configuration Application
@@ -29,12 +33,30 @@ export const PAYMENT_CONFIG = {
     ARMORIES_PER_TRANCHE: 2
   },
 
-  // Moyens de paiement supportés
+  // Moyens de paiement supportés par FeexPay
   PAYMENT_METHODS: {
-    MTN_MOBILE_MONEY: 'MTN_MOBILE_MONEY',
-    MOOV_MONEY: 'MOOV_MONEY',
-    CELTIIS_CASH: 'CELTIIS_CASH',
-    CARTE_BANCAIRE: 'CARTE_BANCAIRE'
+    MTN_MOBILE_MONEY: {
+      name: 'MTN_MOBILE_MONEY',
+      network: 'MTN',
+      country: 'CI',
+      case: 'MOBILE'
+    },
+    MOOV_MONEY: {
+      name: 'MOOV_MONEY',
+      network: 'MOOV',
+      country: 'CI',
+      case: 'MOBILE'
+    },
+    CELTIIS_CASH: {
+      name: 'CELTIIS_CASH',
+      network: 'CELTIIS',
+      country: 'CI',
+      case: 'MOBILE'
+    },
+    CARTE_BANCAIRE: {
+      name: 'CARTE_BANCAIRE',
+      case: 'CARD'
+    }
   },
 
   // Statuts de paiement
@@ -55,13 +77,13 @@ export const PAYMENT_CONFIG = {
   }
 };
 
-// Validation des configurations
+// Validation des configurations selon votre .env
 export const validatePaymentConfig = () => {
   const required = [
     'FEEXPAY_API_KEY',
-    'FEEXPAY_SECRET_KEY',
-    'EMAIL_USER',
-    'EMAIL_PASS'
+    'FEEXPAY_SHOP_ID',
+    'SMTP_USER',
+    'SMTP_PASSWORD'
   ];
 
   const missing = required.filter(key => !process.env[key]);
@@ -97,6 +119,37 @@ export const calculateExtraArmoriesCost = (armoiresSouscrites, armoiresIncluses 
 export const calculateTotalCost = (prixBase, armoiresSouscrites, armoiresIncluses = 2) => {
   const fraisSupplementaires = calculateExtraArmoriesCost(armoiresSouscrites, armoiresIncluses);
   return prixBase + fraisSupplementaires;
+};
+
+// Configuration FeexPay pour le frontend
+export const getFeexPayFrontendConfig = (paymentData) => {
+  return {
+    token: PAYMENT_CONFIG.FEEXPAY.API_KEY,
+    id: PAYMENT_CONFIG.FEEXPAY.SHOP_ID,
+    amount: paymentData.montant,
+    description: `Abonnement Arkiva - ${paymentData.armoires_souscrites} armoires`,
+    callback: () => console.log('Paiement terminé'),
+    callback_url: `${PAYMENT_CONFIG.APP.FRONTEND_URL}/payment/success`,
+    callback_info: JSON.stringify({ 
+      payment_id: paymentData.payment_id, 
+      entreprise_id: paymentData.entreprise_id 
+    }),
+    custom_id: paymentData.custom_id,
+    mode: PAYMENT_CONFIG.FEEXPAY.MODE,
+    buttonText: "Payer",
+    buttonClass: "btn btn-primary",
+    defaultValueField: paymentData.defaultValueField || {}
+  };
+};
+
+// Vérifier si un moyen de paiement est supporté
+export const isPaymentMethodSupported = (method) => {
+  return Object.keys(PAYMENT_CONFIG.PAYMENT_METHODS).includes(method);
+};
+
+// Obtenir la configuration d'un moyen de paiement
+export const getPaymentMethodConfig = (method) => {
+  return PAYMENT_CONFIG.PAYMENT_METHODS[method] || null;
 };
 
 export default PAYMENT_CONFIG; 
