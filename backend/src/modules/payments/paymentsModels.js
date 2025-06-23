@@ -19,13 +19,15 @@ const createPaymentsTable = `
     payment_id SERIAL PRIMARY KEY,
     entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
     subscription_id INTEGER REFERENCES subscription(subscription_id) ON DELETE CASCADE,
-    montant INT NOT NULL,
-    armoires_souscrites INT NOT NULL,
-    statut VARCHAR(50) NOT NULL, -- succès, échec, en_attente, annulé
-    reference_transaction VARCHAR(255) UNIQUE,
-    moyen_paiement VARCHAR(50), -- MTN_MOBILE_MONEY, MOOV_MONEY, CELTIIS_CASH, CARTE_BANCAIRE
-    feexpay_reference VARCHAR(255),
-    date_paiement TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    montant DECIMAL(10,2) NOT NULL,
+    armoires_souscrites INTEGER NOT NULL DEFAULT 2,
+    statut VARCHAR(20) DEFAULT 'en_attente' CHECK (statut IN ('en_attente', 'succès', 'échec', 'annulé')),
+    moyen_paiement VARCHAR(50),
+    numero_telephone VARCHAR(20),
+    feexpay_reference VARCHAR(100),
+    feexpay_trans_key VARCHAR(15),
+    reference_transaction VARCHAR(100),
+    custom_id VARCHAR(100),
     date_expiration TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
