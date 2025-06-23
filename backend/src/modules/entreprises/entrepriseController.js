@@ -177,7 +177,7 @@ export const getStats = async (req, res) => {
                 )) as nombre_casiers,
                 
                 -- Nombre de dossiers
-                (SELECT COUNT(*) FROM dossiers WHERE casier_id IN (
+                (SELECT COUNT(*) FROM dossiers WHERE cassier_id IN (
                     SELECT cassier_id FROM casiers WHERE armoire_id IN (
                         SELECT armoire_id FROM armoires WHERE entreprise_id = $1
                     )
@@ -194,7 +194,7 @@ export const getStats = async (req, res) => {
                 
                 -- Taille totale des fichiers (en octets)
                 (SELECT COALESCE(SUM(taille), 0) FROM fichiers WHERE dossier_id IN (
-                    SELECT dossier_id FROM dossiers WHERE casier_id IN (
+                    SELECT dossier_id FROM dossiers WHERE cassier_id IN (
                         SELECT cassier_id FROM casiers WHERE armoire_id IN (
                             SELECT armoire_id FROM armoires WHERE entreprise_id = $1
                         )

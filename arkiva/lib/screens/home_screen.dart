@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:arkiva/screens/entreprise_detail_screen.dart';
 import 'package:arkiva/screens/create_user_screen.dart';
 import 'package:arkiva/screens/admin_dashboard_screen.dart';
+import 'package:arkiva/screens/settings_screen.dart';
 import 'package:arkiva/screens/login_screen.dart';
 import 'package:arkiva/services/document_service.dart';
 import 'package:arkiva/screens/tags_screen.dart';
@@ -768,26 +769,10 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             tooltip: 'Notifications',
           ),
-          if (userRole == 'admin')
-            IconButton(
-              icon: const Icon(Icons.dashboard),
-              onPressed: () {
-                _navigateToScreen(context, const AdminDashboardScreen());
-              },
-              tooltip: 'Tableau de bord administrateur',
-            ),
-          if (userRole == 'admin')
-            IconButton(
-              icon: const Icon(Icons.person_add),
-              onPressed: () {
-                _navigateToScreen(context, const CreateUserScreen());
-              },
-              tooltip: 'Créer un utilisateur',
-            ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              print('Profile/Settings button pressed');
+              _navigateToScreen(context, const SettingsScreen());
             },
             tooltip: 'Paramètres',
           ),
