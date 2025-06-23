@@ -1,8 +1,8 @@
 import pool from '../../config/database.js';
-import './entrepriseModels.js';  // Import pour la création de la table
 import bcrypt from 'bcrypt';
 import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
 import "./entrepriseModels.js";
+
 // Créer une nouvelle entreprise
 export const create = async (req, res) => {
     const { nom, email, telephone, adresse, logo_url, plan_abonnement, armoire_limit } = req.body;

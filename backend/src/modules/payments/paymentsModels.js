@@ -1,46 +1,50 @@
 import pool from '../../config/database.js';
 
-const createTableSubscriptions = `
- CREATE TABLE IF NOT EXISTS subscription (
-  suscription_id SERIAL PRIMARY KEY,
-  nom VARCHAR(255) NOT NULL,
-  prix VARCHAR(255) NOT NULL,
-  duree INTEGER NOT NULL, -- durée en mois
+const createSubscriptionsTable = `
+CREATE TABLE subscription (
+  subscription_id SERIAL PRIMARY KEY,
+  nom VARCHAR(255) NOT NULL, -- Mensuel, Annuel
+  prix_base INT NOT NULL, -- 5000 ou 50000
+  duree INT NOT NULL, -- en jours (30 ou 365)
+  armoires_incluses INT DEFAULT 2,
   description TEXT,
-  status VARCHAR(50) DEFAULT 'actif', -- actif, inactif, suspendu
+  status VARCHAR(20) DEFAULT 'actif',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
- );
+);
+
 `;
 
-const createTablePayments = `
- CREATE TABLE IF NOT EXISTS payments (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-  suscription_id INTEGER REFERENCES suscription(suscription_id) ON DELETE CASCADE,
-  montant DECIMAL(10, 2) NOT NULL,
-  statut VARCHAR(50) NOT NULL, -- succès, échec, en attente
-  date_paiement TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  reference_transaction VARCHAR(255) UNIQUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
- );
+const createPaymentsTable = `
+  CREATE TABLE IF NOT EXISTS payments (
+    payment_id SERIAL PRIMARY KEY,
+    entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
+    subscription_id INTEGER REFERENCES subscription(subscription_id) ON DELETE CASCADE,
+    montant INT NOT NULL,
+    armoires_souscrites INT NOT NULL,
+    statut VARCHAR(50) NOT NULL, -- succès, échec, en_attente
+    reference_transaction VARCHAR(255) UNIQUE,
+    date_paiement TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 `;
 
-const initializeTable = async () => {
-  try {
-    await pool.query(createTableSubscriptions);
-    console.log('✅ Table suscription créée ou déjà existante');
+// Exécution de la requête
+pool.query(createSubscriptionsTable)
+  .then(() => {
+    console.log('Table subscription created successfully');
+  })
+  .catch((err) => {
+    console.error('Error setting up subscription table:', err);
+  }); 
 
-    await pool.query(createTablePayments);
-    console.log('✅ Table payments créée ou déjà existante');
-
-  } catch (err) {
-    console.error('❌ Erreur lors de l\'initialisation des tables :', err);
-    throw err;
-  }
-};
-
-initializeTable();
+pool.query(createPaymentsTable)
+  .then(() => {
+    console.log('Table payments created successfully');
+  })
+  .catch((err) => {
+    console.error('Error setting up payments table:', err);
+  });
 
 export default pool;
