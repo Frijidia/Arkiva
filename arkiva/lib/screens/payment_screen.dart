@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:feexpay_flutter/feexpay_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -8,91 +7,123 @@ class PaymentScreen extends StatefulWidget {
   final String authToken;
 
   const PaymentScreen({
-    Key? key,
+    super.key,
     required this.paymentId,
     required this.authToken,
-  }) : super(key: key);
+  });
 
   @override
-  _PaymentScreenState createState() => _PaymentScreenState();
+  State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isLoading = false;
-  String _selectedPaymentMethod = 'MTN_MOBILE_MONEY';
+  Map<String, dynamic>? _paymentInfo;
+  String? _selectedPaymentMethod;
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _customIdController = TextEditingController();
 
-  final Map<String, String> _paymentMethods = {
-    'MTN_MOBILE_MONEY': 'MTN Mobile Money',
-    'MOOV_MONEY': 'Moov Money',
-    'CELTIIS_CASH': 'Celtiis Cash',
-    'CARTE_BANCAIRE': 'Carte Bancaire',
-  };
+  final List<Map<String, dynamic>> _paymentMethods = [
+    {'id': 'mobile_money', 'name': 'Mobile Money', 'icon': Icons.phone_android},
+    {'id': 'card', 'name': 'Carte bancaire', 'icon': Icons.credit_card},
+    {'id': 'bank_transfer', 'name': 'Virement bancaire', 'icon': Icons.account_balance},
+  ];
 
-  Future<void> _processPayment() async {
+  @override
+  void initState() {
+    super.initState();
+    _loadPaymentInfo();
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _customIdController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadPaymentInfo() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // 1. Appeler l'API backend pour obtenir les données FeexPay
+      // Récupérer les informations de paiement depuis le backend
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/api/payments/current-subscription'),
+        headers: {
+          'Authorization': 'Bearer ${widget.authToken}',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _paymentInfo = data;
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Erreur lors du chargement des informations de paiement');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
+    }
+  }
+
+  Future<void> _processPayment() async {
+    if (_selectedPaymentMethod == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez sélectionner un moyen de paiement')),
+      );
+      return;
+    }
+
+    if (_selectedPaymentMethod == 'mobile_money' && _phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez saisir votre numéro de téléphone')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
       final response = await http.post(
         Uri.parse('http://localhost:3000/api/payments/process-payment'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.authToken}',
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'payment_id': widget.paymentId,
           'moyen_paiement': _selectedPaymentMethod,
-          'numero_telephone': _phoneController.text.isNotEmpty ? _phoneController.text : null,
+          'numero_telephone': _phoneController.text,
+          'custom_id': _customIdController.text.isNotEmpty ? _customIdController.text : null,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
-        if (data['success']) {
-          final feexpayData = data['feexpay_data'];
-          
-          // 2. Lancer l'interface FeexPay
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChoicePage(
-                token: feexpayData['token'],
-                id: feexpayData['id'],
-                amount: feexpayData['amount'].toString(),
-                redirecturl: feexpayData['redirecturl'],
-                trans_key: feexpayData['trans_key'],
-                callback_info: feexpayData['callback_info'],
-              ),
-            ),
-          );
-
-          // 3. Retour à la page de succès
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Paiement terminé avec succès !'),
-              backgroundColor: Colors.green,
-            ),
-          );
-
-          // Naviguer vers la page de succès
-          Navigator.pushReplacementNamed(context, '/payment-success');
-        } else {
-          throw Exception(data['message'] ?? 'Erreur lors du traitement du paiement');
-        }
+        // Afficher les informations de paiement FeexPay
+        _showFeexPayInfo(data['feexpay_data'], data['payment_info']);
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Erreur serveur');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${errorData['error']}')),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Erreur: $e')),
       );
     } finally {
       setState(() {
@@ -101,140 +132,219 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  void _showFeexPayInfo(Map<String, dynamic> feexpayData, Map<String, dynamic> paymentInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Paiement initié'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Votre paiement a été initié avec succès.'),
+            const SizedBox(height: 16),
+            Text('Montant: ${paymentInfo['montant']} FCFA'),
+            Text('Armoires: ${paymentInfo['armoires_souscrites']}'),
+            const SizedBox(height: 16),
+            const Text(
+              'Informations FeexPay:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text('ID: ${feexpayData['id']}'),
+            Text('Clé de transaction: ${feexpayData['trans_key']}'),
+            Text('Montant: ${feexpayData['amount']}'),
+            const SizedBox(height: 16),
+            const Text(
+              'Utilisez ces informations avec le SDK FeexPay Flutter pour finaliser le paiement.',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context); // Retour à la page précédente
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Paiement Arkiva'),
-        backgroundColor: Color(0xFF112C56),
+        title: const Text('Paiement d\'abonnement'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Informations de paiement
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Informations de paiement',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text('ID de paiement: ${widget.paymentId}'),
-                    Text('Token: ${widget.authToken.substring(0, 20)}...'),
-                  ],
-                ),
-              ),
-            ),
-            
-            SizedBox(height: 16),
-
-            // Sélection du moyen de paiement
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Moyen de paiement',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    ..._paymentMethods.entries.map((entry) => RadioListTile<String>(
-                      title: Text(entry.value),
-                      value: entry.key,
-                      groupValue: _selectedPaymentMethod,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedPaymentMethod = value!;
-                        });
-                      },
-                    )).toList(),
-                  ],
-                ),
-              ),
-            ),
-            
-            SizedBox(height: 16),
-
-            // Numéro de téléphone (optionnel)
-            if (_selectedPaymentMethod.contains('MOBILE'))
-              Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Numéro de téléphone (optionnel)',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Informations de l'abonnement
+                  if (_paymentInfo != null) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Récapitulatif de l\'abonnement',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text('Armoires souscrites: ${_paymentInfo!['subscription']['armoiresSouscrites']}'),
+                            if (_paymentInfo!['subscription']['expirationDate'] != null)
+                              Text('Expire le: ${DateTime.parse(_paymentInfo!['subscription']['expirationDate']).toLocal().toString().split(' ')[0]}'),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          hintText: '22507000000',
-                          border: OutlineInputBorder(),
-                        ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Sélection du moyen de paiement
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Moyen de paiement',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ..._paymentMethods.map((method) => RadioListTile<String>(
+                            value: method['id'],
+                            groupValue: _selectedPaymentMethod,
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedPaymentMethod = value;
+                              });
+                            },
+                            title: Row(
+                              children: [
+                                Icon(method['icon']),
+                                const SizedBox(width: 8),
+                                Text(method['name']),
+                              ],
+                            ),
+                          )),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                  const SizedBox(height: 16),
 
-            Spacer(),
-
-            // Bouton de paiement
-            ElevatedButton(
-              onPressed: _isLoading ? null : _processPayment,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF112C56),
-                padding: EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-              ),
-              child: _isLoading
-                  ? CircularProgressIndicator(color: Colors.white)
-                  : Text(
-                      'Payer maintenant',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                  // Numéro de téléphone (pour Mobile Money)
+                  if (_selectedPaymentMethod == 'mobile_money') ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Numéro de téléphone',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _phoneController,
+                              decoration: const InputDecoration(
+                                labelText: 'Numéro de téléphone',
+                                hintText: 'Ex: 22507012345',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.phone,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // ID personnalisé (optionnel)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ID personnalisé (optionnel)',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _customIdController,
+                            decoration: const InputDecoration(
+                              labelText: 'ID personnalisé',
+                              hintText: 'Ex: MON_ID_123',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Bouton de paiement
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _processPayment,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Procéder au paiement',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
 
 // Page de succès
 class PaymentSuccessScreen extends StatelessWidget {
+  const PaymentSuccessScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Paiement Réussi'),
+        title: const Text('Paiement Réussi'),
         backgroundColor: Colors.green,
         automaticallyImplyLeading: false,
       ),
@@ -242,13 +352,13 @@ class PaymentSuccessScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle,
               color: Colors.green,
               size: 100,
             ),
-            SizedBox(height: 24),
-            Text(
+            const SizedBox(height: 24),
+            const Text(
               'Paiement effectué avec succès !',
               style: TextStyle(
                 fontSize: 24,
@@ -256,25 +366,25 @@ class PaymentSuccessScreen extends StatelessWidget {
                 color: Colors.green,
               ),
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Votre abonnement Arkiva est maintenant actif.',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushReplacementNamed(context, '/home');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF112C56),
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                backgroundColor: const Color(0xFF112C56),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
               ),
-              child: Text(
+              child: const Text(
                 'Retour à l\'accueil',
                 style: TextStyle(color: Colors.white),
               ),

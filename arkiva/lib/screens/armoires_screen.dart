@@ -5,6 +5,8 @@ import 'casiers_screen.dart';
 import '../services/auth_state_service.dart';
 import 'package:provider/provider.dart';
 import '../services/casier_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ArmoiresScreen extends StatefulWidget {
   final int entrepriseId;
@@ -25,11 +27,52 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
   List<Armoire> _armoires = [];
   bool _isLoading = true;
   String? _error;
+  bool _abonnementActif = true;
+  bool _abonnementCharge = false;
 
   @override
   void initState() {
     super.initState();
+    _checkAbonnement();
     _loadArmoires();
+  }
+
+  Future<void> _checkAbonnement() async {
+    try {
+      final authState = context.read<AuthStateService>();
+      final token = authState.token;
+      if (token != null) {
+        final response = await http.get(
+          Uri.parse('http://localhost:3000/api/payments/current-subscription'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _abonnementActif = data['subscription']?['isActive'] ?? false;
+            _abonnementCharge = true;
+          });
+        } else {
+          setState(() {
+            _abonnementActif = false;
+            _abonnementCharge = true;
+          });
+        }
+      } else {
+        setState(() {
+          _abonnementActif = false;
+          _abonnementCharge = true;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _abonnementActif = false;
+        _abonnementCharge = true;
+      });
+    }
   }
 
   Future<void> _loadArmoires() async {
@@ -160,107 +203,100 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadArmoires,
+            onPressed: () {
+              _checkAbonnement();
+              _loadArmoires();
+            },
           ),
         ],
       ),
-      body: _isLoading
+      body: _isLoading || !_abonnementCharge
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-              : _armoires.isEmpty
-                  ? const Center(child: Text('Aucune armoire disponible'))
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 0.9,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+              : Column(
+                  children: [
+                    if (!_abonnementActif)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          "Vous ne pouvez pas accéder à vos armoires car votre abonnement n'est pas actif.",
+                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      itemCount: _armoires.length,
-                      itemBuilder: (context, index) {
-                        final armoire = _armoires[index];
-                        return Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CasiersScreen(
-                                    armoireId: armoire.armoireId,
-                                    armoireNom: armoire.nom,
-                                    entrepriseId: widget.entrepriseId,
+                    Expanded(
+                      child: _armoires.isEmpty
+                          ? const Center(child: Text('Aucune armoire disponible'))
+                          : GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                childAspectRatio: 0.9,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
+                              itemCount: _armoires.length,
+                              itemBuilder: (context, index) {
+                                final armoire = _armoires[index];
+                                return Card(
+                                  elevation: 4,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ),
-                              );
-                            },
-                            child: Stack(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.folder_special_outlined,
-                                        size: 40,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        armoire.nom,
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: _abonnementActif
+                                        ? () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => CasiersScreen(
+                                                  armoireId: armoire.armoireId,
+                                                  armoireNom: armoire.nom,
+                                                  entrepriseId: widget.entrepriseId,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        : () {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Abonnement inactif : accès aux armoires verrouillé.'),
+                                              ),
+                                            );
+                                          },
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _abonnementActif ? Icons.folder : Icons.lock,
+                                          size: 48,
+                                          color: _abonnementActif ? Colors.blue[700] : Colors.grey[600],
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      if (armoire.sousTitre.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 12),
                                         Text(
-                                          armoire.sousTitre,
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Colors.grey[700],
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
+                                          armoire.nom,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          textAlign: TextAlign.center,
                                         ),
+                                        if (!_abonnementActif)
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 8.0),
+                                            child: Text(
+                                              'Abonnement requis',
+                                              style: TextStyle(color: Colors.red, fontSize: 12),
+                                            ),
+                                          ),
                                       ],
-                                    ],
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit, size: 20),
-                                        tooltip: 'Renommer l\'armoire',
-                                        onPressed: () => _renameArmoire(armoire),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                                        tooltip: 'Supprimer l\'armoire',
-                                        onPressed: () => _deleteArmoire(armoire),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
-                          ),
-                        );
-                      },
                     ),
+                  ],
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createArmoire,
         child: const Icon(Icons.add),

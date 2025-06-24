@@ -17,7 +17,7 @@ router.use(verifyToken);
 // Routes qui nécessitent un abonnement actif
 router.post('/', checkRole(['admin', 'contributeur']), checkSubscriptionStatus, CreateArmoire);
 router.put('/:armoire_id', checkRole(['admin', 'contributeur']), checkArmoireAccess, RenameArmoire);
-router.get('/:entreprise_id', checkRole(['admin', 'contributeur']), checkSubscriptionStatus, GetAllArmoires);
+router.get('/:entreprise_id', checkRole(['admin', 'contributeur']), GetAllArmoires);
 router.delete('/:armoire_id', checkRole(['admin', 'contributeur']), checkArmoireAccess, DeleteArmoire);
 
 
