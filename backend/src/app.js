@@ -27,6 +27,7 @@ import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
 import searchRoutes from './modules/search/searchRoute.js'; // routes de recherche
 import favorisRoutes from './modules/favoris/favorisRoutes.js'; // favoris
 import payments from './modules/payments/paymentsRoutes.js'; // payments et abonnements
+import statsRoutes from './modules/stats/statsRoutes.js'; // statistiques
 // app.use('/api/search', searchRoutes);
 
 const app = express();
@@ -58,8 +59,9 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/favoris', favorisRoutes);
-// app.use('/api/search', searchRoutes);
 app.use('/api/payments', payments);
+app.use('/api/stats', statsRoutes);
+// app.use('/api/search', searchRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
