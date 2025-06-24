@@ -11,17 +11,19 @@ import {
    
 } from './fichierControllers.js';
 import { verifyToken, checkRole } from '../../modules/auth/authMiddleware.js';
+import { checkSubscriptionStatus, checkFichierAccess } from '../payments/subscriptionMiddleware.js';
 
 const router = express.Router();
 
 router.use(verifyToken);
 
-router.put('/:fichier_id', checkRole(['admin', 'contributeur']), renameFichier);
-router.delete('/:fichier_id', checkRole(['admin', 'contributeur']), deleteFichier);
-router.get('/:fichier_id/:entreprise_id', displayFichier);
-router.get('/:dossier_id', getFichiersByDossierId);
+// Routes qui nécessitent un abonnement actif
+router.put('/:fichier_id', checkRole(['admin', 'contributeur']), checkFichierAccess, renameFichier);
+router.delete('/:fichier_id', checkRole(['admin', 'contributeur']), checkFichierAccess, deleteFichier);
+router.get('/:fichier_id/:entreprise_id', checkFichierAccess, displayFichier);
+router.get('/:dossier_id', checkSubscriptionStatus, getFichiersByDossierId);
 // router.get('/telecharger/:fichier_id', telechargerFichier);
-router.get('/getinfofile/:fichier_id', getFichierById);
+router.get('/getinfofile/:fichier_id', checkFichierAccess, getFichierById);
 
 
 

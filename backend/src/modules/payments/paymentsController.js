@@ -223,12 +223,22 @@ export const feexPayWebhook = async (req, res) => {
       return res.status(400).json({ error: "Payment ID introuvable dans custom_id" });
     }
 
-    if (status === 'success' || status === 'SUCCESS') {
+    if (status === 'success' || status === 'SUCCESS' || status === 'completed') {
       await pool.query(
         `UPDATE payments SET statut = $1, reference_transaction = $2 WHERE payment_id = $3`,
         ['succès', transaction_id, paymentId]
       );
       console.log(`Paiement ${paymentId} marqué comme succès`);
+
+      // Générer et envoyer la facture
+      try {
+        const invoice = await generateInvoice(paymentId, entrepriseId);
+        await sendInvoiceEmail(invoice, entrepriseId);
+        console.log(`Facture ${invoice.numero_facture} générée et envoyée par email`);
+      } catch (invoiceError) {
+        console.error('Erreur lors de la génération/envoi de la facture:', invoiceError);
+        // On ne fait pas échouer le webhook pour une erreur de facture
+      }
     } else {
       await pool.query(
         `UPDATE payments SET statut = $1 WHERE payment_id = $2`,
@@ -262,7 +272,7 @@ const generateInvoice = async (paymentId, entrepriseId) => {
 
     const payment = paymentResult.rows[0];
     const numeroFacture = `FACT-${Date.now()}-${paymentId}`;
-    const montantHT = payment.montant;
+    const montantHT = parseInt(payment.montant);
     const tva = 0; // Pas de TVA selon les spécifications
     const montantTTC = montantHT + tva;
 
@@ -368,13 +378,57 @@ export const getCurrentSubscription = async (req, res) => {
 
     const entreprise = result.rows[0];
     const isExpired = entreprise.date_expiration && new Date(entreprise.date_expiration) < new Date();
+    const hasActivePayment = entreprise.payment_status === 'succès';
+    const isSubscriptionActive = !isExpired && hasActivePayment;
+
+    // Compter les armoires de l'entreprise
+    const armoiresResult = await pool.query(
+      'SELECT COUNT(*) as total_armoires FROM armoires WHERE entreprise_id = $1',
+      [entrepriseId]
+    );
+
+    // Compter les dossiers
+    const dossiersResult = await pool.query(
+      `SELECT COUNT(*) as total_dossiers FROM dossiers d
+       JOIN casiers c ON d.casier_id = c.cassier_id
+       JOIN armoires a ON c.armoire_id = a.armoire_id
+       WHERE a.entreprise_id = $1`,
+      [entrepriseId]
+    );
+
+    // Compter les fichiers
+    const fichiersResult = await pool.query(
+      `SELECT COUNT(*) as total_fichiers FROM fichiers f
+       JOIN dossiers d ON f.dossier_id = d.dossier_id
+       JOIN casiers c ON d.casier_id = c.cassier_id
+       JOIN armoires a ON c.armoire_id = a.armoire_id
+       WHERE a.entreprise_id = $1`,
+      [entrepriseId]
+    );
 
     res.status(200).json({
       entreprise,
-      isExpired,
-      canAccess: !isExpired,
-      daysUntilExpiration: entreprise.date_expiration ? 
-        Math.ceil((new Date(entreprise.date_expiration) - new Date()) / (1000 * 60 * 60 * 24)) : null
+      subscription: {
+        isActive: isSubscriptionActive,
+        isExpired,
+        hasActivePayment,
+        expirationDate: entreprise.date_expiration,
+        daysUntilExpiration: entreprise.date_expiration ? 
+          Math.ceil((new Date(entreprise.date_expiration) - new Date()) / (1000 * 60 * 60 * 24)) : null,
+        armoiresSouscrites: entreprise.armoires_souscrites || 0
+      },
+      usage: {
+        totalArmoires: parseInt(armoiresResult.rows[0].total_armoires),
+        totalDossiers: parseInt(dossiersResult.rows[0].total_dossiers),
+        totalFichiers: parseInt(fichiersResult.rows[0].total_fichiers)
+      },
+      access: {
+        canAccessArmoires: isSubscriptionActive,
+        canAccessDossiers: isSubscriptionActive,
+        canAccessFichiers: isSubscriptionActive,
+        canUpload: isSubscriptionActive,
+        canCreate: isSubscriptionActive
+      }
     });
 
   } catch (err) {

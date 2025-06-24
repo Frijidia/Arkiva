@@ -1,7 +1,7 @@
 {
-  "name": "backend",
+  "name": "arkiva-backend",
   "version": "1.0.0",
-  "description": "Ce dossier contient tous les services backend nécessaires pour la plateforme de streaming.",
+  "description": "Ce dossier contient tous les services backend nécessaires pour la plateforme de Arkiva.",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
