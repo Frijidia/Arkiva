@@ -132,27 +132,27 @@ Tu dois concevoir un endpoint ou une logique côté desktop (à discuter avec le
 
 🟠 ÉTAPE 7 – Abonnement & paiement
 
-    Table abonnements
+    ✅ Table abonnements
 
-    Table paiements
+    ✅ Table paiements
 
-    Gestion :
+    ✅ Gestion :
 
-        POST /abonnement/choisir
+        ✅ POST /abonnement/choisir
 
-        POST /abonnement/payer (intégration avec FeexPay)
+        ✅ POST /abonnement/payer (intégration avec FeexPay)
 
-        GET /abonnement
+        ✅ GET /abonnement
 
-        GET /factures
+        ✅ GET /factures
 
     Génération de PDF de facture (lib : pdfkit, puppeteer, wkhtmltopdf…)
 
 ⚪ ÉTAPE 8 – Tableaux de bord / statistiques
 
-    GET /dashboard/global → nombre d’armoires, utilisateurs, documents, espace utilisé
+   ✅ GET /dashboard/global → nombre d’armoires, utilisateurs, documents, espace utilisé
 
-    GET /dashboard/utilisateur/:id → activité de l’utilisateur
+   ✅ GET /dashboard/utilisateur/:id → activité de l’utilisateur
 
 Tu peux te baser sur les logs pour agréger les statistiques.
 

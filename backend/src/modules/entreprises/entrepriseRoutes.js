@@ -6,7 +6,6 @@ import {
     update,
     remove,
     list,
-    getStats,
     addUser
 } from './entrepriseController.js';
 
@@ -24,6 +23,5 @@ router.post('/:id/users', checkRole(['admin']), addUser);
 // Routes accessibles aux administrateurs et contributeurs
 router.get('/', checkRole(['admin', 'contributeur']), list);
 router.get('/:id', checkRole(['admin', 'contributeur']), getById);
-router.get('/:id/stats', checkRole(['admin', 'contributeur']), getStats);
 
 export default router; 
