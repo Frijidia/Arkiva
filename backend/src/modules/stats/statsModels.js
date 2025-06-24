@@ -23,7 +23,7 @@ export const getEntrepriseStats = async (entrepriseId) => {
                 )) as nombre_casiers,
                 
                 -- Nombre de dossiers
-                (SELECT COUNT(*) FROM dossiers WHERE casier_id IN (
+                (SELECT COUNT(*) FROM dossiers WHERE cassier_id IN (
                     SELECT cassier_id FROM casiers WHERE armoire_id IN (
                         SELECT armoire_id FROM armoires WHERE entreprise_id = $1
                     )
@@ -31,7 +31,7 @@ export const getEntrepriseStats = async (entrepriseId) => {
                 
                 -- Nombre de fichiers
                 (SELECT COUNT(*) FROM fichiers WHERE dossier_id IN (
-                    SELECT dossier_id FROM dossiers WHERE casier_id IN (
+                    SELECT dossier_id FROM dossiers WHERE cassier_id IN (
                         SELECT cassier_id FROM casiers WHERE armoire_id IN (
                             SELECT armoire_id FROM armoires WHERE entreprise_id = $1
                         )
@@ -40,7 +40,7 @@ export const getEntrepriseStats = async (entrepriseId) => {
                 
                 -- Taille totale des fichiers (en octets)
                 (SELECT COALESCE(SUM(taille), 0) FROM fichiers WHERE dossier_id IN (
-                    SELECT dossier_id FROM dossiers WHERE casier_id IN (
+                    SELECT dossier_id FROM dossiers WHERE cassier_id IN (
                         SELECT cassier_id FROM casiers WHERE armoire_id IN (
                             SELECT armoire_id FROM armoires WHERE entreprise_id = $1
                         )
@@ -128,7 +128,7 @@ export const getArmoiresStats = async (entrepriseId) => {
             COALESCE(SUM(f.taille), 0) as taille_totale
         FROM armoires a
         LEFT JOIN casiers c ON a.armoire_id = c.armoire_id
-        LEFT JOIN dossiers d ON c.cassier_id = d.casier_id
+        LEFT JOIN dossiers d ON c.cassier_id = d.cassier_id
         LEFT JOIN fichiers f ON d.dossier_id = f.dossier_id
         WHERE a.entreprise_id = $1
         GROUP BY a.armoire_id, a.nom, a.sous_titre, a.created_at
@@ -149,7 +149,7 @@ export const getActiviteRecente = async (entrepriseId, limit = 10) => {
             u.username as nom_utilisateur
         FROM fichiers f
         JOIN dossiers d ON f.dossier_id = d.dossier_id
-        JOIN casiers c ON d.casier_id = c.cassier_id
+        JOIN casiers c ON d.cassier_id = c.cassier_id
         JOIN armoires a ON c.armoire_id = a.armoire_id
         JOIN users u ON d.user_id = u.user_id
         WHERE a.entreprise_id = $1
@@ -162,7 +162,7 @@ export const getActiviteRecente = async (entrepriseId, limit = 10) => {
             d.created_at as date_activite,
             u.username as nom_utilisateur
         FROM dossiers d
-        JOIN casiers c ON d.casier_id = c.cassier_id
+        JOIN casiers c ON d.cassier_id = c.cassier_id
         JOIN armoires a ON c.armoire_id = a.armoire_id
         JOIN users u ON d.user_id = u.user_id
         WHERE a.entreprise_id = $1
@@ -204,7 +204,7 @@ export const getStatsParTypeFichier = async (entrepriseId) => {
             COALESCE(SUM(f.taille), 0) as taille_totale
         FROM fichiers f
         JOIN dossiers d ON f.dossier_id = d.dossier_id
-        JOIN casiers c ON d.casier_id = c.cassier_id
+        JOIN casiers c ON d.cassier_id = c.cassier_id
         JOIN armoires a ON c.armoire_id = a.armoire_id
         WHERE a.entreprise_id = $1
         GROUP BY type_fichier
@@ -225,7 +225,7 @@ export const getCroissanceMensuelle = async (entrepriseId, mois = 12) => {
                 COALESCE(SUM(f.taille), 0) as taille_ajoutee
             FROM fichiers f
             JOIN dossiers d ON f.dossier_id = d.dossier_id
-            JOIN casiers c ON d.casier_id = c.cassier_id
+            JOIN casiers c ON d.cassier_id = c.cassier_id
             JOIN armoires a ON c.armoire_id = a.armoire_id
             WHERE a.entreprise_id = $1 
             AND f.created_at >= NOW() - INTERVAL '1 month' * $2

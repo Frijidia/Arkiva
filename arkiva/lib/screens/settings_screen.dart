@@ -5,6 +5,7 @@ import 'package:arkiva/services/admin_service.dart';
 import 'package:arkiva/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:arkiva/screens/admin_dashboard_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -285,8 +286,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ],
             ),
           ),
-          // Onglet Dashboard Admin
-          _buildAdminDashboardTab(),
+          // Onglet Dashboard Admin (nouveau dashboard moderne)
+          AdminDashboardScreen(),
         ],
       ) : _buildNonAdminView(),
     );
@@ -440,149 +441,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ),
             ),
           );
-  }
-
-  Widget _buildAdminDashboardTab() {
-    if (_isLoadingAdmin) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadAdminData,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Statistiques
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Statistiques de l\'entreprise',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_stats != null) ...[
-                      _buildStatItem('Nombre d\'utilisateurs', _stats!['nombre_utilisateurs']),
-                      _buildStatItem('Nombre d\'armoires', _stats!['nombre_armoires']),
-                      _buildStatItem('Nombre de fichiers', _stats!['nombre_fichiers']),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Liste des utilisateurs
-            const Text(
-              'Liste des utilisateurs',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_users != null)
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _users!.length,
-                itemBuilder: (context, index) {
-                  final user = _users![index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(user['username']?[0].toUpperCase() ?? 'U'),
-                      ),
-                      title: Text(user['username'] ?? 'Sans nom'),
-                      subtitle: Text('${user['email']} - ${user['role']}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Bouton pour modifier le rôle
-                          PopupMenuButton<String>(
-                            onSelected: (String newRole) {
-                              _updateUserRole(user['user_id'], newRole);
-                            },
-                            itemBuilder: (BuildContext context) => [
-                              const PopupMenuItem(
-                                value: 'admin',
-                                child: Text('Admin'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'contributeur',
-                                child: Text('Contributeur'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'lecteur',
-                                child: Text('Lecteur'),
-                              ),
-                            ],
-                            child: const Icon(Icons.edit),
-                          ),
-                          // Bouton pour supprimer l'utilisateur
-                          if (user['role'] != 'admin')
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Confirmer la suppression'),
-                                    content: Text(
-                                        'Voulez-vous vraiment supprimer l\'utilisateur ${user['username']} ?'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Annuler'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          _deleteUser(user['user_id']);
-                                        },
-                                        child: const Text('Supprimer'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _build2FASection() {

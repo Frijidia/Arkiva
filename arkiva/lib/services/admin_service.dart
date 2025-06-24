@@ -9,7 +9,7 @@ class AdminService {
     print('🔄 Récupération des statistiques de l\'entreprise...');
     
     final response = await http.get(
-      Uri.parse('$baseUrl/entreprise/$entrepriseId/stats'),
+      Uri.parse('http://localhost:3000/api/stats/entreprise/$entrepriseId'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -18,7 +18,7 @@ class AdminService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Échec de la récupération des statistiques: ${response.body}');
+      throw Exception('Échec de la récupération des statistiques: \\${response.body}');
     }
   }
 

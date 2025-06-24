@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:arkiva/services/auth_state_service.dart';
-import 'package:arkiva/services/admin_service.dart';
+import 'package:arkiva/services/stats_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -10,214 +10,322 @@ class AdminDashboardScreen extends StatefulWidget {
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  final AdminService _adminService = AdminService();
-  Map<String, dynamic>? _stats;
-  List<Map<String, dynamic>>? _users;
-  bool _isLoading = true;
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late StatsService _statsService;
+  late int entrepriseId;
+  late String token;
+  int _logsPage = 0;
+  final int _logsPageSize = 50;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _tabController = TabController(length: 7, vsync: this);
+    final authState = Provider.of<AuthStateService>(context, listen: false);
+    entrepriseId = authState.entrepriseId!;
+    token = authState.token!;
+    _statsService = StatsService();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final authStateService = context.read<AuthStateService>();
-      final token = authStateService.token;
-      final entrepriseId = authStateService.entrepriseId;
-
-      if (token != null && entrepriseId != null) {
-        _stats = await _adminService.getEntrepriseStats(entrepriseId, token);
-        _users = await _adminService.getUsers(token, entrepriseId);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _updateUserRole(int userId, String newRole) async {
-    try {
-      final token = context.read<AuthStateService>().token;
-      if (token != null) {
-        await _adminService.updateUserRole(token, userId, newRole);
-        await _loadData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rôle mis à jour avec succès')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
-    }
-  }
-
-  Future<void> _deleteUser(int userId) async {
-    try {
-      final token = context.read<AuthStateService>().token;
-      if (token != null) {
-        await _adminService.deleteUser(token, userId);
-        await _loadData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Utilisateur supprimé avec succès')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
-    }
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tableau de bord administrateur'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Statistiques
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Statistiques de l\'entreprise',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_stats != null) ...[
-                        _buildStatItem('Nombre d\'utilisateurs', _stats!['nombre_utilisateurs']),
-                        _buildStatItem('Nombre d\'armoires', _stats!['nombre_armoires']),
-                        _buildStatItem('Nombre de fichiers', _stats!['nombre_fichiers']),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Liste des utilisateurs
-              const Text(
-                'Liste des utilisateurs',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (_users != null)
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _users!.length,
-                  itemBuilder: (context, index) {
-                    final user = _users![index];
-                    return Card(
-                      child: ListTile(
-                        title: Text(user['username'] ?? 'Sans nom'),
-                        subtitle: Text('${user['email']} - ${user['role']}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Bouton pour modifier le rôle
-                            PopupMenuButton<String>(
-                              onSelected: (String newRole) {
-                                _updateUserRole(user['user_id'], newRole);
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                const PopupMenuItem(
-                                  value: 'admin',
-                                  child: Text('Admin'),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'contributeur',
-                                  child: Text('Contributeur'),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'lecteur',
-                                  child: Text('Lecteur'),
-                                ),
-                              ],
-                              child: const Icon(Icons.edit),
-                            ),
-                            // Bouton pour supprimer l'utilisateur
-                            if (user['role'] != 'admin')
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Confirmer la suppression'),
-                                      content: Text(
-                                          'Voulez-vous vraiment supprimer l\'utilisateur ${user['username']} ?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context),
-                                          child: const Text('Annuler'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            _deleteUser(user['user_id']);
-                                          },
-                                          child: const Text('Supprimer'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabs: const [
+            Tab(text: 'Vue générale'),
+            Tab(text: 'Utilisateurs'),
+            Tab(text: 'Armoires'),
+            Tab(text: 'Activité'),
+            Tab(text: 'Types de fichiers'),
+            Tab(text: 'Croissance'),
+            Tab(text: 'Logs'),
+          ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildVueGenerale(),
+          _buildUtilisateurs(),
+          _buildArmoires(),
+          _buildActivite(),
+          _buildTypesFichiers(),
+          _buildCroissance(),
+          _buildLogs(),
+        ],
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+  Widget _buildVueGenerale() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _statsService.getStatsGenerales(entrepriseId, token),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final stats = snapshot.data!;
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: ListTile(
+                title: const Text('Nombre d\'utilisateurs'),
+                trailing: Text('${stats['nombre_utilisateurs']}'),
+              ),
             ),
+            Card(
+              child: ListTile(
+                title: const Text('Nombre d\'armoires'),
+                trailing: Text('${stats['nombre_armoires']}'),
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: const Text('Nombre de fichiers'),
+                trailing: Text('${stats['nombre_fichiers']}'),
+              ),
+            ),
+            // Ajoute d'autres stats si besoin
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUtilisateurs() {
+    return FutureBuilder<List<List<dynamic>>>(
+      future: Future.wait([
+        _statsService.getAdmins(entrepriseId, token),
+        _statsService.getContributeurs(entrepriseId, token),
+        _statsService.getLecteurs(entrepriseId, token),
+      ]),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final admins = snapshot.data![0];
+        final contributeurs = snapshot.data![1];
+        final lecteurs = snapshot.data![2];
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('Admins', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...admins.map((admin) => ListTile(
+              title: Text(admin['username']),
+              subtitle: Text(admin['email']),
+              trailing: const Text('Admin'),
+            )),
+            const SizedBox(height: 16),
+            const Text('Contributeurs', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...contributeurs.map((c) => ListTile(
+              title: Text(c['username']),
+              subtitle: Text(c['email']),
+              trailing: const Text('Contributeur'),
+            )),
+            const SizedBox(height: 16),
+            const Text('Lecteurs', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...lecteurs.map((l) => ListTile(
+              title: Text(l['username']),
+              subtitle: Text(l['email']),
+              trailing: const Text('Lecteur'),
+            )),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildArmoires() {
+    return FutureBuilder<List<dynamic>>(
+      future: _statsService.getStatsArmoires(entrepriseId, token),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final armoires = snapshot.data!;
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('Statistiques par armoire', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...armoires.map((a) => Card(
+              child: ListTile(
+                title: Text(a['nom_armoire']),
+                subtitle: Text('Casiers: ${a['nombre_casiers']} | Dossiers: ${a['nombre_dossiers']} | Fichiers: ${a['nombre_fichiers']}'),
+                trailing: Text('${a['taille_totale_mb']} MB'),
+              ),
+            )),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildActivite() {
+    return FutureBuilder<List<dynamic>>(
+      future: _statsService.getActiviteRecente(entrepriseId, token),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final activites = snapshot.data!;
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('Activité récente', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...activites.map((a) => ListTile(
+              title: Text('${a['type_activite']} : ${a['nom_element']}'),
+              subtitle: Text('Par ${a['nom_utilisateur']} le ${a['date_activite']}'),
+            )),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTypesFichiers() {
+    return FutureBuilder<List<dynamic>>(
+      future: _statsService.getStatsTypesFichiers(entrepriseId, token),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final types = snapshot.data!;
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('Répartition par type de fichier', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...types.map((t) => ListTile(
+              title: Text(t['type_fichier']),
+              subtitle: Text('Fichiers: ${t['nombre_fichiers']}'),
+              trailing: Text('${t['taille_totale_mb']} MB'),
+            )),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCroissance() {
+    return FutureBuilder<List<dynamic>>(
+      future: _statsService.getCroissance(entrepriseId, token),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final croissance = snapshot.data!;
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('Croissance mensuelle', style: TextStyle(fontWeight: FontWeight.bold)),
+            ...croissance.map((c) => ListTile(
+              title: Text('${c['mois_formate'] ?? c['mois']}'),
+              subtitle: Text('Nouveaux fichiers: ${c['nouveaux_fichiers']}'),
+              trailing: Text('${c['taille_ajoutee_mb']} MB'),
+            )),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLogs() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Statistiques des logs', style: TextStyle(fontWeight: FontWeight.bold)),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _statsService.getLogsStats(entrepriseId, token),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
+              final stats = snapshot.data!;
+              return Card(
+                child: ListTile(
+                  title: Text('Total logs: ${stats['nombre_total_logs']}'),
+                  subtitle: Text('Utilisateurs actifs: ${stats['nombre_utilisateurs_actifs']}\nConnexions: ${stats['nombre_connexions']}'),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          const Text('Top utilisateurs actifs', style: TextStyle(fontWeight: FontWeight.bold)),
+          FutureBuilder<List<dynamic>>(
+            future: _statsService.getLogsParUtilisateur(entrepriseId, token, limit: 20),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
+              final users = snapshot.data!;
+              return Column(
+                children: users.map((u) => ListTile(
+                  title: Text(u['username']),
+                  subtitle: Text(u['email']),
+                  trailing: Text('Actions: ${u['nombre_actions']}'),
+                )).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          const Text('Logs par action', style: TextStyle(fontWeight: FontWeight.bold)),
+          FutureBuilder<List<dynamic>>(
+            future: _statsService.getLogsParAction(entrepriseId, token),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
+              final actions = snapshot.data!;
+              return Column(
+                children: actions.map((a) => ListTile(
+                  title: Text('${a['action']}'),
+                  subtitle: Text('Utilisateurs: ${a['nombre_utilisateurs_uniques']}'),
+                  trailing: Text('Actions: ${a['nombre_actions']}'),
+                )).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          const Text('Logs par cible', style: TextStyle(fontWeight: FontWeight.bold)),
+          FutureBuilder<List<dynamic>>(
+            future: _statsService.getLogsParCible(entrepriseId, token),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
+              final cibles = snapshot.data!;
+              return Column(
+                children: cibles.map((c) => ListTile(
+                  title: Text('${c['type_cible']}'),
+                  subtitle: Text('Utilisateurs: ${c['nombre_utilisateurs_uniques']}'),
+                  trailing: Text('Actions: ${c['nombre_actions']}'),
+                )).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          const Text('Tous les logs (pagination)', style: TextStyle(fontWeight: FontWeight.bold)),
+          FutureBuilder<List<dynamic>>(
+            future: _statsService.getLogs(entrepriseId, token, limit: _logsPageSize, offset: _logsPage * _logsPageSize),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
+              final logs = snapshot.data!;
+              return Column(
+                children: [
+                  ...logs.map((log) => ListTile(
+                    title: Text('${log['action']} sur ${log['type_cible']}'),
+                    subtitle: Text('Par ${log['username'] ?? log['user_id']} le ${log['created_at']}'),
+                  )),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: _logsPage > 0 ? () => setState(() => _logsPage--) : null,
+                      ),
+                      Text('Page ${_logsPage + 1}'),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_forward),
+                        onPressed: () => setState(() => _logsPage++),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
