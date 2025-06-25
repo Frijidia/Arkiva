@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'email': _emailController.text.trim(),
         'password': _passwordController.text.trim(),
       }),
-    );
+      );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200) {
       _token = data['token'];
@@ -61,8 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         // Connexion normale
-        final authStateService = context.read<AuthStateService>();
-        await authStateService.setAuthState(
+      final authStateService = context.read<AuthStateService>();
+      await authStateService.setAuthState(
           _token!,
           _userId!.toString(),
         );
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({'code': _code2FAController.text.trim()}),
-    );
+      );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200) {
       final newToken = data['token'];
@@ -136,42 +136,42 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (!_show2FA) ...[
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer votre email';
-                      }
-                      return null;
-                    },
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 16.0),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Mot de passe',
-                      border: OutlineInputBorder(),
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer votre mot de passe';
-                      }
-                      return null;
-                    },
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mot de passe',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 24.0),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text('Se connecter'),
-                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre mot de passe';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24.0),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Se connecter'),
+                ),
                 ] else ...[
                   const Text('Un code de vérification a été envoyé à votre email.'),
                   const SizedBox(height: 12),

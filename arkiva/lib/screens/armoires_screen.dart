@@ -227,37 +227,37 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
                       ),
                     Expanded(
                       child: _armoires.isEmpty
-                          ? const Center(child: Text('Aucune armoire disponible'))
-                          : GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                childAspectRatio: 0.9,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: _armoires.length,
-                              itemBuilder: (context, index) {
-                                final armoire = _armoires[index];
-                                return Card(
-                                  elevation: 4,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: InkWell(
+                  ? const Center(child: Text('Aucune armoire disponible'))
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 0.9,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: _armoires.length,
+                      itemBuilder: (context, index) {
+                        final armoire = _armoires[index];
+                        return Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
                                     onTap: _abonnementActif
                                         ? () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => CasiersScreen(
-                                                  armoireId: armoire.armoireId,
-                                                  armoireNom: armoire.nom,
-                                                  entrepriseId: widget.entrepriseId,
-                                                ),
-                                              ),
-                                            );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CasiersScreen(
+                                    armoireId: armoire.armoireId,
+                                    armoireNom: armoire.nom,
+                                    entrepriseId: widget.entrepriseId,
+                                  ),
+                                ),
+                              );
                                           }
                                         : () {
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -266,20 +266,20 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
                                               ),
                                             );
                                           },
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
                                           _abonnementActif ? Icons.folder : Icons.lock,
                                           size: 48,
                                           color: _abonnementActif ? Colors.blue[700] : Colors.grey[600],
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          armoire.nom,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        armoire.nom,
                                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                           textAlign: TextAlign.center,
-                                        ),
+                                      ),
                                         if (!_abonnementActif)
                                           const Padding(
                                             padding: EdgeInsets.only(top: 8.0),
@@ -287,16 +287,16 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
                                               'Abonnement requis',
                                               style: TextStyle(color: Colors.red, fontSize: 12),
                                             ),
-                                          ),
-                                      ],
+                                      ),
+                                    ],
                                     ),
                                   ),
                                 );
                               },
-                            ),
+                                  ),
+                                ),
+                              ],
                     ),
-                  ],
-                ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createArmoire,
         child: const Icon(Icons.add),

@@ -141,14 +141,12 @@ export const processPayment = async (req, res) => {
         entreprise_id: entrepriseId,
         custom_id: custom_id || `ARKIVA_${payment_id}_${Date.now()}`
       }),
-      
       // Données supplémentaires pour le suivi
       payment_id: payment_id,
       entreprise_id: entrepriseId,
       moyen_paiement: moyen_paiement,
       numero_telephone: numero_telephone,
       custom_id: custom_id || `ARKIVA_${payment_id}_${Date.now()}`,
-      
       // Configuration selon le mode
       mode: FEEXPAY_CONFIG.mode,
       description: `Abonnement Arkiva - ${payment.armoires_souscrites} armoires`

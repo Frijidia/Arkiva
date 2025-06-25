@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:feexpay_flutter/feexpay_flutter.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String paymentId;
@@ -112,9 +113,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
-        // Afficher les informations de paiement FeexPay
-        _showFeexPayInfo(data['feexpay_data'], data['payment_info']);
+        final feexpay = data['feexpay_data'];
+        final callbackInfo = feexpay['callback_info'];
+        final callbackInfoMap = callbackInfo is String ? jsonDecode(callbackInfo) : callbackInfo;
+        // Ouvre directement l'interface FeexPay Flutter
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChoicePage(
+              token: feexpay['token'],
+              id: feexpay['id'],
+              amount: feexpay['amount'],
+              redirecturl: feexpay['redirecturl'],
+              trans_key: feexpay['trans_key'],
+              callback_info: callbackInfoMap,
+            ),
+          ),
+        );
       } else {
         final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,48 +147,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  void _showFeexPayInfo(Map<String, dynamic> feexpayData, Map<String, dynamic> paymentInfo) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Paiement initié'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Votre paiement a été initié avec succès.'),
-            const SizedBox(height: 16),
-            Text('Montant: ${paymentInfo['montant']} FCFA'),
-            Text('Armoires: ${paymentInfo['armoires_souscrites']}'),
-            const SizedBox(height: 16),
-            const Text(
-              'Informations FeexPay:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('ID: ${feexpayData['id']}'),
-            Text('Clé de transaction: ${feexpayData['trans_key']}'),
-            Text('Montant: ${feexpayData['amount']}'),
-            const SizedBox(height: 16),
-            const Text(
-              'Utilisez ces informations avec le SDK FeexPay Flutter pour finaliser le paiement.',
-              style: TextStyle(fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context); // Retour à la page précédente
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -184,58 +157,58 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              child: Column(
+        child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          children: [
                   // Informations de l'abonnement
                   if (_paymentInfo != null) ...[
-                    Card(
-                      child: Padding(
+            Card(
+              child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                             const Text(
                               'Récapitulatif de l\'abonnement',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                             const SizedBox(height: 12),
                             Text('Armoires souscrites: ${_paymentInfo!['subscription']['armoiresSouscrites']}'),
                             if (_paymentInfo!['subscription']['expirationDate'] != null)
                               Text('Expire le: ${DateTime.parse(_paymentInfo!['subscription']['expirationDate']).toLocal().toString().split(' ')[0]}'),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ],
+                ),
+              ),
+            ),
                     const SizedBox(height: 16),
                   ],
 
-                  // Sélection du moyen de paiement
-                  Card(
-                    child: Padding(
+            // Sélection du moyen de paiement
+            Card(
+              child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                           const Text(
-                            'Moyen de paiement',
-                            style: TextStyle(
+                      'Moyen de paiement',
+                      style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                           const SizedBox(height: 12),
                           ..._paymentMethods.map((method) => RadioListTile<String>(
                             value: method['id'],
-                            groupValue: _selectedPaymentMethod,
-                            onChanged: (value) {
-                              setState(() {
+                      groupValue: _selectedPaymentMethod,
+                      onChanged: (value) {
+                        setState(() {
                                 _selectedPaymentMethod = value;
-                              });
-                            },
+                        });
+                      },
                             title: Row(
                               children: [
                                 Icon(method['icon']),
@@ -244,36 +217,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               ],
                             ),
                           )),
-                        ],
-                      ),
-                    ),
-                  ),
+                  ],
+                ),
+              ),
+            ),
                   const SizedBox(height: 16),
 
                   // Numéro de téléphone (pour Mobile Money)
                   if (_selectedPaymentMethod == 'mobile_money') ...[
-                    Card(
-                      child: Padding(
+              Card(
+                child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                             const Text(
                               'Numéro de téléphone',
-                              style: TextStyle(
+                        style: TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                             const SizedBox(height: 12),
-                            TextField(
-                              controller: _phoneController,
+                      TextField(
+                        controller: _phoneController,
                               decoration: const InputDecoration(
                                 labelText: 'Numéro de téléphone',
                                 hintText: 'Ex: 22507012345',
                                 border: OutlineInputBorder(),
                               ),
-                              keyboardType: TextInputType.phone,
+                        keyboardType: TextInputType.phone,
                             ),
                           ],
                         ),
@@ -302,36 +275,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             decoration: const InputDecoration(
                               labelText: 'ID personnalisé',
                               hintText: 'Ex: MON_ID_123',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ],
+                          border: OutlineInputBorder(),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
+                ),
+              ),
                   const SizedBox(height: 24),
 
-                  // Bouton de paiement
+            // Bouton de paiement
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _processPayment,
-                      style: ElevatedButton.styleFrom(
+              onPressed: _isLoading ? null : _processPayment,
+              style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isLoading
+              ),
+              child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Procéder au paiement',
                               style: TextStyle(fontSize: 16),
-                            ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
             ),
+          ],
+        ),
+      ),
     );
   }
 }

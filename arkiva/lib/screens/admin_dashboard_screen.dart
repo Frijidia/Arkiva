@@ -26,7 +26,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     entrepriseId = authState.entrepriseId!;
     token = authState.token!;
     _statsService = StatsService();
-  }
+      }
 
   @override
   void dispose() {
@@ -76,8 +76,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         final stats = snapshot.data!;
         return ListView(
           padding: const EdgeInsets.all(16),
-          children: [
-            Card(
+            children: [
+              Card(
               child: ListTile(
                 title: const Text('Nombre d\'utilisateurs'),
                 trailing: Text('${stats['nombre_utilisateurs']}'),
@@ -93,8 +93,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               child: ListTile(
                 title: const Text('Nombre de fichiers'),
                 trailing: Text('${stats['nombre_fichiers']}'),
-              ),
-            ),
+                        ),
+                      ),
             // Ajoute d'autres stats si besoin
           ],
         );
@@ -130,7 +130,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               subtitle: Text(c['email']),
               trailing: const Text('Contributeur'),
             )),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
             const Text('Lecteurs', style: TextStyle(fontWeight: FontWeight.bold)),
             ...lecteurs.map((l) => ListTile(
               title: Text(l['username']),
@@ -154,7 +154,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           children: [
             const Text('Statistiques par armoire', style: TextStyle(fontWeight: FontWeight.bold)),
             ...armoires.map((a) => Card(
-              child: ListTile(
+                      child: ListTile(
                 title: Text(a['nom_armoire']),
                 subtitle: Text('Casiers: ${a['nombre_casiers']} | Dossiers: ${a['nombre_dossiers']} | Fichiers: ${a['nombre_fichiers']}'),
                 trailing: Text('${a['taille_totale_mb']} MB'),
@@ -174,7 +174,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         final activites = snapshot.data!;
         return ListView(
           padding: const EdgeInsets.all(16),
-          children: [
+                          children: [
             const Text('Activité récente', style: TextStyle(fontWeight: FontWeight.bold)),
             ...activites.map((a) => ListTile(
               title: Text('${a['type_activite']} : ${a['nom_element']}'),
@@ -182,7 +182,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             )),
           ],
         );
-      },
+                              },
     );
   }
 
@@ -201,7 +201,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               subtitle: Text('Fichiers: ${t['nombre_fichiers']}'),
               trailing: Text('${t['taille_totale_mb']} MB'),
             )),
-          ],
+                              ],
         );
       },
     );
@@ -244,10 +244,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 child: ListTile(
                   title: Text('Total logs: ${stats['nombre_total_logs']}'),
                   subtitle: Text('Utilisateurs actifs: ${stats['nombre_utilisateurs_actifs']}\nConnexions: ${stats['nombre_connexions']}'),
-                ),
-              );
-            },
-          ),
+                                    ),
+                                  );
+                                },
+                              ),
           const SizedBox(height: 24),
           const Text('Top utilisateurs actifs', style: TextStyle(fontWeight: FontWeight.bold)),
           FutureBuilder<List<dynamic>>(
@@ -277,9 +277,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   subtitle: Text('Utilisateurs: ${a['nombre_utilisateurs_uniques']}'),
                   trailing: Text('Actions: ${a['nombre_actions']}'),
                 )).toList(),
-              );
-            },
-          ),
+                    );
+                  },
+                ),
           const SizedBox(height: 24),
           const Text('Logs par cible', style: TextStyle(fontWeight: FontWeight.bold)),
           FutureBuilder<List<dynamic>>(
@@ -311,7 +311,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   )),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+        children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: _logsPage > 0 ? () => setState(() => _logsPage--) : null,
@@ -320,7 +320,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       IconButton(
                         icon: const Icon(Icons.arrow_forward),
                         onPressed: () => setState(() => _logsPage++),
-                      ),
+            ),
                     ],
                   ),
                 ],

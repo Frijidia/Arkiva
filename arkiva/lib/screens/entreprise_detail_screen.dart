@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:arkiva/services/auth_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/screens/edit_entreprise_screen.dart';
-import 'package:arkiva/screens/payment_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:feexpay_flutter/feexpay_flutter.dart';
 
 class EntrepriseDetailScreen extends StatefulWidget {
   const EntrepriseDetailScreen({super.key});
@@ -122,17 +122,45 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final paymentId = data['paiement']['payment_id'];
-        
-        // Naviguer vers la page de paiement
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentScreen(
-              paymentId: paymentId.toString(),
-              authToken: token,
-            ),
-          ),
+        // Appel backend pour générer les infos FeexPay
+        final processResponse = await http.post(
+          Uri.parse('http://localhost:3000/api/payments/process-payment'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'payment_id': paymentId.toString(),
+            'moyen_paiement': 'mobile_money', // ou 'card' selon le cas
+            'numero_telephone': '', // tu peux demander le numéro avant si besoin
+            'custom_id': null,
+          }),
         );
+        if (processResponse.statusCode == 200) {
+          final processData = jsonDecode(processResponse.body);
+          final feexpay = processData['feexpay_data'];
+          final callbackInfo = feexpay['callback_info'];
+          final callbackInfoMap = callbackInfo is String ? jsonDecode(callbackInfo) : callbackInfo;
+          // Ouvre directement FeexPay
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChoicePage(
+                token: feexpay['token'],
+                id: feexpay['id'].toString(),
+                amount: feexpay['amount'].toString(),
+                redirecturl: feexpay['redirecturl'],
+                trans_key: feexpay['trans_key'].toString(),
+                callback_info: callbackInfoMap,
+              ),
+            ),
+          );
+        } else {
+          final errorData = jsonDecode(processResponse.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: ${errorData['error']}')),
+          );
+        }
       } else {
         final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -324,47 +352,47 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
           children: [
             // Informations de l'entreprise
             FutureBuilder<Map<String, dynamic>>(
-              future: _entrepriseInfoFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
+        future: _entrepriseInfoFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text('Erreur: ${snapshot.error}'),
                     ),
                   );
-                } else if (!snapshot.hasData || snapshot.data == null) {
+          } else if (!snapshot.hasData || snapshot.data == null) {
                   return const Card(
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Aucune donnée d\'entreprise trouvée.'),
                     ),
                   );
-                } else {
-                  final entreprise = snapshot.data!;
+          } else {
+            final entreprise = snapshot.data!;
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entreprise['nom'] ?? 'N/A',
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('Email: ${entreprise['email'] ?? 'N/A'}'),
-                          const SizedBox(height: 8),
-                          Text('Téléphone: ${entreprise['telephone'] ?? 'N/A'}'),
-                          const SizedBox(height: 8),
-                          Text('Adresse: ${entreprise['adresse'] ?? 'N/A'}'),
-                          const SizedBox(height: 8),
-                          Text('Plan d\'abonnement: ${entreprise['plan_abonnement'] ?? 'N/A'}'),
-                          const SizedBox(height: 8),
-                          Text('Limite d\'armoires: ${entreprise['armoire_limit'] ?? 'N/A'}'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entreprise['nom'] ?? 'N/A',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Email: ${entreprise['email'] ?? 'N/A'}'),
+                  const SizedBox(height: 8),
+                  Text('Téléphone: ${entreprise['telephone'] ?? 'N/A'}'),
+                  const SizedBox(height: 8),
+                  Text('Adresse: ${entreprise['adresse'] ?? 'N/A'}'),
+                  const SizedBox(height: 8),
+                  Text('Plan d\'abonnement: ${entreprise['plan_abonnement'] ?? 'N/A'}'),
+                  const SizedBox(height: 8),
+                  Text('Limite d\'armoires: ${entreprise['armoire_limit'] ?? 'N/A'}'),
                         ],
                       ),
                     ),
@@ -398,10 +426,10 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Aucune information d\'abonnement disponible.'),
-                    ),
-                  );
-                }
-              },
+              ),
+            );
+          }
+        },
             ),
           ],
         ),
