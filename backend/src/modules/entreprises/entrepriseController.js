@@ -41,9 +41,17 @@ export const create = async (req, res) => {
         // Valider la transaction
         await pool.query('COMMIT');
         
+        // Récupérer l'utilisateur mis à jour
+        const userMaj = await pool.query(
+            'SELECT user_id, email, username, role, entreprise_id FROM users WHERE user_id = $1',
+            [adminId]
+        );
+
+        // Envoyer l'entreprise ET l'utilisateur mis à jour dans la réponse
         res.status(201).json({
             message: 'Entreprise créée avec succès',
-            entreprise
+            entreprise,
+            user: userMaj.rows[0]
         });
     } catch (error) {
         // Annuler la transaction en cas d'erreur

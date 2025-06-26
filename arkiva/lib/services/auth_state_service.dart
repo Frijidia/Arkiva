@@ -30,7 +30,7 @@ class AuthStateService extends ChangeNotifier {
     if (_isAuthenticated) {
       try {
         final userInfo = await AuthService().getUserInfo(_token!);
-        _userId = userInfo['user_id']?.toString();
+        _userId = userInfo['user_id']?.toString() ?? userInfo['id']?.toString();
         _username = userInfo['username'];
         _entrepriseId = userInfo['entreprise_id'];
         _role = userInfo['role'];
@@ -65,7 +65,7 @@ class AuthStateService extends ChangeNotifier {
 
     try {
       final userInfo = await AuthService().getUserInfo(_token!);
-      _userId = userInfo['user_id']?.toString();
+      _userId = userInfo['user_id']?.toString() ?? userInfo['id']?.toString();
       _username = userInfo['username'];
       _entrepriseId = userInfo['entreprise_id'];
       _role = userInfo['role'];
@@ -105,6 +105,14 @@ class AuthStateService extends ChangeNotifier {
 
   void setCasierCount(int count) {
     _casierCount = count;
+    notifyListeners();
+  }
+
+  void setEntrepriseAndUser(int entrepriseId, Map<String, dynamic> user) {
+    _entrepriseId = entrepriseId;
+    _userId = user['user_id']?.toString() ?? user['id']?.toString();
+    _username = user['username'];
+    _role = user['role'];
     notifyListeners();
   }
 } 

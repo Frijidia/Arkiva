@@ -76,8 +76,11 @@ class _CreateEntrepriseScreenState extends State<CreateEntrepriseScreen> {
       }
 
       if (_logoFile != null) {
-         print('📎 Fichier logo sélectionné: ${_logoFile!.path}');
-         await _authService.createEntrepriseWithLogo(entrepriseData, _logoFile!, token);
+         print('📎 Fichier logo sélectionné: \\${_logoFile!.path}');
+         final response = await _authService.createEntrepriseWithLogo(entrepriseData, _logoFile!, token);
+         final entrepriseId = response['entreprise']['entreprise_id'];
+         final user = response['user'];
+         authStateService.setEntrepriseAndUser(entrepriseId, user);
        } else {
           final entreprise = Entreprise(
              nom: _nomController.text,
@@ -86,7 +89,10 @@ class _CreateEntrepriseScreenState extends State<CreateEntrepriseScreen> {
              adresse: _adresseController.text,
              logoUrl: '',
           );
-         await _authService.createEntreprise(entreprise, token);
+         final response = await _authService.createEntreprise(entreprise, token);
+         final entrepriseId = response['entreprise']['entreprise_id'];
+         final user = response['user'];
+         authStateService.setEntrepriseAndUser(entrepriseId, user);
        }
 
       print('✅ Création d\'entreprise réussie, redirection vers l\'accueil...');

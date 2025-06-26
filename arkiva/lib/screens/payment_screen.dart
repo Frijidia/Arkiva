@@ -118,9 +118,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final callbackInfoMap = callbackInfo is String ? jsonDecode(callbackInfo) : callbackInfo;
         // Ouvre directement l'interface FeexPay Flutter
         Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChoicePage(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChoicePage(
               token: feexpay['token'],
               id: feexpay['id'],
               amount: feexpay['amount'],
