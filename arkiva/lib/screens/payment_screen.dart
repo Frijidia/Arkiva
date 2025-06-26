@@ -116,11 +116,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final feexpay = data['feexpay_data'];
         final callbackInfo = feexpay['callback_info'];
         final callbackInfoMap = callbackInfo is String ? jsonDecode(callbackInfo) : callbackInfo;
+        // Ajout d'un log pour vérifier le payload transmis à FeexPay
+        print('Payload transmis à ChoicePage (FeexPay):');
+        print({
+          'token': feexpay['token'],
+          'id': feexpay['id'],
+          'amount': feexpay['amount'],
+          'redirecturl': feexpay['redirecturl'],
+          'trans_key': feexpay['trans_key'],
+          'callback_info': callbackInfoMap,
+        });
         // Ouvre directement l'interface FeexPay Flutter
         Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChoicePage(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChoicePage(
               token: feexpay['token'],
               id: feexpay['id'],
               amount: feexpay['amount'],

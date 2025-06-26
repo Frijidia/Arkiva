@@ -220,4 +220,5 @@ Pour le système :
     
 
 
-    
+       npm install -g ngrok
+          ngrok http 3000

@@ -128,25 +128,32 @@ export const processPayment = async (req, res) => {
     // 2. Générer une clé de transaction aléatoire de 15 caractères
     const trans_key = Math.random().toString(36).substring(2, 17);
 
+    // 2.1. Générer un custom_id unique si non fourni
+    const generatedCustomId = custom_id || `ARKIVA_${payment_id}_${Date.now()}`;
+
     // 3. Préparer les données pour le SDK FeexPay Flutter
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:37811';
+    const redirecturl = `${frontendUrl}/payment/success`;
+    console.log('FeexPay redirecturl utilisé:', redirecturl);
     const feexpayData = {
       // Données requises par le SDK FeexPay
       id: FEEXPAY_CONFIG.shopId,
       token: FEEXPAY_CONFIG.apiKey,
       amount: Math.round(Number(payment.montant)),
       trans_key: trans_key,
-      redirecturl: `${process.env.FRONTEND_URL}/payment/success`,
+      redirecturl: redirecturl,
+      // IMPORTANT : custom_id à la racine du payload
+      custom_id: generatedCustomId,
       callback_info: JSON.stringify({ 
         payment_id, 
         entreprise_id: entrepriseId,
-        custom_id: custom_id || `ARKIVA_${payment_id}_${Date.now()}`
+        custom_id: generatedCustomId
       }),
       // Données supplémentaires pour le suivi
       payment_id: payment_id,
       entreprise_id: entrepriseId,
       moyen_paiement: moyen_paiement,
       numero_telephone: numero_telephone,
-      custom_id: custom_id || `ARKIVA_${payment_id}_${Date.now()}`,
       // Configuration selon le mode
       mode: FEEXPAY_CONFIG.mode,
       description: `Abonnement Arkiva - ${payment.armoires_souscrites} armoires`
@@ -227,6 +234,10 @@ export const feexPayWebhook = async (req, res) => {
         ['succès', transaction_id, paymentId]
       );
       console.log(`Paiement ${paymentId} marqué comme succès`);
+
+      // Correction : récupérer entrepriseId depuis la base
+      const paymentResult = await pool.query('SELECT entreprise_id FROM payments WHERE payment_id = $1', [paymentId]);
+      const entrepriseId = paymentResult.rows[0]?.entreprise_id;
 
       // Générer et envoyer la facture
       try {
