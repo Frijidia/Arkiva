@@ -44,10 +44,19 @@ class _LoginScreenState extends State<LoginScreen> {
       }),
       );
     final data = jsonDecode(response.body);
+    print('Réponse backend : ${response.body}'); // Log la réponse brute
     if (response.statusCode == 200) {
-      _token = data['token'];
       final user = data['user'];
-      _userId = user['id'];
+      if (user == null || user['user_id'] == null || user['role'] == null) {
+        setState(() {
+          _errorMsg = "Réponse du serveur incomplète. Veuillez contacter l'administrateur.";
+          _isLoading = false;
+        });
+        print('Réponse inattendue : $data');
+        return;
+      }
+      _token = data['token'];
+      _userId = user['user_id'];
       if (user['two_factor_enabled'] == true) {
         setState(() { _show2FA = true; });
         // Optionnel : renvoyer un code à chaque tentative de login

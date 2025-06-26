@@ -13,8 +13,29 @@ const createTableCassiers = `
 );
 `;
 
+// Migration pour corriger les incohérences de noms de colonnes
+const fixColumnNames = `
+  DO $$
+  BEGIN
+    -- Vérifier si la table dossiers existe et corriger le nom de la colonne
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dossiers') THEN
+      -- Si la colonne s'appelle 'casier_id' (sans double s), la renommer en 'cassier_id'
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dossiers' AND column_name = 'casier_id') THEN
+        ALTER TABLE dossiers RENAME COLUMN casier_id TO cassier_id;
+        RAISE NOTICE 'Colonne casier_id renommée en cassier_id dans la table dossiers';
+      END IF;
+    END IF;
+  END $$;
+`;
+
 pool.query(createTableCassiers)
-    .then(() => console.log('Table casier created successfully'))
+    .then(() => {
+        console.log('Table casier created successfully');
+        return pool.query(fixColumnNames);
+    })
+    .then(() => {
+        console.log('Column names fixed successfully');
+    })
     .catch((err) => console.error('Error creating table:', err));
 
 

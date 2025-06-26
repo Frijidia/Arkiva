@@ -30,6 +30,22 @@ const addContenuOcrColumn = `
   END $$;
 `;
 
+// Migration pour ajouter la colonne taille si elle n'existe pas
+const addTailleColumn = `
+  DO $$ 
+  BEGIN 
+    IF NOT EXISTS (
+      SELECT 1 
+      FROM information_schema.columns 
+      WHERE table_name = 'fichiers' 
+      AND column_name = 'taille'
+    ) THEN
+      ALTER TABLE fichiers ADD COLUMN taille INTEGER;
+      RAISE NOTICE 'Colonne taille ajoutée à la table fichiers';
+    END IF;
+  END $$;
+`;
+
 const initializeTable = async () => {
   try {
     // Créer la table si elle n'existe pas
@@ -39,6 +55,10 @@ const initializeTable = async () => {
     // Ajouter la colonne contenu_ocr si elle n'existe pas
     await pool.query(addContenuOcrColumn);
     console.log('Colonne contenu_ocr vérifiée/ajoutée');
+
+    // Ajouter la colonne taille si elle n'existe pas
+    await pool.query(addTailleColumn);
+    console.log('Colonne taille vérifiée/ajoutée');
 
   } catch (err) {
     console.error('Erreur lors de l\'initialisation de la table fichiers:', err);

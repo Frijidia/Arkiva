@@ -19,6 +19,47 @@ const createUsersTable = `
   );
 `;
 
+// Migration pour ajouter les colonnes manquantes
+const addMissingColumns = `
+  DO $$
+  BEGIN
+    -- Ajouter la colonne password si elle n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'password') THEN
+      ALTER TABLE users ADD COLUMN password TEXT;
+    END IF;
+    
+    -- Ajouter la colonne two_factor_code si elle n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'two_factor_code') THEN
+      ALTER TABLE users ADD COLUMN two_factor_code VARCHAR(6);
+    END IF;
+    
+    -- Ajouter la colonne two_factor_code_expires si elle n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'two_factor_code_expires') THEN
+      ALTER TABLE users ADD COLUMN two_factor_code_expires TIMESTAMP;
+    END IF;
+    
+    -- Ajouter la colonne two_factor_method si elle n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'two_factor_method') THEN
+      ALTER TABLE users ADD COLUMN two_factor_method VARCHAR(10);
+    END IF;
+  END $$;
+`;
+
+// Migration pour migrer les mots de passe
+const migratePasswords = `
+  DO $$
+  BEGIN
+    -- Si la colonne password_hash existe et que password est vide, copier password_hash vers password
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'password_hash') THEN
+      UPDATE users 
+      SET password = password_hash 
+      WHERE password IS NULL AND password_hash IS NOT NULL;
+      
+      RAISE NOTICE 'Mots de passe migrés de password_hash vers password';
+    END IF;
+  END $$;
+`;
+
 // Création d'un index sur entreprise_id pour optimiser les recherches
 const createIndex = `
   CREATE INDEX IF NOT EXISTS idx_users_entreprise_id ON users(entreprise_id);
@@ -28,6 +69,14 @@ const createIndex = `
 pool.query(createUsersTable)
   .then(() => {
     console.log('Table users created successfully');
+    return pool.query(addMissingColumns);
+  })
+  .then(() => {
+    console.log('Missing columns added successfully');
+    return pool.query(migratePasswords);
+  })
+  .then(() => {
+    console.log('Passwords migrated successfully');
     return pool.query(createIndex);
   })
   .then(() => {

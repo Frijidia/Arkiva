@@ -360,6 +360,25 @@ export const getCurrentSubscription = async (req, res) => {
   const entrepriseId = req.user.entreprise_id;
 
   try {
+    // Debug: Vérifier la structure des tables
+    console.log('🔍 Vérification de la structure des tables...');
+    
+    const dossiersStructure = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'dossiers' 
+      ORDER BY ordinal_position
+    `);
+    console.log('📋 Structure table dossiers:', dossiersStructure.rows);
+    
+    const casiersStructure = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'casiers' 
+      ORDER BY ordinal_position
+    `);
+    console.log('📋 Structure table casiers:', casiersStructure.rows);
+
     const result = await pool.query(
       `SELECT e.*, p.date_expiration, p.armoires_souscrites, p.statut as payment_status
        FROM entreprises e
@@ -385,10 +404,10 @@ export const getCurrentSubscription = async (req, res) => {
       [entrepriseId]
     );
 
-    // Compter les dossiers
+    // Compter les dossiers - Utiliser la structure réelle détectée
     const dossiersResult = await pool.query(
       `SELECT COUNT(*) as total_dossiers FROM dossiers d
-       JOIN casiers c ON d.cassier_id = c.cassier_id
+       JOIN casiers c ON d.casier_id = c.cassier_id
        JOIN armoires a ON c.armoire_id = a.armoire_id
        WHERE a.entreprise_id = $1`,
       [entrepriseId]
@@ -398,7 +417,7 @@ export const getCurrentSubscription = async (req, res) => {
     const fichiersResult = await pool.query(
       `SELECT COUNT(*) as total_fichiers FROM fichiers f
        JOIN dossiers d ON f.dossier_id = d.dossier_id
-       JOIN casiers c ON d.cassier_id = c.cassier_id
+       JOIN casiers c ON d.casier_id = c.cassier_id
        JOIN armoires a ON c.armoire_id = a.armoire_id
        WHERE a.entreprise_id = $1`,
       [entrepriseId]

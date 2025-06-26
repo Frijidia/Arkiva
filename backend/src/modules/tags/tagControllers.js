@@ -46,7 +46,7 @@ export async function getAllTags(req, res) {
 
     try {
         const result = await pool.query(
-            'SELECT * FROM tags WHERE entreprise_id = $1 ORDER BY name',
+            'SELECT * FROM tags WHERE entreprise_id = $1 ORDER BY nom',
             [entreprise_id]
         );
         res.status(200).json(result.rows);
@@ -94,7 +94,7 @@ export async function renameTag(req, res) {
 
     try {
         const result = await pool.query(
-            'UPDATE tags SET name = $1 WHERE tag_id = $2 RETURNING *',
+            'UPDATE tags SET nom = $1 WHERE tag_id = $2 RETURNING *',
             [newName, tag_id]
         );
 
@@ -127,7 +127,7 @@ export async function addTagToFile(req, res) {
     try {
         // Chercher si le tag existe pour cette entreprise
         let result = await pool.query(
-            'SELECT tag_id FROM tags WHERE name = $1 AND entreprise_id = $2',
+            'SELECT tag_id FROM tags WHERE nom = $1 AND entreprise_id = $2',
             [nom_tag, entreprise_id]
         );
 
@@ -138,7 +138,7 @@ export async function addTagToFile(req, res) {
             const defaultDescription = '';
 
             result = await pool.query(
-                'INSERT INTO tags (name, color, description, entreprise_id) VALUES ($1, $2, $3, $4) RETURNING tag_id',
+                'INSERT INTO tags (nom, color, description, entreprise_id) VALUES ($1, $2, $3, $4) RETURNING tag_id',
                 [nom_tag, defaultColor, defaultDescription, entreprise_id]
             );
 
@@ -279,18 +279,18 @@ export const getPopularTags = async (req, res) => {
     try {
         const topResult = await pool.query(
             `
-            SELECT tags.name, COUNT(fichier_tags.fichier_id)
+            SELECT tags.nom, COUNT(fichier_tags.fichier_id)
             FROM fichier_tags
             JOIN tags ON tags.tag_id = fichier_tags.tag_id
             WHERE tags.entreprise_id = $1
-            GROUP BY tags.name
+            GROUP BY tags.nom
             ORDER BY COUNT(fichier_tags.fichier_id) DESC
             LIMIT $2
             `,
             [entreprise_id, limit]
         );
 
-        const topTags = topResult.rows.map(row => row.name);
+        const topTags = topResult.rows.map(row => row.nom);
         return res.status(200).json({ tags: topTags });
 
     } catch (error) {
@@ -314,7 +314,7 @@ export const getTagsForFile = async (req, res) => {
 
     try {
         const result = await pool.query(`
-      SELECT tags.tag_id, tags.name
+      SELECT tags.tag_id, tags.nom
       FROM fichier_tags
       JOIN tags ON fichier_tags.tag_id = tags.tag_id
       WHERE fichier_tags.fichier_id = $1

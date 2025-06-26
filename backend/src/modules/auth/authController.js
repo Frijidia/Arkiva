@@ -34,7 +34,7 @@ export const register = async (req, res) => {
         // Définir le rôle comme admin
         const role = 'admin';
 
-        // Créer l'utilisateur
+        // Créer l'utilisateur (insertion dans password)
         const result = await pool.query(
             `INSERT INTO users (email, password, username, role) 
              VALUES ($1, $2, $3, $4) 
@@ -83,7 +83,18 @@ export const login = async (req, res) => {
 
         const user = result.rows[0];
 
-        // Vérifier le mot de passe
+        // Debug: Vérifier les valeurs
+        console.log('🔍 Debug login:');
+        console.log('  - password (from request):', typeof password, password ? '***' : 'null/undefined');
+        console.log('  - user.password (from DB):', typeof user.password, user.password ? '***' : 'null/undefined');
+        console.log('  - user object keys:', Object.keys(user));
+
+        // Vérifier le mot de passe (utiliser password)
+        if (!user.password) {
+            console.error('❌ Mot de passe manquant en base de données pour l\'utilisateur:', user.email);
+            return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
@@ -142,7 +153,6 @@ export const getMe = async (req, res) => {
                 user_id,
                 entreprise_id,
                 email,
-                password,
                 username,
                 role,
                 two_factor_enabled,
@@ -160,10 +170,26 @@ export const getMe = async (req, res) => {
             return res.status(404).json({ message: 'Utilisateur non trouvé' });
         }
 
-        res.json(result.rows[0]);
+        // On renomme user_id en id pour le frontend si besoin
+        const user = result.rows[0];
+        const userResponse = {
+            id: user.user_id,
+            email: user.email,
+            username: user.username,
+            role: user.role,
+            entreprise_id: user.entreprise_id,
+            two_factor_enabled: user.two_factor_enabled,
+            two_factor_secret: user.two_factor_secret,
+            two_factor_method: user.two_factor_method,
+            two_factor_code: user.two_factor_code,
+            two_factor_code_expires: user.two_factor_code_expires,
+            created_at: user.created_at
+        };
+
+        res.json(userResponse);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Erreur du serveur' });
+        console.error('Erreur dans getMe:', error);
+        res.status(500).json({ message: 'Erreur du serveur', details: error.message });
     }
 };
 
