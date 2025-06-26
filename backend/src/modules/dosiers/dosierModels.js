@@ -1,4 +1,4 @@
-import pool from '../../config/database.js';
+import db from '../../config/database.js';
 
 const createTabledosier = `
  CREATE TABLE IF NOT EXISTS dossiers (
@@ -12,7 +12,6 @@ const createTabledosier = `
 );
 `;
 
-pool.query(createTabledosier)
-    .then(() => console.log('Table dosier created successfully'))
-    .catch((err) => console.error('Error creating table:', err));
-
+db.query(createTabledosier)
+  .then(() => console.log('Table dosier created successfully'))
+  .catch((err) => console.error('Error setting up dosier table:', err)); 

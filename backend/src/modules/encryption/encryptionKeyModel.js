@@ -1,4 +1,4 @@
-import db from '../../config/database.js';
+import pool from '../../config/database.js';
 
 const createEncryptionKeysTable = `
   DO $$ 
@@ -30,7 +30,7 @@ const createEncryptionKeysTable = `
 `;
 
 // Création de la table
-db.query(createEncryptionKeysTable)
+pool.query(createEncryptionKeysTable)
   .then(() => {
     console.log('Table encryption_keys créée/mise à jour avec succès');
   })
@@ -42,7 +42,7 @@ db.query(createEncryptionKeysTable)
 const createKey = async (data) => {
     try {
         const { entreprise_id, key_encrypted, iv, auth_tag } = data;
-        const result = await db.query(
+        const result = await pool.query(
             'INSERT INTO encryption_keys (entreprise_id, key_encrypted, iv, auth_tag) VALUES ($1, $2, $3, $4) RETURNING *',
             [entreprise_id, key_encrypted, iv, auth_tag]
         );
@@ -55,7 +55,7 @@ const createKey = async (data) => {
 
 const findByEntrepriseId = async (entrepriseId) => {
     try {
-        const result = await db.query(
+        const result = await pool.query(
             'SELECT * FROM encryption_keys WHERE entreprise_id = $1 ORDER BY created_at DESC LIMIT 1',
             [entrepriseId]
         );
@@ -69,7 +69,7 @@ const findByEntrepriseId = async (entrepriseId) => {
 const updateKey = async (entrepriseId, data) => {
     try {
         const { key_encrypted, iv, auth_tag } = data;
-        const result = await db.query(
+        const result = await pool.query(
             'UPDATE encryption_keys SET key_encrypted = $1, iv = $2, auth_tag = $3, updated_at = CURRENT_TIMESTAMP WHERE entreprise_id = $4 RETURNING *',
             [key_encrypted, iv, auth_tag, entrepriseId]
         );
@@ -85,7 +85,7 @@ const updateKey = async (entrepriseId, data) => {
 
 const deleteKey = async (entrepriseId) => {
     try {
-        const result = await db.query(
+        const result = await pool.query(
             'DELETE FROM encryption_keys WHERE entreprise_id = $1 RETURNING *',
             [entrepriseId]
         );
@@ -102,7 +102,7 @@ const deleteKey = async (entrepriseId) => {
 const cleanupOldKeys = async (entrepriseId) => {
     try {
         // Garde uniquement la clé la plus récente
-        await db.query(
+        await pool.query(
             `DELETE FROM encryption_keys 
              WHERE entreprise_id = $1 
              AND id NOT IN (

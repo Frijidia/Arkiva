@@ -1,6 +1,6 @@
 import pool from '../../config/database.js';
 import nlp from 'compromise';
-import "./tagModels.js";
+//import "./tagModels.js";
 
 
 /**

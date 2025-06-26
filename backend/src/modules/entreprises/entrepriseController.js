@@ -1,7 +1,7 @@
 import pool from '../../config/database.js';
 import bcrypt from 'bcrypt';
 import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
-import "./entrepriseModels.js";
+//import "./entrepriseModels.js";
 
 // Créer une nouvelle entreprise
 export const create = async (req, res) => {
@@ -12,7 +12,7 @@ export const create = async (req, res) => {
         // Commencer une transaction
         await pool.query('BEGIN');
 
-        // Créer l'entreprise
+        // Créer l'ent  reprise
         const entrepriseResult = await pool.query(
             `INSERT INTO entreprises 
              (nom, email, telephone, adresse, logo_url, plan_abonnement, armoire_limit) 

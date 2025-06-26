@@ -1,4 +1,4 @@
-import pool from '../../config/database.js';
+import db from '../../config/database.js';
 
 const createTableCassiers = `
  CREATE TABLE IF NOT EXISTS casiers (
@@ -28,10 +28,10 @@ const fixColumnNames = `
   END $$;
 `;
 
-pool.query(createTableCassiers)
+db.query(createTableCassiers)
     .then(() => {
         console.log('Table casier created successfully');
-        return pool.query(fixColumnNames);
+        return db.query(fixColumnNames);
     })
     .then(() => {
         console.log('Column names fixed successfully');

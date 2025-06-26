@@ -3,7 +3,7 @@ import pool from '../../config/database.js';
 const createSubscriptionsTable = `
 CREATE TABLE IF NOT EXISTS subscription (
   subscription_id SERIAL PRIMARY KEY,
-  nom VARCHAR(255) NOT NULL, -- Mensuel, Annuel
+  nom VARCHAR(255) NOT NULL UNIQUE, -- Mensuel, Annuel
   prix_base INT NOT NULL, -- 5000 ou 50000
   duree INT NOT NULL, -- en jours (30 ou 365)
   armoires_incluses INT DEFAULT 2,
@@ -99,36 +99,35 @@ const createExpirationTrigger = `
     EXECUTE FUNCTION update_entreprise_expiration();
 `;
 
-// Exécution des requêtes
-const initializeTables = async () => {
-  try {
-    // Créer les tables
-    await pool.query(createSubscriptionsTable);
+// Exécution des requêtes dans l'ordre
+pool.query(createSubscriptionsTable)
+  .then(() => {
     console.log('Table subscription created successfully');
-    
-    await pool.query(createPaymentsTable);
+    return pool.query(createPaymentsTable);
+  })
+  .then(() => {
     console.log('Table payments created successfully');
-    
-    await pool.query(createInvoicesTable);
+    return pool.query(createInvoicesTable);
+  })
+  .then(() => {
     console.log('Table invoices created successfully');
-    
-    await pool.query(createSubscriptionHistoryTable);
+    return pool.query(createSubscriptionHistoryTable);
+  })
+  .then(() => {
     console.log('Table subscription_history created successfully');
-    
-    // Insérer les abonnements par défaut
-    await pool.query(insertDefaultSubscriptions);
+    return pool.query(updateEntrepriseExpiration);
+  })
+  .then(() => {
+    console.log('Function update_entreprise_expiration created successfully');
+    return pool.query(createExpirationTrigger);
+  })
+  .then(() => {
+    console.log('Trigger trigger_update_expiration created successfully');
+    return pool.query(insertDefaultSubscriptions);
+  })
+  .then(() => {
     console.log('Default subscriptions inserted successfully');
-    
-    // Créer la fonction et le trigger
-    await pool.query(updateEntrepriseExpiration);
-    await pool.query(createExpirationTrigger);
-    console.log('Expiration trigger created successfully');
-    
-  } catch (err) {
-    console.error('Error setting up payment tables:', err);
-  }
-};
-
-initializeTables();
+  })
+  .catch((err) => console.error('Error setting up payments tables:', err));
 
 export default pool;

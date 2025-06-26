@@ -37,13 +37,31 @@ const getFichiersByDossierId = async (dossierId) => {
 };
 
 const getCasierById = async (casierId) => {
-    const result = await pool.query('SELECT * FROM casiers WHERE casier_id = $1', [casierId]);
-    return result.rows[0];
+    const result = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [casierId]);
+    if (result.rows.length === 0) {
+        throw new Error(`Casier ${casierId} non trouvé`);
+    }
+
+    const casier = result.rows[0];
+
+    // Récupérer les dossiers du casier
+    const dossiersResult = await pool.query(
+        'SELECT * FROM dossiers WHERE cassier_id = $1 ORDER BY dossier_id ASC',
+        [casierId]
+    );
+
+    // Récupérer tous les casiers de l'armoire
+    const casiersResult = await pool.query(
+        'SELECT * FROM casiers WHERE armoire_id = $1 ORDER BY cassier_id ASC',
+        [casier.armoire_id]
+    );
+
+    return casier;
 };
 
 const getDossiersByCasier = async (casierId) => {
     const result = await pool.query(
-        'SELECT * FROM dossiers WHERE casier_id = $1 ORDER BY dossier_id ASC',
+        'SELECT * FROM dossiers WHERE cassier_id = $1 ORDER BY dossier_id ASC',
         [casierId]
     );
     return result.rows;
@@ -56,7 +74,7 @@ const getArmoireById = async (armoireId) => {
 
 const getCasiersByArmoire = async (armoireId) => {
     const result = await pool.query(
-        'SELECT * FROM casiers WHERE armoire_id = $1 ORDER BY casier_id ASC',
+        'SELECT * FROM casiers WHERE armoire_id = $1 ORDER BY cassier_id ASC',
         [armoireId]
     );
     return result.rows;
@@ -124,7 +142,7 @@ export const createBackup = async (req, res) => {
                 // Ajouter les casiers
                 const casiers = await getCasiersByArmoire(cible_id);
                 for (const casier of casiers) {
-                    archive.append(JSON.stringify(casier, null, 2), { name: `casiers/${casier.casier_id}.json` });
+                    archive.append(JSON.stringify(casier, null, 2), { name: `casiers/${casier.cassier_id}.json` });
                 }
                 break;
 

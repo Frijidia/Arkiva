@@ -45,14 +45,14 @@ pool.connect((err, client, release) => {
   }
 });
 
-// Test de la connexion Sequelize
-sequelize.authenticate()
-  .then(() => {
-    console.log('Connexion à la base de données Sequelize établie');
-  })
-  .catch(err => {
-    console.error('Erreur de connexion à la base de données Sequelize:', err);
-  });
+// Test de la connexion Sequelize - COMMENTÉ POUR ÉVITER LA BOUCLE INFINIE
+// sequelize.authenticate()
+//   .then(() => {
+//     console.log('Connexion à la base de données Sequelize établie');
+//   })
+//   .catch(err => {
+//     console.error('Erreur de connexion à la base de données Sequelize:', err);
+//   });
 
 // Gestionnaire d'erreurs
 pool.on('error', (err) => {

@@ -1,4 +1,4 @@
-import pool from '../../config/database.js';
+import db from '../../config/database.js';
 
 // Création de la table entreprises
 const createEntreprisesTable = `
@@ -19,7 +19,7 @@ const createEntreprisesTable = `
 `;
 
 // Exécution de la requête
-pool.query(createEntreprisesTable)
+db.query(createEntreprisesTable)
   .then(() => {
     console.log('Table entreprises created successfully');
   })

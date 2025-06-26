@@ -1,4 +1,4 @@
-import "./auditModels.js"
+//import "./auditModels.js"
 import { getUserLogs, getTargetLogs, getEntrepriseLogs } from './auditService.js';
 // Obtenir les logs d'un utilisateur
 

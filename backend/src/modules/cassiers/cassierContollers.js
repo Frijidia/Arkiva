@@ -1,7 +1,7 @@
 import pool from '../../config/database.js';
-import "./cassierModels.js";
+//import "./cassierModels.js";
 
-// création d’un casier
+// création d'un casier
 export const CreateCasier = async (req, res) => {
     const { armoire_id, user_id } = req.body;
     const sous_titre = "";
@@ -11,7 +11,7 @@ export const CreateCasier = async (req, res) => {
     }
 
     try {
-        // 1. Récupérer le nom de l’armoire
+        // 1. Récupérer le nom de l'armoire
         const armoireResult = await pool.query(
             'SELECT nom FROM armoires WHERE armoire_id = $1',
             [armoire_id]
@@ -23,7 +23,7 @@ export const CreateCasier = async (req, res) => {
 
         const nomArmoire = armoireResult.rows[0].nom;
 
-        // 2. Extraire le numéro de l’armoire depuis son nom (ex: "Armoire 2" → 2)
+        // 2. Extraire le numéro de l'armoire depuis son nom (ex: "Armoire 2" → 2)
         const numeroArmoire = parseInt(nomArmoire.match(/\d+/)[0]);
 
         // 3. Calculer la plage de noms pour les casiers de cette armoire
@@ -142,12 +142,12 @@ export const DeleteCasier = async (req, res) => {
 
 
 export const getCasierById = async (req, res) => {
-  const { casier_id } = req.params;
+  const { cassier_id } = req.params;
 
-  if (!casier_id) return res.status(400).json({ error: "ID du casier requis" });
+  if (!cassier_id) return res.status(400).json({ error: "ID du casier requis" });
 
   try {
-    const result = await pool.query('SELECT * FROM casiers WHERE casier_id = $1', [casier_id]);
+    const result = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [cassier_id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Casier introuvable" });

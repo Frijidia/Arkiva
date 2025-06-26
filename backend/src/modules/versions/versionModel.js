@@ -38,10 +38,9 @@ class VersionModel {
     async init() {
         try {
             await pool.query(createVersionsTableSQL);
-            console.log('Table versions mise à jour avec succès');
+            console.log('Table versions créée/mise à jour avec succès');
         } catch (error) {
-            console.error('Erreur lors de l\'initialisation de la table versions:', error);
-            throw error;
+            console.error('Erreur lors de la création/mise à jour de la table versions:', error);
         }
     }
 

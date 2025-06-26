@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/database.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import './authModels.js';
+//import './authModels.js';
 import { enable2FA as enable2FAService, verify2FACode, send2FACode } from './twoFactorService.js';
 import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
 

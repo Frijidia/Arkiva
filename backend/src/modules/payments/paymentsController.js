@@ -1,6 +1,6 @@
 // paymentsController.js
 import pool from '../../config/database.js';
-import "./paymentsModels.js";
+//import "./paymentsModels.js";
 import nodemailer from 'nodemailer';
 import axios from 'axios';
 
@@ -133,7 +133,7 @@ export const processPayment = async (req, res) => {
       // Données requises par le SDK FeexPay
       id: FEEXPAY_CONFIG.shopId,
       token: FEEXPAY_CONFIG.apiKey,
-      amount: payment.montant,
+      amount: Math.round(Number(payment.montant)),
       trans_key: trans_key,
       redirecturl: `${process.env.FRONTEND_URL}/payment/success`,
       callback_info: JSON.stringify({ 
@@ -407,7 +407,7 @@ export const getCurrentSubscription = async (req, res) => {
     // Compter les dossiers - Utiliser la structure réelle détectée
     const dossiersResult = await pool.query(
       `SELECT COUNT(*) as total_dossiers FROM dossiers d
-       JOIN casiers c ON d.casier_id = c.cassier_id
+       JOIN casiers c ON d.cassier_id = c.cassier_id
        JOIN armoires a ON c.armoire_id = a.armoire_id
        WHERE a.entreprise_id = $1`,
       [entrepriseId]
@@ -417,7 +417,7 @@ export const getCurrentSubscription = async (req, res) => {
     const fichiersResult = await pool.query(
       `SELECT COUNT(*) as total_fichiers FROM fichiers f
        JOIN dossiers d ON f.dossier_id = d.dossier_id
-       JOIN casiers c ON d.casier_id = c.cassier_id
+       JOIN casiers c ON d.cassier_id = c.cassier_id
        JOIN armoires a ON c.armoire_id = a.armoire_id
        WHERE a.entreprise_id = $1`,
       [entrepriseId]

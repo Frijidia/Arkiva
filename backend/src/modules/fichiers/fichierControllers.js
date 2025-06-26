@@ -1,4 +1,4 @@
-import "./fichierModels.js";
+//import "./fichierModels.js";
 import pool from '../../config/database.js';
 import s3 from '../../config/aws.js';
 import { GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
