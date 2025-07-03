@@ -3,6 +3,7 @@ import pool from '../../config/database.js';
 //import "./paymentsModels.js";
 import nodemailer from 'nodemailer';
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 
 // Configuration email selon votre .env
 const transporter = nodemailer.createTransport({
@@ -77,11 +78,12 @@ export const chooseSubscription = async (req, res) => {
     dateExpiration.setDate(dateExpiration.getDate() + abonnement.duree);
 
     // 4. Créer une entrée de paiement en attente
+    const payment_id = uuidv4();
     const paiementResult = await pool.query(
-      `INSERT INTO payments (entreprise_id, subscription_id, montant, armoires_souscrites, statut, date_expiration)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO payments (payment_id, entreprise_id, subscription_id, montant, armoires_souscrites, statut, date_expiration)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [entrepriseId, subscription_id, montantTotal, armoires_souscrites, 'en_attente', dateExpiration]
+      [payment_id, entrepriseId, subscription_id, montantTotal, armoires_souscrites, 'en_attente', dateExpiration]
     );
 
     // 5. Logger l'action
@@ -204,61 +206,115 @@ export const processPayment = async (req, res) => {
 // Webhook FeexPay pour confirmer les paiements
 export const feexPayWebhook = async (req, res) => {
   try {
-    // Vérifier que le body existe
+    // Log complet du corps de la requête
+    console.log("[FeexPay] Webhook body complet:", JSON.stringify(req.body, null, 2));
+
     if (!req.body) {
-      console.error("Webhook FeexPay: req.body est undefined");
+      console.error("[FeexPay] Webhook: req.body est undefined");
       return res.status(400).json({ error: "Body de la requête manquant" });
     }
 
-    const { reference, status, transaction_id, custom_id } = req.body;
-
-    console.log("Webhook FeexPay reçu:", { reference, status, transaction_id, custom_id });
-
-    // Vérifier la signature FeexPay (à implémenter selon leur documentation)
-    if (!verifyFeexPaySignature(req)) {
-      console.error("Webhook FeexPay: Signature invalide");
-      return res.status(401).json({ error: "Signature invalide" });
+    const { reference, status, transaction_id } = req.body;
+    // Extraction du custom_id depuis callback_info si nécessaire
+    let custom_id = req.body.custom_id;
+    if (!custom_id && req.body.callback_info) {
+      try {
+        const callbackInfoObj = typeof req.body.callback_info === 'string'
+          ? JSON.parse(req.body.callback_info)
+          : req.body.callback_info;
+        custom_id = callbackInfoObj.custom_id;
+        console.log('[FeexPay] custom_id extrait depuis callback_info:', custom_id);
+      } catch (e) {
+        console.error('[FeexPay] Erreur parsing callback_info:', e, req.body.callback_info);
+      }
     }
 
-    // Extraire payment_id de custom_id
-    const paymentId = custom_id ? custom_id.split('_')[1] : null;
+    // Extraction du payment_id (alphanumérique) depuis custom_id
+    let paymentId = null;
+    if (custom_id) {
+      // Extrait la partie centrale du custom_id (ex: ARKIVA_6824ae4d4e09a6935400f8dc_1751562560272)
+      const match = custom_id.match(/^ARKIVA_([^_]+)_/);
+      if (match) {
+        paymentId = match[1];
+      }
+    }
+    console.log(`[FeexPay] PaymentId extrait (string):`, paymentId);
 
     if (!paymentId) {
-      console.error("Webhook FeexPay: Payment ID introuvable dans custom_id:", custom_id);
+      console.error("[FeexPay] Payment ID introuvable dans custom_id:", custom_id);
       return res.status(400).json({ error: "Payment ID introuvable dans custom_id" });
     }
 
-    if (status === 'success' || status === 'SUCCESS' || status === 'completed') {
-      await pool.query(
-        `UPDATE payments SET statut = $1, reference_transaction = $2 WHERE payment_id = $3`,
+    // Vérification du statut actuel
+    const currentStatus = await pool.query(
+      'SELECT statut FROM payments WHERE payment_id = $1',
+      [paymentId]
+    );
+    console.log("[FeexPay] Statut actuel:", currentStatus.rows[0]?.statut);
+
+    // Normalisation du statut
+    const normalizedStatus = String(status).toLowerCase();
+    console.log("[FeexPay] Statut normalisé:", normalizedStatus);
+
+    if ([
+      'success', 'completed', 'approved', 'successful'
+    ].includes(normalizedStatus)) {
+      const updateResult = await pool.query(
+        `UPDATE payments 
+         SET statut = $1, 
+             reference_transaction = $2,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE payment_id = $3 AND statut = 'en_attente'
+         RETURNING payment_id, statut, reference_transaction`,
         ['succès', transaction_id, paymentId]
       );
-      console.log(`Paiement ${paymentId} marqué comme succès`);
 
-      // Correction : récupérer entrepriseId depuis la base
-      const paymentResult = await pool.query('SELECT entreprise_id FROM payments WHERE payment_id = $1', [paymentId]);
-      const entrepriseId = paymentResult.rows[0]?.entreprise_id;
+      console.log("[FeexPay] Résultat update:", {
+        rowCount: updateResult.rowCount,
+        updatedPayment: updateResult.rows[0]
+      });
 
-      // Générer et envoyer la facture
-      try {
-        const invoice = await generateInvoice(paymentId, entrepriseId);
-        await sendInvoiceEmail(invoice, entrepriseId);
-        console.log(`Facture ${invoice.numero_facture} générée et envoyée par email`);
-      } catch (invoiceError) {
-        console.error('Erreur lors de la génération/envoi de la facture:', invoiceError);
-        // On ne fait pas échouer le webhook pour une erreur de facture
+      if (updateResult.rowCount === 0) {
+        console.warn(`[FeexPay] Aucun paiement en attente mis à jour pour payment_id=${paymentId}`);
+        // Vérifions si le paiement existe
+        const payment = await pool.query(
+          'SELECT payment_id, statut FROM payments WHERE payment_id = $1',
+          [paymentId]
+        );
+        console.log("[FeexPay] État actuel du paiement:", payment.rows[0]);
+      } else {
+        console.log(`[FeexPay] Paiement ${paymentId} marqué comme succès`);
+        
+        try {
+          const paymentResult = await pool.query(
+            'SELECT entreprise_id FROM payments WHERE payment_id = $1',
+            [paymentId]
+          );
+          const entrepriseId = paymentResult.rows[0]?.entreprise_id;
+          
+          if (entrepriseId) {
+            const invoice = await generateInvoice(paymentId, entrepriseId);
+            await sendInvoiceEmail(invoice, entrepriseId);
+            console.log(`[FeexPay] Facture ${invoice.numero_facture} générée et envoyée`);
+          } else {
+            console.error("[FeexPay] Impossible de trouver l'entreprise_id pour le paiement", paymentId);
+          }
+        } catch (invoiceError) {
+          console.error('[FeexPay] Erreur facture:', invoiceError);
+        }
       }
     } else {
-      await pool.query(
-        `UPDATE payments SET statut = $1 WHERE payment_id = $2`,
+      console.log(`[FeexPay] Statut non reconnu comme succès:`, status);
+      const updateResult = await pool.query(
+        `UPDATE payments SET statut = $1 WHERE payment_id = $2 AND statut = 'en_attente'`,
         ['échec', paymentId]
       );
-      console.log(`Paiement ${paymentId} marqué comme échec`);
+      console.log(`[FeexPay] Paiement marqué comme échec:`, updateResult.rowCount, 'ligne(s) modifiée(s)');
     }
 
     res.status(200).json({ message: "Webhook traité avec succès" });
   } catch (err) {
-    console.error("Erreur webhook FeexPay:", err);
+    console.error("[FeexPay] Erreur webhook:", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
