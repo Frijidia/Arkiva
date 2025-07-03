@@ -1,74 +1,67 @@
-import fs from "fs";
-import pdf from "pdf-parse";
-import { fromPath } from "pdf2pic";
-import Tesseract from "tesseract.js";
-import pool from '../../config/database.js';
-import path from "path";
+import { PDFDocument } from 'pdf-lib';
+import pdfParse from 'pdf-parse';
+import sharp from 'sharp';
+import Tesseract from 'tesseract.js';
 
-async function extractTextFromPdf(pdfPath) {
-  const dataBuffer = fs.readFileSync(pdfPath);
-  const data = await pdf(dataBuffer);
+// Extrait le texte d'un PDF classique via pdf-parse (buffer)
+async function extractTextFromPdfBuffer(pdfBuffer) {
+  const data = await pdfParse(pdfBuffer);
   return data.text;
-};
+}
 
+// Convertit une page PDF (buffer) en image PNG buffer puis OCR via Tesseract
+async function ocrPageBuffer(pdfPageBuffer) {
+  // Convertir PDF page en PNG avec sharp
+  const imageBuffer = await sharp(pdfPageBuffer).png().toBuffer();
 
-export const extractTextFromImage = async (imagePath) => {
-  const result = await Tesseract.recognize(imagePath, 'eng'); // ou 'fra' pour le français
-  return result.data.text.trim();
-};
+  // OCR en mémoire via tesseract.js
+  const { data: { text } } = await Tesseract.recognize(imageBuffer, 'fra'); // ou 'eng'
+  return text;
+}
 
+// OCR complet pour PDF scanné : chaque page convertie en image et OCR
+async function extractTextFromScannedPdfBuffer(pdfBuffer) {
+  const pdfDoc = await PDFDocument.load(pdfBuffer);
+  const numPages = pdfDoc.getPageCount();
 
-async function extractTextFromScannedPdf(pdfPath) {
-  // Récupérer nombre de pages avec pdf-parse
-  const dataBuffer = fs.readFileSync(pdfPath);
-  const data = "fdf"
-  await pdf(dataBuffer);
-  const numPages = data.numpages;
+  let fullText = '';
 
-  const convert = fromPath(pdfPath, {
-    density: 150,
-    format: "png",
-    width: 1200,
-    height: 1600,
-  });
+  for (let i = 0; i < numPages; i++) {
+    const newPdf = await PDFDocument.create();
+    const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+    newPdf.addPage(copiedPage);
 
-  let fullText = "";
+    const singlePagePdfBytes = await newPdf.save();
 
-  for (let i = 1; i <= numPages; i++) {
-    const page = await convert(i);
-    const imagePath = page.path;
-
-    const {
-      data: { text },
-    } = await Tesseract.recognize(imagePath, "fra"); // 'fra' ou 'eng'
-
-    fullText += `Page ${i}:\n${text}\n\n`;
-
-    fs.unlinkSync(imagePath);
+    const pageText = await ocrPageBuffer(singlePagePdfBytes);
+    fullText += `Page ${i + 1}:\n${pageText}\n\n`;
   }
 
   return fullText.trim();
 }
 
+// OCR image en mémoire via buffer
+async function extractTextFromImageBuffer(imageBuffer) {
+  const { data: { text } } = await Tesseract.recognize(imageBuffer, 'fra'); // ou 'eng'
+  return text.trim();
+}
 
+// Fonction principale qui choisit la bonne méthode en fonction de l'extension
+export async function extractSmartText(buffer, fileName) {
+  const ext = fileName.toLowerCase().split('.').pop();
 
-export const extractSmartText = async (filePath) => {
-  const ext = path.extname(filePath).toLowerCase();
-
-  if (ext === '.pdf') {
-    const rawText = await extractTextFromPdf(filePath);
-
+  if (ext === 'pdf') {
+    const rawText = await extractTextFromPdfBuffer(buffer);
     if (rawText.trim().length > 20) {
       return rawText.trim();
     } else {
-      return await extractTextFromScannedPdf(filePath); // OCR du PDF scanné
+      return await extractTextFromScannedPdfBuffer(buffer);
     }
   }
 
-  if (['.jpg', '.jpeg', '.png', '.bmp', '.tiff'].includes(ext)) {
-    return await extractTextFromImage(filePath); // OCR direct sur l'image
+  if (['jpg', 'jpeg', 'png', 'bmp', 'tiff'].includes(ext)) {
+    return await extractTextFromImageBuffer(buffer);
   }
 
-  return ''; // Format non pris en charge pour l’OCR
-};
-
+  return ''; // Format non supporté
+}

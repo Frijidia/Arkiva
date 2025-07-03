@@ -9,7 +9,9 @@ const createTableArmoires = `
   is_deleted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
-  version_id INTEGER DEFAULT 0
+  version_id INTEGER DEFAULT 0,
+  taille_max BIGINT DEFAULT 524288000 -- 500 Mo en octets
+
 );
 `;
 

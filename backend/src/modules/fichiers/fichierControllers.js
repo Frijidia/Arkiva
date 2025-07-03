@@ -140,7 +140,7 @@ export async function streamToBuffer(stream) {
 }
 
 
-export async function downloadFileBufferFromS3(key) {
+export default async function downloadFileBufferFromS3(key) {
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: key,
