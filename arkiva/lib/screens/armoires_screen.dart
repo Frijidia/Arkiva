@@ -245,54 +245,67 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                                    onTap: _abonnementActif
-                                        ? () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CasiersScreen(
-                                    armoireId: armoire.armoireId,
-                                    armoireNom: armoire.nom,
-                                    entrepriseId: widget.entrepriseId,
-                                  ),
-                                ),
-                              );
-                                          }
-                                        : () {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Abonnement inactif : accès aux armoires verrouillé.'),
-                                              ),
-                                            );
-                                          },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                          _abonnementActif ? Icons.folder : Icons.lock,
-                                          size: 48,
-                                          color: _abonnementActif ? Colors.blue[700] : Colors.grey[600],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        armoire.nom,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                          textAlign: TextAlign.center,
-                                      ),
-                                        if (!_abonnementActif)
-                                          const Padding(
-                                            padding: EdgeInsets.only(top: 8.0),
-                                            child: Text(
-                                              'Abonnement requis',
-                                              style: TextStyle(color: Colors.red, fontSize: 12),
+                          child: Stack(
+                            children: [
+                              InkWell(
+                                onTap: _abonnementActif
+                                    ? () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => CasiersScreen(
+                                              armoireId: armoire.armoireId,
+                                              armoireNom: armoire.nom,
+                                              entrepriseId: widget.entrepriseId,
                                             ),
-                                      ),
-                                    ],
+                                          ),
+                                        );
+                                      }
+                                    : () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Abonnement inactif : accès aux armoires verrouillé.'),
+                                          ),
+                                        );
+                                      },
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _abonnementActif ? Icons.folder : Icons.lock,
+                                      size: 48,
+                                      color: _abonnementActif ? Colors.blue[700] : Colors.grey[600],
                                     ),
-                                  ),
-                                );
-                              },
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      armoire.nom,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    if (!_abonnementActif)
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 8.0),
+                                        child: Text(
+                                          'Abonnement requis',
+                                          style: TextStyle(color: Colors.red, fontSize: 12),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  tooltip: 'Supprimer l\'armoire',
+                                  onPressed: () => _deleteArmoire(armoire),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                                   ),
                                 ),
                               ],

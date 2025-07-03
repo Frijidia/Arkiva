@@ -49,15 +49,12 @@ class DossierService {
     );
 
     if (response.statusCode == 201) {
-      if (kDebugMode) {
-        print('Raw response body for createDossier (201): ${response.body}');
-      }
       final data = json.decode(response.body);
       return Dossier.fromJson(data['dossier']);
     } else {
       final errorData = json.decode(response.body);
-      final errorMessage = errorData['error'] ?? 'Unknown error';
-      throw Exception('Échec de la création du dossier: $errorMessage (Status: ${response.statusCode})');
+      final errorMessage = errorData['error'] ?? errorData['message'] ?? 'Erreur inconnue';
+      throw Exception(errorMessage);
     }
   }
 

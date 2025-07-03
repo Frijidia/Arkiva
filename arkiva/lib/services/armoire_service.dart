@@ -39,10 +39,12 @@ class ArmoireService {
         final data = json.decode(response.body);
         return Armoire.fromJson(data['armoire']);
       } else {
-        throw Exception('Échec de la création de l\'armoire');
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error'] ?? errorData['message'] ?? 'Erreur inconnue';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Erreur lors de la création de l\'armoire: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 

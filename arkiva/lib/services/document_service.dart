@@ -56,7 +56,9 @@ class DocumentService {
     if (response.statusCode == 201) {
       return Document.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Échec de la création du document');
+      final errorData = json.decode(response.body);
+      final errorMessage = errorData['error'] ?? errorData['message'] ?? 'Erreur inconnue';
+      throw Exception(errorMessage);
     }
   }
 
