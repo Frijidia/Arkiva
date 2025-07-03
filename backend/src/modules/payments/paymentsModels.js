@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS subscription (
 
 const createPaymentsTable = `
   CREATE TABLE IF NOT EXISTS payments (
-    payment_id SERIAL PRIMARY KEY,
+    payment_id VARCHAR(100) PRIMARY KEY,
     entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
     subscription_id INTEGER REFERENCES subscription(subscription_id) ON DELETE CASCADE,
     montant DECIMAL(10,2) NOT NULL,
@@ -37,7 +37,7 @@ const createPaymentsTable = `
 const createInvoicesTable = `
   CREATE TABLE IF NOT EXISTS invoices (
     invoice_id SERIAL PRIMARY KEY,
-    payment_id INTEGER REFERENCES payments(payment_id) ON DELETE CASCADE,
+    payment_id VARCHAR(100) REFERENCES payments(payment_id) ON DELETE CASCADE,
     entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
     numero_facture VARCHAR(255) UNIQUE NOT NULL,
     montant_ht INT NOT NULL,
@@ -55,7 +55,7 @@ const createSubscriptionHistoryTable = `
   CREATE TABLE IF NOT EXISTS subscription_history (
     history_id SERIAL PRIMARY KEY,
     entreprise_id INTEGER REFERENCES entreprises(entreprise_id) ON DELETE CASCADE,
-    payment_id INTEGER REFERENCES payments(payment_id) ON DELETE CASCADE,
+    payment_id VARCHAR(100) REFERENCES payments(payment_id) ON DELETE CASCADE,
     type_action VARCHAR(50) NOT NULL, -- souscription, renouvellement, expiration, annulation
     ancien_statut VARCHAR(50),
     nouveau_statut VARCHAR(50),
