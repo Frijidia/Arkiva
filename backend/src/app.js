@@ -62,6 +62,7 @@ app.use('/api/favoris', favorisRoutes);
 app.use('/api/payments', payments);
 app.use('/api/stats', statsRoutes);
 // app.use('/api/search', searchRoutes);
+//app.use('/api/fileManager', fileManagerRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

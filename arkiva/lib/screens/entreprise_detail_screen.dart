@@ -139,8 +139,19 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
         if (processResponse.statusCode == 200) {
           final processData = jsonDecode(processResponse.body);
           final feexpay = processData['feexpay_data'];
-          final callbackInfo = feexpay['callback_info'];
-          final callbackInfoMap = callbackInfo is String ? jsonDecode(callbackInfo) : callbackInfo;
+          // Générer un custom_id unique
+          final customId = feexpay['custom_id'] ?? 'ARKIVA_${feexpay['id']}_${DateTime.now().millisecondsSinceEpoch}';
+          final callbackInfo = {'custom_id': customId};
+          // Ajout d'un print pour vérifier le payload transmis à FeexPay
+          print('Payload transmis à FeexPay :');
+          print({
+            'token': feexpay['token'],
+            'id': feexpay['id'],
+            'amount': feexpay['amount'],
+            'redirecturl': feexpay['redirecturl'],
+            'trans_key': feexpay['trans_key'],
+            'callback_info': callbackInfo,
+          });
           // Ouvre directement FeexPay
           Navigator.push(
             context,
@@ -151,7 +162,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
                 amount: feexpay['amount'].toString(),
                 redirecturl: feexpay['redirecturl'],
                 trans_key: feexpay['trans_key'].toString(),
-                callback_info: callbackInfoMap,
+                callback_info: callbackInfo, // Passe un Map
               ),
             ),
           );

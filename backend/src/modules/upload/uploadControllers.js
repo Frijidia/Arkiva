@@ -65,8 +65,9 @@ export const upload = multer({ storage });
 
 
 //fonction pour upload sur s3
-export const uploadFileBufferToS3 = async (fileBuffer, originalName) => {
+export async function  uploadFileBufferToS3 (fileBuffer, originalName){
   const fileKey = 'uploads/' + Date.now() + '-' + originalName;
+  let fichiersTailleTotale = 0;
 
   const command = new PutObjectCommand({
     Bucket: bucketName,
@@ -90,6 +91,7 @@ export const uploadFileBufferToS3 = async (fileBuffer, originalName) => {
 export const uploadFiles = async (req, res) => {
   const { dossier_id, entreprise_id } = req.body;
   let originalFileName = "";
+  let fichiersTailleTotale = "";
 
   if (!dossier_id) return res.status(400).json({ error: "ID du dossier requis" });
   if (!entreprise_id) return res.status(400).json({ error: "ID de l'entreprise requis" });
@@ -105,6 +107,7 @@ export const uploadFiles = async (req, res) => {
       }
       let finalName = file.originalname;
       let finalPath = file.path;
+      console.log(finalPath);
       let isConverted = false;
 
       const convertedPath = await convertToPdf(file.path);
@@ -118,17 +121,12 @@ export const uploadFiles = async (req, res) => {
 
       const finalBuffer = fs.readFileSync(finalPath);
 
-      let contenu_ocr = '';
-      try {
-        contenu_ocr = await extractSmartText(finalPath);
-      } catch (error) {
-        console.warn(`Erreur lors de l'extraction du texte : ${error.message}`);
-        // Continue l'upload même si l'OCR échoue
-      }
+      const contenu_ocr = await extractSmartText(finalBuffer, finalName);
 
       const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, finalName, entreprise_id);
       const jsonString = encryptedBuffer.toString('utf8');
       const s3Data = await uploadFileBufferToS3(encryptedBuffer, finalName + '.enc');
+      fichiersTailleTotale += s3Data.size;
 
       uploaded.push([
         s3Data.originalName,
@@ -147,6 +145,16 @@ export const uploadFiles = async (req, res) => {
         fs.unlinkSync(finalPath); // supprime les fichiers non convertis (images, pdf, etc.)
       }
 
+    }
+
+    const checkEspace = await checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale);
+    if (!checkEspace.peutAjouter) {
+      return res.status(400).json({
+        error: checkEspace.message,
+        totalActuel: checkEspace.totalActuel,
+        fichiersTailleTotale: checkEspace.fichiersTailleTotale,
+        espaceRestant: checkEspace.nouvelleTailleTotale,
+      });
     }
 
     const placeholders = uploaded.map((_, i) =>
@@ -169,3 +177,63 @@ export const uploadFiles = async (req, res) => {
     res.status(500).json({ error: 'Erreur lors du téléversement des fichiers' });
   }
 };
+
+
+async function checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale) {
+  // 1. Récupérer armoire_id et taille_max à partir du dossier
+  const armoireResult = await pool.query(`
+    SELECT armoires.armoire_id, armoires.taille_max
+    FROM dossiers
+    JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+    JOIN armoires ON casiers.armoire_id = armoires.armoire_id
+    WHERE dossiers.dossier_id = $1
+  `, [dossier_id]);
+
+  if (armoireResult.rows.length === 0) {
+    throw new Error("Armoire liée non trouvée pour ce dossier.");
+  }
+
+  const { armoire_id, taille_max } = armoireResult.rows[0];
+
+  if (taille_max === null || taille_max === undefined) {
+    throw new Error("La capacité maximale de l'armoire n'est pas définie.");
+  }
+
+  const tailleMaxNumber = Number(taille_max);
+  if (isNaN(tailleMaxNumber)) {
+    throw new Error("La capacité maximale de l'armoire n'est pas un nombre valide.");
+  }
+
+  // 2. Calculer la taille totale déjà utilisée dans cette armoire
+  const totalResult = await pool.query(`
+    SELECT COALESCE(SUM(fichiers.taille), 0) AS total_octets
+    FROM fichiers
+    JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
+    JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+    WHERE casiers.armoire_id = $1
+  `, [armoire_id]);
+
+  const totalActuel = Number(totalResult.rows[0].total_octets) || 0;
+  const nouvelleTailleTotale = Number(totalActuel) + Number(fichiersTailleTotale);
+
+
+  // 3. Calcul de l'espace restant
+  const espaceRestant = tailleMaxNumber - totalActuel;
+
+  // 4. Comparaison et retour d'infos
+  if (nouvelleTailleTotale >= tailleMaxNumber) {
+    return {
+      peutAjouter: false,
+      totalActuel,
+      fichiersTailleTotale,
+      nouvelleTailleTotale,
+      message: "La limite de stockage de l'armoire sera dépassée."
+    };
+  }
+
+  return {
+    peutAjouter: true,
+    espaceRestant: espaceRestant - fichiersTailleTotale,
+    message: "Espace suffisant pour ajouter les fichiers."
+  };
+}

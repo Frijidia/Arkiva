@@ -222,3 +222,36 @@ Pour le système :
 
        npm install -g ngrok
           ngrok http 3000
+
+
+
+
+```
+
+┌─────────────────────────────────────────────────────────┐
+│                    FRONTEND                             │
+│           (What customers see)                          │
+│        The dining room and menu                         │
+└─────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────┐
+│                   API GATEWAY                           │
+│              (The waiter)                               │
+│        Takes orders and serves food                     │
+└─────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────┬─────────────────┬─────────────────────┐
+│    SECURITY     │  BUSINESS LOGIC │  EXTERNAL SERVICES  │
+│   (The safe)    │  (The kitchen)  │   (Suppliers)       │
+│                 │                 │                     │
+│ • User login    │ • File handling │ • Cloud storage     │
+│ • Encryption    │ • Video process │ • Payment systems   │
+│ • Access rights │ • Email sending │ • Email services    │
+└─────────────────┴─────────────────┴─────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────┐
+│                   DATABASE                              │
+│              (The inventory)                            │
+│        Where all information is stored                  │
+└─────────────────────────────────────────────────────────┘
+```
