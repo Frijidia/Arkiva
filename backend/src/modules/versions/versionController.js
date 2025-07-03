@@ -3,7 +3,7 @@ import * as fileModel from '../fichiers/fichierModels.js';
 import * as dossierModel from '../dosiers/dosierModels.js';
 import * as casierModel from '../cassiers/cassierModels.js';
 import * as armoireModel from '../armoires/armoireModels.js';
-import { downloadFileBufferFromS3 } from '../fichiers/fichierControllers.js';
+//import { downloadFileBufferFromS3 } from '../fichiers/fichierControllers.js';
 import pool from '../../config/database.js';
 
 // Fonction utilitaire pour vérifier l'existence et le type d'un élément
