@@ -139,19 +139,58 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
         if (processResponse.statusCode == 200) {
           final processData = jsonDecode(processResponse.body);
           final feexpay = processData['feexpay_data'];
-          // Générer un custom_id unique
-          final customId = feexpay['custom_id'] ?? 'ARKIVA_${feexpay['id']}_${DateTime.now().millisecondsSinceEpoch}';
+          
+          // Logs détaillés pour tracer le custom_id
+          print('🔍 [Frontend] Réponse complète du backend:');
+          print(jsonEncode(processData));
+          
+          print('🔍 [Frontend] Données FeexPay reçues:');
+          print(jsonEncode(feexpay));
+          
+          // Utiliser uniquement le custom_id fourni par le backend
+          String? customId;
+          try {
+            // Essayer d'abord de récupérer custom_id directement
+            customId = feexpay['custom_id'];
+            
+            // Si pas trouvé, essayer de l'extraire depuis callback_info
+            if (customId == null && feexpay['callback_info'] != null) {
+              print('🔍 [Frontend] Tentative d\'extraction depuis callback_info...');
+              final callbackInfoStr = feexpay['callback_info'] as String;
+              final callbackInfoObj = jsonDecode(callbackInfoStr);
+              customId = callbackInfoObj['custom_id'];
+              print('🔍 [Frontend] custom_id extrait depuis callback_info: $customId');
+            }
+          } catch (e) {
+            print('❌ [Frontend] Erreur lors de l\'extraction du custom_id: $e');
+          }
+
+          print('🔍 [Frontend] custom_id final: $customId');
+
+          if (customId == null) {
+            print('❌ [Frontend] ERREUR: custom_id manquant dans la réponse du backend');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Erreur: custom_id manquant dans la réponse du backend.')),
+            );
+            return;
+          }
+          
           final callbackInfo = {'custom_id': customId};
+          print('🔍 [Frontend] callback_info créé:');
+          print(jsonEncode(callbackInfo));
+          
           // Ajout d'un print pour vérifier le payload transmis à FeexPay
-          print('Payload transmis à FeexPay :');
-          print({
+          print('📤 [Frontend] Payload transmis à FeexPay :');
+          final feexPayPayload = {
             'token': feexpay['token'],
             'id': feexpay['id'],
             'amount': feexpay['amount'],
             'redirecturl': feexpay['redirecturl'],
             'trans_key': feexpay['trans_key'],
             'callback_info': callbackInfo,
-          });
+          };
+          print(jsonEncode(feexPayPayload));
+          
           // Ouvre directement FeexPay
           Navigator.push(
             context,
