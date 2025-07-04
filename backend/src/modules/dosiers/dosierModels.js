@@ -6,6 +6,7 @@ const createTabledosier = `
   casier_id INTEGER REFERENCES casiers(cassier_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   nom VARCHAR(100),
+  is_deleted BOOLEAN DEFAULT FALSE,
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   version_id INTEGER DEFAULT 0

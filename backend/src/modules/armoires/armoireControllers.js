@@ -62,7 +62,7 @@ export const GetAllArmoires = async (req, res) => {
     try {
         const result = await pool.query(`
   SELECT * FROM armoires
-  WHERE entreprise_id = $1
+  WHERE entreprise_id = $1 AND is_deleted = false
   ORDER BY CAST(regexp_replace(nom, '\\D', '', 'g') AS INTEGER)
 `, [entreprise_id]);
         res.status(200).json(result.rows);

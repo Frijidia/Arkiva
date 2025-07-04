@@ -19,7 +19,7 @@ export const getFichiersByDossierId = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM fichiers WHERE dossier_id = $1 ORDER BY fichier_id DESC',
+      'SELECT * FROM fichiers WHERE dossier_id = $1 AND is_deleted = false ORDER BY fichier_id DESC',
       [dossier_id]
     );
 
