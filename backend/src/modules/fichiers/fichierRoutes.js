@@ -6,7 +6,8 @@ import {
     deleteFichier,
     displayFichier,
     // telechargerFichier,
-    getFichierById
+    getFichierById,
+    deplacerFichier
 
    
 } from './fichierControllers.js';
@@ -22,6 +23,7 @@ router.get('/:fichier_id/:entreprise_id', displayFichier);
 router.get('/:dossier_id', getFichiersByDossierId);
 // router.get('/telecharger/:fichier_id', telechargerFichier);
 router.get('/getinfofile/:fichier_id', getFichierById);
+router.put('/:id/deplacer', deplacerFichier);
 
 
 
