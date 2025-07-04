@@ -49,6 +49,19 @@ const createBackupsTableSQL = `
         ALTER TABLE sauvegardes ADD COLUMN date_creation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
     END IF;
 
+    -- Ajouter les colonnes S3 pour être cohérent avec les versions
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 'storage_path') THEN
+        ALTER TABLE sauvegardes ADD COLUMN storage_path TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 's3_key') THEN
+        ALTER TABLE sauvegardes ADD COLUMN s3_key TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sauvegardes' AND column_name = 's3_size') THEN
+        ALTER TABLE sauvegardes ADD COLUMN s3_size BIGINT;
+    END IF;
+
   END $$;
 `;
 
@@ -68,21 +81,37 @@ class BackupModel {
 
     async createBackup(data) {
         try {
-            const { type, cible_id, entreprise_id, chemin_sauvegarde, contenu_json, declenche_par_id } = data;
+            const { 
+                type, 
+                cible_id, 
+                entreprise_id, 
+                chemin_sauvegarde, 
+                contenu_json, 
+                declenche_par_id,
+                storage_path,
+                s3_key,
+                s3_size
+            } = data;
+            
             const query = `
                 INSERT INTO sauvegardes 
-                (type, cible_id, entreprise_id, chemin_sauvegarde, contenu_json, declenche_par_id) 
-                VALUES ($1, $2, $3, $4, $5, $6) 
+                (type, cible_id, entreprise_id, chemin_sauvegarde, contenu_json, declenche_par_id, storage_path, s3_key, s3_size) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
                 RETURNING *
             `;
+            
             const result = await pool.query(query, [
                 type, 
                 cible_id, 
                 entreprise_id, 
                 chemin_sauvegarde, 
                 contenu_json, 
-                declenche_par_id
+                declenche_par_id,
+                storage_path,
+                s3_key,
+                s3_size
             ]);
+            
             return result.rows[0];
         } catch (error) {
             console.error('Erreur lors de la création de la sauvegarde:', error);
@@ -114,6 +143,36 @@ class BackupModel {
             return result.rows[0];
         } catch (error) {
             console.error('Erreur lors de la récupération de la sauvegarde par ID:', error);
+            throw error;
+        }
+    }
+
+    async getBackupsByType(type) {
+        try {
+            const query = `
+                SELECT * FROM sauvegardes 
+                WHERE type = $1
+                ORDER BY date_creation DESC
+            `;
+            const result = await pool.query(query, [type]);
+            return result.rows;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des sauvegardes par type:', error);
+            throw error;
+        }
+    }
+
+    async getBackupsByEntreprise(entreprise_id) {
+        try {
+            const query = `
+                SELECT * FROM sauvegardes 
+                WHERE entreprise_id = $1
+                ORDER BY date_creation DESC
+            `;
+            const result = await pool.query(query, [entreprise_id]);
+            return result.rows;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des sauvegardes par entreprise:', error);
             throw error;
         }
     }

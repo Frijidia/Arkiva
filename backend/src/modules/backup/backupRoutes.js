@@ -3,7 +3,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { verifyToken, checkRole } from '../auth/authMiddleware.js';
-import * as backupController from './backupController.js';
+import {
+  createBackup,
+  getAllBackups,
+  getBackupById
+} from './backupController.js';
+import cleanupService from './cleanupService.js';
 
 const router = express.Router();
 
@@ -47,8 +52,29 @@ router.use(verifyToken);
 router.use(checkRole(['admin']));
 
 // Routes pour les sauvegardes
-router.post('/', backupController.createBackup);
-router.get('/', backupController.getAllBackups);
-router.get('/:id', backupController.getBackupById);
+router.post('/', checkRole(['admin']), createBackup);
+router.get('/', checkRole(['admin']), getAllBackups);
+router.get('/:id', checkRole(['admin']), getBackupById);
+
+// 🧹 Nouvelle route pour le nettoyage automatique
+router.post('/cleanup', checkRole(['admin']), async (req, res) => {
+  try {
+    console.log(`🧹 [Cleanup] Nettoyage manuel déclenché par l'admin`);
+    
+    const result = await cleanupService.runFullCleanup();
+    
+    res.status(200).json({
+      message: 'Nettoyage terminé avec succès',
+      result: result
+    });
+    
+  } catch (error) {
+    console.error('❌ [Cleanup] Erreur lors du nettoyage manuel:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors du nettoyage',
+      details: error.message 
+    });
+  }
+});
 
 export default router; 

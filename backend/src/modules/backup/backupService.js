@@ -1,10 +1,14 @@
 import backupModel from './backupModel.js';
-import auditService from '../audit/auditService.js';
+import { logAction } from '../audit/auditService.js';
 import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
 import awsStorageService from '../../services/awsStorageService.js';
-import { logAction } from '../audit/auditService.js';
+import { fileURLToPath } from 'url';
+
+// Nécessaire pour utiliser __dirname avec les modules ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Chemin temporaire pour créer l'archive avant upload vers S3
 const TEMP_DIR = path.join(__dirname, '../../temp');
@@ -53,13 +57,18 @@ const createBackup = async (backupData, utilisateur_id, res) => {
                 const dbBackupData = {
                     type,
                     cible_id: cible_id || null,
-                    chemin_sauvegarde: s3Result.location, // URL S3
+                    entreprise_id: backupData.entreprise_id || null,
+                    chemin_sauvegarde: s3Result.location, // URL S3 (pour compatibilité)
                     contenu_json: {
                         ...backupSummary,
                         s3Key: s3Result.key,
-                        s3Size: s3Result.size
+                        s3Size: s3Result.size,
+                        s3Location: s3Result.location
                     },
                     declenche_par_id: utilisateur_id,
+                    storage_path: s3Result.key, // Clé S3
+                    s3_key: s3Result.key, // Clé S3
+                    s3_size: s3Result.size // Taille S3
                 };
 
                 const newBackup = await backupModel.createBackup(dbBackupData);
@@ -274,11 +283,6 @@ const createBackup = async (backupData, utilisateur_id, res) => {
         throw error;
     }
 };
-
-// Nécessaire pour utiliser __dirname et __filename avec les modules ES
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export default {
     createBackup,
