@@ -7,7 +7,7 @@ async function getArmoireUsedSpace(armoire_id) {
     SELECT COALESCE(SUM(fichiers.taille), 0) AS total_octets
     FROM fichiers
     JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
-    JOIN casiers ON dossiers.casier_id = casiers.casier_id
+    JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
     WHERE casiers.armoire_id = $1
   `, [armoire_id]);
 
