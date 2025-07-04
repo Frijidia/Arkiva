@@ -6,7 +6,8 @@ import {
     deleteFichier,
     displayFichier,
     // telechargerFichier,
-    getFichierById
+    getFichierById,
+    deplacerFichier
 
    
 } from './fichierControllers.js';
@@ -23,8 +24,7 @@ router.delete('/:fichier_id', checkRole(['admin', 'contributeur']), checkFichier
 router.get('/:fichier_id/:entreprise_id', checkFichierAccess, displayFichier);
 router.get('/:dossier_id', checkSubscriptionStatus, getFichiersByDossierId);
 // router.get('/telecharger/:fichier_id', telechargerFichier);
-router.get('/getinfofile/:fichier_id', checkFichierAccess, getFichierById);
-
-
+router.get('/getinfofile/:fichier_id', getFichierById);
+router.put('/:id/deplacer', deplacerFichier);
 
 export default router;

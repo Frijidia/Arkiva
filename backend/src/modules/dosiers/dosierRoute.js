@@ -4,7 +4,8 @@ import {
     CreateDossier,
     GetDossiersByCasier,
     DeleteDossier,
-    RenameDossier
+    RenameDossier,
+    deplacerDossier
 
    
 } from './dosierControllers.js';
