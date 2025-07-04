@@ -305,13 +305,38 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               final logs = snapshot.data!;
               return Column(
                 children: [
-                  ...logs.map((log) => ListTile(
-                    title: Text('${log['action']} sur ${log['type_cible']}'),
-                    subtitle: Text('Par ${log['username'] ?? log['user_id']} le ${log['created_at']}'),
-                  )),
+                  ...logs.map((log) {
+                    final details = log['details'] ?? {};
+                    final hasHumanMessage = details['message'] != null;
+                    return Card(
+                      child: ListTile(
+                        title: Text(details['message'] ?? '${log['action']} sur ${log['type_cible']}'),
+                        subtitle: hasHumanMessage ? null : Text('Par ${log['username'] ?? log['user_id']} le ${log['created_at']}', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (log['action'] == 'delete' && log['type_cible'] == 'file')
+                              ElevatedButton(
+                                onPressed: () {
+                                  // TODO: restaurer le fichier (à implémenter plus tard)
+                                },
+                                child: const Text('Restaurer'),
+                              ),
+                            if (log['action'] == 'update' && log['type_cible'] == 'file')
+                              ElevatedButton(
+                                onPressed: () {
+                                  // TODO: afficher les versions (à implémenter plus tard)
+                                },
+                                child: const Text('Versions'),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+                    children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: _logsPage > 0 ? () => setState(() => _logsPage--) : null,
@@ -320,7 +345,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       IconButton(
                         icon: const Icon(Icons.arrow_forward),
                         onPressed: () => setState(() => _logsPage++),
-            ),
+                      ),
                     ],
                   ),
                 ],

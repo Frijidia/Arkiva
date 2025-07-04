@@ -42,10 +42,12 @@ class CasierService {
         // Le backend retourne l'objet casier créé directement
         return Casier.fromJson(data['casier']);
       } else {
-        throw Exception('Échec de la création du casier');
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error'] ?? errorData['message'] ?? 'Erreur inconnue';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Erreur lors de la création du casier: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 

@@ -108,13 +108,15 @@ export const login = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
-        // Logger la connexion
+        // Logger la connexion avec un message humain
+        const now = new Date();
+        const message = `L'utilisateur ${user.username} (${user.email}) s'est connecté le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}.`;
         await logAction(
             user.user_id,
             ACTIONS.LOGIN,
             TARGET_TYPES.USER,
             user.user_id,
-            { ip: req.ip }
+            { ip: req.ip, message }
         );
 
         res.json({ token, user });
