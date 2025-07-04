@@ -92,7 +92,7 @@ export const getDossierById = async (req, res) => {
   if (!dossier_id) return res.status(400).json({ error: "ID du dossier requis" });
 
   try {
-    const result = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [dossier_id]);
+    const result = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1 AND is_deleted = false', [dossier_id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Dossier introuvable" });
