@@ -263,3 +263,25 @@ export const getDossierCountByCasierId = async (req, res) => {
     res.status(500).json({ error: "Erreur lors du comptage des dossiers" });
   }
 };
+
+// Déplacement d'un dossier vers un autre casier
+export const deplacerDossier = async (req, res) => {
+  const { id } = req.params; // ID du dossier
+  const { nouveau_casier_id } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE dossiers SET casier_id = $1 WHERE dossier_id = $2 RETURNING *`,
+      [nouveau_casier_id, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Dossier non trouvé" });
+    }
+
+    res.status(200).json({ message: "Dossier déplacé avec succès", dossier: result.rows[0] });
+  } catch (err) {
+    console.error("Erreur déplacement dossier :", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
