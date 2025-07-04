@@ -5,6 +5,7 @@ import { GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mime from "mime-types";
 import encryptionService from '../encryption/encryptionService.js';
+import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
 
 // import fs from 'fs/promises';
 
@@ -48,12 +49,20 @@ export const deleteFichier = async (req, res) => {
   const { fichier_id } = req.params;
 
   try {
-    const result = await pool.query('SELECT chemin FROM fichiers WHERE fichier_id = $1', [fichier_id]);
-    if (result.rowCount === 0) {
+    // Récupérer toutes les infos nécessaires pour le log
+    const fichierResult = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
+    if (fichierResult.rowCount === 0) {
       return res.status(404).json({ error: "Fichier non trouvé" });
     }
+    const fichier = fichierResult.rows[0];
+    const dossierResult = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [fichier.dossier_id]);
+    const dossier = dossierResult.rows[0] || { nom: '?' };
+    const casierResult = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [dossier.cassier_id]);
+    const casier = casierResult.rows[0] || { nom: '?' };
+    const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [casier.armoire_id]);
+    const armoire = armoireResult.rows[0] || { nom: '?' };
 
-    const filePath = result.rows[0].chemin;
+    const filePath = fichier.chemin;
     const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
     const key = filePath.replace(s3BaseUrl, '');
 
@@ -65,6 +74,24 @@ export const deleteFichier = async (req, res) => {
 
     // Supprimer de la base
     await pool.query('DELETE FROM fichiers WHERE fichier_id = $1', [fichier_id]);
+
+    // Log humain
+    const user = req.user;
+    const now = new Date();
+    const message = `L'utilisateur ${user.username} a supprimé le fichier "${fichier.originalfilename || fichier.nom}" du casier "${casier.nom}" de l'armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}.`;
+    await logAction(
+      user.user_id,
+      ACTIONS.DELETE,
+      TARGET_TYPES.FILE,
+      fichier_id,
+      {
+        message,
+        fichier_id,
+        dossier_id: dossier.dossier_id,
+        casier_id: casier.cassier_id,
+        armoire_id: armoire.armoire_id
+      }
+    );
 
     res.status(200).json({ message: "Fichier supprimé avec succès" });
   } catch (err) {
@@ -93,6 +120,31 @@ export const renameFichier = async (req, res) => {
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Fichier non trouvé" });
     }
+
+    // Log humain
+    const fichier = result.rows[0];
+    const dossierResult = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [fichier.dossier_id]);
+    const dossier = dossierResult.rows[0] || { nom: '?' };
+    const casierResult = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [dossier.cassier_id]);
+    const casier = casierResult.rows[0] || { nom: '?' };
+    const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [casier.armoire_id]);
+    const armoire = armoireResult.rows[0] || { nom: '?' };
+    const user = req.user;
+    const now = new Date();
+    const message = `L'utilisateur ${user.username} a modifié le fichier "${fichier.originalfilename}" du dossier "${dossier.nom}", casier "${casier.nom}", armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}.`;
+    await logAction(
+      user.user_id,
+      ACTIONS.UPDATE,
+      TARGET_TYPES.FILE,
+      fichier_id,
+      {
+        message,
+        fichier_id,
+        dossier_id: dossier.dossier_id,
+        casier_id: casier.cassier_id,
+        armoire_id: armoire.armoire_id
+      }
+    );
 
     res.status(200).json({ message: "Nom du fichier mis à jour", fichier: result.rows[0] });
   } catch (err) {
