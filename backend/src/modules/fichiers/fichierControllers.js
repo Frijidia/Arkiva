@@ -210,3 +210,24 @@ export const getFichierCountByDossierId = async (req, res) => {
   }
 };
 
+// Déplacement d'un fichier vers un autre dossier
+export const deplacerFichier = async (req, res) => {
+  const { id } = req.params; // ID du fichier
+  const { nouveau_dossier_id } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE fichiers SET dossier_id = $1 WHERE fichier_id = $2 RETURNING *`,
+      [nouveau_dossier_id, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Fichier non trouvé" });
+    }
+
+    res.status(200).json({ message: "Fichier déplacé avec succès", fichier: result.rows[0] });
+  } catch (err) {
+    console.error("Erreur déplacement fichier :", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};

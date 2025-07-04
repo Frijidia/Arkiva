@@ -171,3 +171,26 @@ export const getCasierById = async (req, res) => {
     res.status(500).json({ error: "Erreur lors de la récupération du casier" });
   }
 };
+
+
+// Déplacement d'un casier vers une autre armoire
+export const deplacerCasier = async (req, res) => {
+  const { id } = req.params; // ID du casier
+  const { nouvelle_armoire_id } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE casiers SET armoire_id = $1 WHERE casier_id = $2 RETURNING *`,
+      [nouvelle_armoire_id, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Casier non trouvé" });
+    }
+
+    res.status(200).json({ message: "Casier déplacé avec succès", casier: result.rows[0] });
+  } catch (err) {
+    console.error("Erreur déplacement casier :", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
