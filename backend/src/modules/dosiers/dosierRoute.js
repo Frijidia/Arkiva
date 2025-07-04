@@ -23,6 +23,7 @@ router.put('/:dossier_id', checkRole(['admin', 'contributeur']), checkDossierAcc
 router.delete('/:dossier_id', checkRole(['admin', 'contributeur']), checkDossierAccess, DeleteDossier);
 router.get('/:cassier_id', checkRole(['admin', 'contributeur']), checkSubscriptionStatus, GetDossiersByCasier);
 
+router.put('/:id/deplacer', deplacerDossier);
 
 
 export default router;
