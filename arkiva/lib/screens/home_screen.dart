@@ -68,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadTags();
     _loadArmoires();
     _loadAllCasiers();
-    _loadAllDossiers();
   }
 
   @override
@@ -178,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/casier/all/$entrepriseId'),
+          Uri.parse('${ApiConfig.baseUrl}/api/casier/getcasiers'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -193,31 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('Erreur chargement tous les casiers: $e');
-    }
-  }
-
-  Future<void> _loadAllDossiers() async {
-    try {
-      final authState = context.read<AuthStateService>();
-      final token = authState.token;
-      final entrepriseId = authState.entrepriseId;
-      if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/dosier/all/$entrepriseId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _allDossiers = data;
-          });
-        }
-      }
-    } catch (e) {
-      print('Erreur chargement tous les dossiers: $e');
     }
   }
 

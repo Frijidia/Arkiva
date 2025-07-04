@@ -271,7 +271,7 @@ export const deplacerDossier = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE dossiers SET casier_id = $1 WHERE dossier_id = $2 RETURNING *`,
+      `UPDATE dossiers SET cassier_id = $1 WHERE dossier_id = $2 RETURNING *`,
       [nouveau_casier_id, id]
     );
 

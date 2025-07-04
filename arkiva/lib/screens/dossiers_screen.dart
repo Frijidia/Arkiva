@@ -235,25 +235,26 @@ class _DossiersScreenState extends State<DossiersScreen> {
   }
 
   Future<void> _deplacerDossier(Dossier dossier) async {
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => DeplacementDialog(
-        type: TypeDeplacement.dossier,
-        titre: 'Déplacer le dossier',
-        nomElement: dossier.nom,
-        elementId: dossier.dossierId!,
-        destinationActuelleId: widget.casier.casierId,
-        onDeplacementReussi: () async {
-          await _loadDossiers();
-        },
-      ),
+      builder: (context) => const DeplacementDialog(pourFichier: false),
     );
 
-    if (result == true) {
-      // Le déplacement a été effectué avec succès, la liste sera rafraîchie automatiquement
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dossier déplacé avec succès')),
-      );
+    if (result != null) {
+      try {
+        final token = context.read<AuthStateService>().token;
+        if (token != null) {
+          await _dossierService.deplacerDossier(token, dossier.dossierId!, result['cassier_id']);
+          await _loadDossiers();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dossier déplacé avec succès')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du déplacement: $e')),
+        );
+      }
     }
   }
 

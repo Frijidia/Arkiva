@@ -233,25 +233,23 @@ class _CasiersScreenState extends State<CasiersScreen> {
   }
 
   Future<void> _deplacerCasier(Casier casier) async {
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => DeplacementDialog(
-        type: TypeDeplacement.casier,
-        titre: 'Déplacer le casier',
-        nomElement: casier.nom,
-        elementId: casier.casierId,
-        destinationActuelleId: widget.armoireId,
-        onDeplacementReussi: () async {
-          await _loadCasiers();
-        },
-      ),
+      builder: (context) => const DeplacementDialog(pourFichier: false),
     );
 
-    if (result == true) {
-      // Le déplacement a été effectué avec succès, la liste sera rafraîchie automatiquement
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Casier déplacé avec succès')),
-      );
+    if (result != null) {
+      try {
+        await _casierService.deplacerCasier(casier.casierId, result['cassier_id']);
+        await _loadCasiers();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Casier déplacé avec succès')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du déplacement: $e')),
+        );
+      }
     }
   }
 

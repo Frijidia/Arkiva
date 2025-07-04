@@ -13,7 +13,8 @@ async function getArmoireUsedSpace(armoire_id) {
     WHERE casiers.armoire_id = $1
   `, [armoire_id]);
 
-  return parseInt(result.rows[0].total_octets);
+  // Correction ici : forcer à 0 si null ou NaN
+  return parseInt(result.rows[0].total_octets) || 0;
 }
 
 // création d’un casier

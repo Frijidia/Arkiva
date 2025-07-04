@@ -369,26 +369,28 @@ class _FichiersScreenState extends State<FichiersScreen> {
       return;
     }
 
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => DeplacementDialog(
-        type: TypeDeplacement.fichier,
-        titre: 'Déplacer le fichier',
-        nomElement: document.nomOriginal ?? document.nom,
-        elementId: int.parse(document.id!),
-        destinationActuelleId: widget.dossier.dossierId,
-        onDeplacementReussi: () async {
-          await _loadDocuments();
-        },
-      ),
+      builder: (context) => const DeplacementDialog(pourFichier: true),
     );
 
-    if (result == true) {
-      // Le déplacement a été effectué avec succès, la liste sera rafraîchie automatiquement
-      if (!mounted) return;
-      _scaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(content: Text('Fichier déplacé avec succès')),
-      );
+    if (result != null) {
+      try {
+        final token = context.read<AuthStateService>().token;
+        if (token != null) {
+          await _documentService.deplacerFichier(token, document.id!, result['dossier_id']);
+          await _loadDocuments();
+          if (!mounted) return;
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(content: Text('Fichier déplacé avec succès')),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Erreur lors du déplacement: $e')),
+        );
+      }
     }
   }
 

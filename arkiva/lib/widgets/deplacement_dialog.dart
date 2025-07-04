@@ -1,37 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:arkiva/services/armoire_service.dart';
-import 'package:arkiva/services/dossier_service.dart';
 import 'package:arkiva/services/casier_service.dart';
-import 'package:arkiva/services/document_service.dart';
-import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/services/dossier_service.dart';
 import 'package:provider/provider.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
-
-enum TypeDeplacement {
-  casier,   // Casier vers armoire
-  dossier,  // Dossier vers casier
-  fichier   // Fichier vers dossier
-}
+import 'package:arkiva/services/auth_state_service.dart';
 
 class DeplacementDialog extends StatefulWidget {
-  final TypeDeplacement type;
-  final String titre;
-  final String nomElement;
-  final int elementId;
-  final int? destinationActuelleId;
-  final Function() onDeplacementReussi;
-
-  const DeplacementDialog({
-    super.key,
-    required this.type,
-    required this.titre,
-    required this.nomElement,
-    required this.elementId,
-    this.destinationActuelleId,
-    required this.onDeplacementReussi,
-  });
+  final bool pourFichier; // true = déplacement fichier, false = dossier
+  const DeplacementDialog({super.key, this.pourFichier = false});
 
   @override
   State<DeplacementDialog> createState() => _DeplacementDialogState();
@@ -39,271 +15,184 @@ class DeplacementDialog extends StatefulWidget {
 
 class _DeplacementDialogState extends State<DeplacementDialog> {
   final ArmoireService _armoireService = ArmoireService();
-  final DossierService _dossierService = DossierService();
   final CasierService _casierService = CasierService();
-  final DocumentService _documentService = DocumentService();
-  
-  List<Map<String, dynamic>> _destinations = [];
-  Map<String, dynamic>? _destinationSelectionnee;
-  bool _isLoading = true;
-  bool _isDeplacing = false;
-  String? _errorMessage;
+  final DossierService _dossierService = DossierService();
+
+  List<dynamic> _armoires = [];
+  List<dynamic> _casiers = [];
+  List<dynamic> _dossiers = [];
+
+  int? _selectedArmoireId;
+  int? _selectedCasierId;
+  int? _selectedDossierId;
+
+  bool _loadingArmoires = true;
+  bool _loadingCasiers = false;
+  bool _loadingDossiers = false;
 
   @override
   void initState() {
     super.initState();
-    _chargerDestinations();
+    _loadArmoires();
   }
 
-  Future<void> _chargerDestinations() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+  Future<void> _loadArmoires() async {
+    setState(() => _loadingArmoires = true);
     try {
-      final authState = context.read<AuthStateService>();
-      final token = authState.token;
-      final entrepriseId = authState.entrepriseId;
-
-      if (token == null || entrepriseId == null) {
-        throw Exception('Token ou entreprise ID manquant');
+      final auth = context.read<AuthStateService>();
+      final entrepriseId = auth.entrepriseId;
+      if (entrepriseId != null) {
+        final armoires = await _armoireService.getAllArmoiresForDeplacement(entrepriseId);
+        setState(() {
+          _armoires = armoires;
+          _loadingArmoires = false;
+        });
       }
-
-      switch (widget.type) {
-        case TypeDeplacement.casier:
-          final authState = context.read<AuthStateService>();
-          final entrepriseId = authState.entrepriseId;
-          if (entrepriseId == null) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = "Impossible de charger les armoires : entrepriseId manquant.";
-            });
-            return;
-          }
-          final armoires = await _armoireService.getAllArmoiresForDeplacement(entrepriseId);
-          // Filtrer l'armoire actuelle
-          _destinations = armoires.where((armoire) => 
-            armoire['armoire_id'] != widget.destinationActuelleId
-          ).toList();
-          break;
-
-        case TypeDeplacement.dossier:
-          final authState = context.read<AuthStateService>();
-          final entrepriseId = authState.entrepriseId;
-          if (entrepriseId == null) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = "Impossible de charger les casiers : entrepriseId manquant.";
-            });
-            return;
-          }
-          final casiers = await _armoireService.getAllCasiers(entrepriseId);
-          // Filtrer le casier actuel
-          _destinations = casiers.where((casier) => 
-            casier['cassier_id'] != widget.destinationActuelleId
-          ).toList();
-          break;
-
-        case TypeDeplacement.fichier:
-          // Charger tous les dossiers pour le déplacement de fichier
-          final response = await http.get(
-            Uri.parse('${ApiConfig.baseUrl}/api/dosier/all/$entrepriseId'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          );
-          
-          if (response.statusCode == 200) {
-            final List<dynamic> data = json.decode(response.body);
-            // Filtrer le dossier actuel
-            _destinations = data.where((dossier) => 
-              dossier['dossier_id'] != widget.destinationActuelleId
-            ).cast<Map<String, dynamic>>().toList();
-          } else {
-            throw Exception('Erreur lors du chargement des dossiers');
-          }
-          break;
-      }
-
-      setState(() {
-        _isLoading = false;
-      });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString();
-      });
+      setState(() => _loadingArmoires = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur chargement armoires: $e')));
     }
   }
 
-  String _getNomDestination(Map<String, dynamic> destination) {
-    switch (widget.type) {
-      case TypeDeplacement.casier:
-        return destination['nom'] ?? 'Armoire sans nom';
-      case TypeDeplacement.dossier:
-        final nom = destination['nom'] ?? 'Casier sans nom';
-        final sousTitre = destination['sous_titre'];
-        return sousTitre != null && sousTitre.isNotEmpty 
-          ? '$nom - $sousTitre' 
-          : nom;
-      case TypeDeplacement.fichier:
-        return destination['nom'] ?? 'Dossier sans nom';
+  Future<void> _loadCasiers(int armoireId) async {
+    setState(() {
+      _loadingCasiers = true;
+      _casiers = [];
+      _selectedCasierId = null;
+      _dossiers = [];
+      _selectedDossierId = null;
+    });
+    try {
+      final casiers = await _casierService.getCasiersByArmoire(armoireId);
+      setState(() {
+        _casiers = casiers;
+        _loadingCasiers = false;
+      });
+    } catch (e) {
+      setState(() => _loadingCasiers = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur chargement casiers: $e')));
     }
   }
 
-  Future<void> _effectuerDeplacement() async {
-    if (_destinationSelectionnee == null) return;
-
+  Future<void> _loadDossiers(int casierId) async {
     setState(() {
-      _isDeplacing = true;
-      _errorMessage = null;
+      _loadingDossiers = true;
+      _dossiers = [];
+      _selectedDossierId = null;
     });
-
     try {
-      final authState = context.read<AuthStateService>();
-      final token = authState.token;
-
-      if (token == null) {
-        throw Exception('Token manquant');
+      final auth = context.read<AuthStateService>();
+      final token = auth.token;
+      if (token != null) {
+        final dossiers = await _dossierService.getDossiers(token, casierId);
+        setState(() {
+          _dossiers = dossiers;
+          _loadingDossiers = false;
+        });
       }
-
-      switch (widget.type) {
-        case TypeDeplacement.casier:
-          await _casierService.deplacerCasier(
-            widget.elementId,
-            _destinationSelectionnee!['armoire_id'],
-          );
-          break;
-
-        case TypeDeplacement.dossier:
-          await _dossierService.deplacerDossier(
-            token,
-            widget.elementId,
-            _destinationSelectionnee!['cassier_id'],
-          );
-          break;
-
-        case TypeDeplacement.fichier:
-          await _documentService.deplacerFichier(
-            token,
-            widget.elementId.toString(),
-            _destinationSelectionnee!['dossier_id'],
-          );
-          break;
-      }
-
-      // Fermer la boîte de dialogue et notifier le succès
-      Navigator.of(context).pop(true);
-      widget.onDeplacementReussi();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.nomElement} déplacé avec succès'),
-          backgroundColor: Colors.green,
-        ),
-      );
     } catch (e) {
-      setState(() {
-        _isDeplacing = false;
-        _errorMessage = e.toString();
-      });
+      setState(() => _loadingDossiers = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur chargement dossiers: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.titre),
+      title: Text(widget.pourFichier ? 'Déplacer le fichier' : 'Déplacer le dossier'),
       content: SizedBox(
-        width: double.maxFinite,
-        child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error, color: Colors.red, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Erreur lors du chargement des destinations',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+        width: 350,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Armoires
+            _loadingArmoires
+                ? const CircularProgressIndicator()
+                : DropdownButtonFormField<int>(
+                    value: _selectedArmoireId,
+                    items: _armoires.map<DropdownMenuItem<int>>((a) => DropdownMenuItem(
+                          value: a['armoire_id'] as int,
+                          child: Text(a['nom']),
+                        )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedArmoireId = value;
+                        _selectedCasierId = null;
+                        _selectedDossierId = null;
+                        _casiers = [];
+                        _dossiers = [];
+                      });
+                      if (value != null) _loadCasiers(value);
+                    },
+                    decoration: const InputDecoration(labelText: 'Armoire de destination'),
                   ),
-                  const SizedBox(height: 8),
-                  Text(_errorMessage!),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _chargerDestinations,
-                    child: Text('Réessayer'),
+            const SizedBox(height: 16),
+            // Casiers
+            _loadingCasiers
+                ? const CircularProgressIndicator()
+                : DropdownButtonFormField<int>(
+                    value: _selectedCasierId,
+                    items: _casiers.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(
+                          value: c.casierId ?? c['cassier_id'],
+                          child: Text(c.nom ?? c['nom']),
+                        )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCasierId = value;
+                        _selectedDossierId = null;
+                        _dossiers = [];
+                      });
+                      if (value != null && widget.pourFichier) _loadDossiers(value);
+                    },
+                    decoration: const InputDecoration(labelText: 'Casier de destination'),
                   ),
-                ],
-              )
-            : _destinations.isEmpty
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.folder_open, color: Colors.grey, size: 48),
-                    const SizedBox(height: 16),
-                    Text('Aucune destination disponible'),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Sélectionnez la nouvelle destination pour "${widget.nomElement}" :',
-                      style: TextStyle(fontSize: 16),
+            if (widget.pourFichier) ...[
+              const SizedBox(height: 16),
+              // Dossiers
+              _loadingDossiers
+                  ? const CircularProgressIndicator()
+                  : DropdownButtonFormField<int>(
+                      value: _selectedDossierId,
+                      items: _dossiers.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
+                            value: d.dossierId ?? d['dossier_id'],
+                            child: Text(d.nom ?? d['nom']),
+                          )).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDossierId = value;
+                        });
+                      },
+                      decoration: const InputDecoration(labelText: 'Dossier de destination'),
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 200,
-                      child: ListView.builder(
-                        itemCount: _destinations.length,
-                        itemBuilder: (context, index) {
-                          final destination = _destinations[index];
-                          final nom = _getNomDestination(destination);
-                          final isSelected = _destinationSelectionnee == destination;
-                          
-                          return ListTile(
-                            leading: Icon(
-                              widget.type == TypeDeplacement.casier 
-                                ? Icons.warehouse 
-                                : widget.type == TypeDeplacement.dossier 
-                                  ? Icons.inventory_2 
-                                  : Icons.folder,
-                              color: isSelected ? Colors.blue : Colors.grey,
-                            ),
-                            title: Text(nom),
-                            selected: isSelected,
-                            onTap: () {
-                              setState(() {
-                                _destinationSelectionnee = destination;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
-          onPressed: _isDeplacing ? null : () => Navigator.of(context).pop(false),
-          child: Text('Annuler'),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler'),
         ),
         ElevatedButton(
-          onPressed: _isDeplacing || _destinationSelectionnee == null || _destinations.isEmpty
-            ? null 
-            : _effectuerDeplacement,
-          child: _isDeplacing
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text('Déplacer'),
+          onPressed: (widget.pourFichier
+                  ? (_selectedArmoireId != null && _selectedCasierId != null && _selectedDossierId != null)
+                  : (_selectedArmoireId != null && _selectedCasierId != null))
+              ? () {
+                  if (widget.pourFichier) {
+                    Navigator.pop(context, {
+                      'armoire_id': _selectedArmoireId,
+                      'cassier_id': _selectedCasierId,
+                      'dossier_id': _selectedDossierId,
+                    });
+                  } else {
+                    Navigator.pop(context, {
+                      'armoire_id': _selectedArmoireId,
+                      'cassier_id': _selectedCasierId,
+                    });
+                  }
+                }
+              : null,
+          child: const Text('Déplacer'),
         ),
       ],
     );

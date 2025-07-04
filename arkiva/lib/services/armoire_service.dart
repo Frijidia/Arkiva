@@ -48,7 +48,7 @@ class ArmoireService {
   Future<List<Map<String, dynamic>>> getAllCasiers(int entrepriseId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/casier/getcasiers/$entrepriseId'),
+        Uri.parse('$baseUrl/api/casier/getcasiers'),
         headers: await ApiConfig.getHeaders(),
       );
 
