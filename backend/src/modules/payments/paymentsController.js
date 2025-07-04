@@ -130,13 +130,21 @@ export const processPayment = async (req, res) => {
     // 2. Générer une clé de transaction aléatoire de 15 caractères
     const trans_key = Math.random().toString(36).substring(2, 17);
 
-    // 2.1. Générer un custom_id unique si non fourni
-    const generatedCustomId = custom_id || `ARKIVA_${payment_id}_${Date.now()}`;
+    // 2.1. Générer un custom_id unique et sécurisé
+    const timestamp = Date.now();
+    const generatedCustomId = `ARKIVA_${payment_id}_${timestamp}`;
+    
+    console.log('[FeexPay] Génération custom_id:', {
+      payment_id,
+      generatedCustomId,
+      timestamp
+    });
 
     // 3. Préparer les données pour le SDK FeexPay Flutter
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:37811';
     const redirecturl = `${frontendUrl}/payment/success`;
     console.log('FeexPay redirecturl utilisé:', redirecturl);
+    
     const feexpayData = {
       // Données requises par le SDK FeexPay
       id: FEEXPAY_CONFIG.shopId,
@@ -149,7 +157,8 @@ export const processPayment = async (req, res) => {
       callback_info: JSON.stringify({ 
         payment_id, 
         entreprise_id: entrepriseId,
-        custom_id: generatedCustomId
+        custom_id: generatedCustomId,
+        timestamp: timestamp
       }),
       // Données supplémentaires pour le suivi
       payment_id: payment_id,
@@ -161,10 +170,17 @@ export const processPayment = async (req, res) => {
       description: `Abonnement Arkiva - ${payment.armoires_souscrites} armoires`
     };
 
-    // 4. Mettre à jour le paiement avec la clé de transaction
+    console.log('[FeexPay] Données envoyées à FeexPay:', {
+      custom_id: feexpayData.custom_id,
+      payment_id: feexpayData.payment_id,
+      amount: feexpayData.amount,
+      trans_key: feexpayData.trans_key
+    });
+
+    // 4. Mettre à jour le paiement avec la clé de transaction et le custom_id
     await pool.query(
       `UPDATE payments 
-       SET feexpay_trans_key = $1, moyen_paiement = $2, custom_id = $3
+       SET feexpay_trans_key = $1, moyen_paiement = $2, custom_id = $3, updated_at = CURRENT_TIMESTAMP
        WHERE payment_id = $4`,
       [trans_key, moyen_paiement, feexpayData.custom_id, payment_id]
     );
@@ -174,7 +190,13 @@ export const processPayment = async (req, res) => {
       `INSERT INTO subscription_history (entreprise_id, payment_id, type_action, ancien_statut, nouveau_statut, details)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [entrepriseId, payment_id, 'initiation_paiement', 'en_attente', 'en_attente', 
-       JSON.stringify({ trans_key, moyen_paiement, montant: payment.montant })]
+       JSON.stringify({ 
+         trans_key, 
+         moyen_paiement, 
+         montant: payment.montant,
+         custom_id: feexpayData.custom_id,
+         timestamp: timestamp
+       })]
     );
 
     // 6. Retourner les données pour le SDK Flutter
@@ -215,6 +237,7 @@ export const feexPayWebhook = async (req, res) => {
     }
 
     const { reference, status, transaction_id } = req.body;
+    
     // Extraction du custom_id depuis callback_info si nécessaire
     let custom_id = req.body.custom_id;
     if (!custom_id && req.body.callback_info) {
@@ -229,43 +252,117 @@ export const feexPayWebhook = async (req, res) => {
       }
     }
 
-    // Extraction du payment_id (alphanumérique) depuis custom_id
-    let paymentId = null;
-    if (custom_id) {
-      // Extrait la partie centrale du custom_id (ex: ARKIVA_6824ae4d4e09a6935400f8dc_1751562560272)
-      const match = custom_id.match(/^ARKIVA_([^_]+)_/);
-      if (match) {
-        paymentId = match[1];
-      }
+    if (!custom_id) {
+      console.error("[FeexPay] Aucun custom_id trouvé dans le webhook");
+      return res.status(400).json({ error: "Custom ID manquant dans le webhook" });
     }
-    console.log(`[FeexPay] PaymentId extrait (string):`, paymentId);
+
+    // Extraction du payment_id depuis custom_id
+    let paymentId = null;
+    const match = custom_id.match(/^ARKIVA_([^_]+)_(\d+)$/);
+    if (match) {
+      paymentId = match[1];
+      const timestamp = match[2];
+      console.log(`[FeexPay] PaymentId extrait: ${paymentId}, Timestamp: ${timestamp}`);
+    } else {
+      console.error("[FeexPay] Format custom_id invalide:", custom_id);
+      return res.status(400).json({ error: "Format Custom ID invalide" });
+    }
 
     if (!paymentId) {
       console.error("[FeexPay] Payment ID introuvable dans custom_id:", custom_id);
       return res.status(400).json({ error: "Payment ID introuvable dans custom_id" });
     }
 
-    // Vérification du statut actuel
-    const currentStatus = await pool.query(
-      'SELECT statut FROM payments WHERE payment_id = $1',
+    // STRATÉGIE DE RECHERCHE ROBUSTE
+    let foundPayment = null;
+    let searchMethod = '';
+
+    // 1. Essayer de trouver par payment_id extrait du custom_id
+    console.log(`[FeexPay] Recherche par payment_id: ${paymentId}`);
+    const paymentCheck = await pool.query(
+      'SELECT payment_id, custom_id, statut, entreprise_id FROM payments WHERE payment_id = $1',
       [paymentId]
     );
-    console.log("[FeexPay] Statut actuel:", currentStatus.rows[0]?.statut);
+
+    if (paymentCheck.rowCount > 0) {
+      foundPayment = paymentCheck.rows[0];
+      searchMethod = 'payment_id';
+      console.log(`[FeexPay] Paiement trouvé par payment_id:`, foundPayment);
+    } else {
+      console.log(`[FeexPay] Paiement non trouvé par payment_id: ${paymentId}`);
+      
+      // 2. Essayer de trouver par custom_id exact
+      console.log(`[FeexPay] Recherche par custom_id exact: ${custom_id}`);
+      const paymentByCustomId = await pool.query(
+        'SELECT payment_id, custom_id, statut, entreprise_id FROM payments WHERE custom_id = $1',
+        [custom_id]
+      );
+      
+      if (paymentByCustomId.rowCount > 0) {
+        foundPayment = paymentByCustomId.rows[0];
+        searchMethod = 'custom_id_exact';
+        console.log(`[FeexPay] Paiement trouvé par custom_id exact:`, foundPayment);
+      } else {
+        console.log(`[FeexPay] Paiement non trouvé par custom_id exact: ${custom_id}`);
+        
+        // 3. Essayer de trouver par custom_id partiel (sans timestamp)
+        const customIdWithoutTimestamp = custom_id.replace(/_\d+$/, '');
+        console.log(`[FeexPay] Recherche par custom_id partiel: ${customIdWithoutTimestamp}`);
+        const paymentByCustomIdPartial = await pool.query(
+          'SELECT payment_id, custom_id, statut, entreprise_id FROM payments WHERE custom_id LIKE $1',
+          [`${customIdWithoutTimestamp}%`]
+        );
+        
+        if (paymentByCustomIdPartial.rowCount > 0) {
+          foundPayment = paymentByCustomIdPartial.rows[0];
+          searchMethod = 'custom_id_partial';
+          console.log(`[FeexPay] Paiement trouvé par custom_id partiel:`, foundPayment);
+        } else {
+          console.log(`[FeexPay] Paiement non trouvé par custom_id partiel: ${customIdWithoutTimestamp}`);
+          
+          // 4. Dernière tentative : chercher le paiement en attente le plus récent
+          console.log(`[FeexPay] Recherche du paiement en attente le plus récent`);
+          const recentPendingPayment = await pool.query(
+            'SELECT payment_id, custom_id, statut, entreprise_id FROM payments WHERE statut = $1 ORDER BY created_at DESC LIMIT 1',
+            ['en_attente']
+          );
+          
+          if (recentPendingPayment.rowCount > 0) {
+            foundPayment = recentPendingPayment.rows[0];
+            searchMethod = 'recent_pending';
+            console.log(`[FeexPay] Paiement en attente le plus récent trouvé:`, foundPayment);
+          } else {
+            console.error(`[FeexPay] Aucun paiement trouvé avec aucune méthode`);
+            return res.status(404).json({ error: "Paiement non trouvé" });
+          }
+        }
+      }
+    }
+
+    // Utiliser le payment_id trouvé
+    paymentId = foundPayment.payment_id;
+    console.log(`[FeexPay] Paiement final sélectionné (méthode: ${searchMethod}):`, {
+      payment_id: paymentId,
+      custom_id: foundPayment.custom_id,
+      statut: foundPayment.statut
+    });
 
     // Normalisation du statut
     const normalizedStatus = String(status).toLowerCase();
     console.log("[FeexPay] Statut normalisé:", normalizedStatus);
 
-    if ([
-      'success', 'completed', 'approved', 'successful'
-    ].includes(normalizedStatus)) {
+    // Traitement selon le statut
+    if (['success', 'completed', 'approved', 'successful'].includes(normalizedStatus)) {
+      console.log(`[FeexPay] Traitement du paiement réussi pour ${paymentId}`);
+      
       const updateResult = await pool.query(
         `UPDATE payments 
          SET statut = $1, 
              reference_transaction = $2,
              updated_at = CURRENT_TIMESTAMP
          WHERE payment_id = $3 AND statut = 'en_attente'
-         RETURNING payment_id, statut, reference_transaction`,
+         RETURNING payment_id, statut, reference_transaction, entreprise_id`,
         ['succès', transaction_id, paymentId]
       );
 
@@ -276,43 +373,62 @@ export const feexPayWebhook = async (req, res) => {
 
       if (updateResult.rowCount === 0) {
         console.warn(`[FeexPay] Aucun paiement en attente mis à jour pour payment_id=${paymentId}`);
-        // Vérifions si le paiement existe
-        const payment = await pool.query(
-          'SELECT payment_id, statut FROM payments WHERE payment_id = $1',
+        
+        // Vérifier le statut actuel
+        const currentPayment = await pool.query(
+          'SELECT payment_id, statut, reference_transaction FROM payments WHERE payment_id = $1',
           [paymentId]
         );
-        console.log("[FeexPay] État actuel du paiement:", payment.rows[0]);
+        
+        if (currentPayment.rowCount > 0) {
+          const current = currentPayment.rows[0];
+          console.log(`[FeexPay] Statut actuel du paiement: ${current.statut}`);
+          
+          if (current.statut === 'succès') {
+            console.log(`[FeexPay] Paiement déjà traité comme succès`);
+            return res.status(200).json({ message: "Paiement déjà traité" });
+          } else {
+            console.log(`[FeexPay] Paiement dans un état inattendu: ${current.statut}`);
+          }
+        }
       } else {
         console.log(`[FeexPay] Paiement ${paymentId} marqué comme succès`);
         
+        // Générer la facture et envoyer l'email
         try {
-          const paymentResult = await pool.query(
-            'SELECT entreprise_id FROM payments WHERE payment_id = $1',
-            [paymentId]
-          );
-          const entrepriseId = paymentResult.rows[0]?.entreprise_id;
-          
+          const entrepriseId = updateResult.rows[0].entreprise_id;
           if (entrepriseId) {
             const invoice = await generateInvoice(paymentId, entrepriseId);
             await sendInvoiceEmail(invoice, entrepriseId);
             console.log(`[FeexPay] Facture ${invoice.numero_facture} générée et envoyée`);
-          } else {
-            console.error("[FeexPay] Impossible de trouver l'entreprise_id pour le paiement", paymentId);
           }
         } catch (invoiceError) {
-          console.error('[FeexPay] Erreur facture:', invoiceError);
+          console.error('[FeexPay] Erreur lors de la génération de la facture:', invoiceError);
         }
       }
     } else {
-      console.log(`[FeexPay] Statut non reconnu comme succès:`, status);
+      console.log(`[FeexPay] Statut non reconnu comme succès: ${status}`);
+      
       const updateResult = await pool.query(
-        `UPDATE payments SET statut = $1 WHERE payment_id = $2 AND statut = 'en_attente'`,
-        ['échec', paymentId]
+        `UPDATE payments 
+         SET statut = $1, 
+             reference_transaction = $2,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE payment_id = $3 AND statut = 'en_attente'
+         RETURNING payment_id, statut`,
+        ['échec', transaction_id, paymentId]
       );
+      
       console.log(`[FeexPay] Paiement marqué comme échec:`, updateResult.rowCount, 'ligne(s) modifiée(s)');
     }
 
-    res.status(200).json({ message: "Webhook traité avec succès" });
+    res.status(200).json({ 
+      message: "Webhook traité avec succès",
+      payment_id: paymentId,
+      status: normalizedStatus,
+      search_method: searchMethod
+    });
+    
   } catch (err) {
     console.error("[FeexPay] Erreur webhook:", err);
     res.status(500).json({ error: "Erreur serveur" });

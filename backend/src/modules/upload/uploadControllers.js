@@ -184,7 +184,7 @@ async function checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale) {
   const armoireResult = await pool.query(`
     SELECT armoires.armoire_id, armoires.taille_max
     FROM dossiers
-    JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+    JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
     JOIN armoires ON casiers.armoire_id = armoires.armoire_id
     WHERE dossiers.dossier_id = $1
   `, [dossier_id]);
@@ -209,7 +209,7 @@ async function checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale) {
     SELECT COALESCE(SUM(fichiers.taille), 0) AS total_octets
     FROM fichiers
     JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
-    JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+    JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
     WHERE casiers.armoire_id = $1
   `, [armoire_id]);
 

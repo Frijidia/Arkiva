@@ -1,0 +1,354 @@
+# 📋 Guide d'intégration Frontend - Système de Sauvegardes et Versions
+
+## 🎯 Vue d'ensemble pour le développeur Frontend
+
+### Architecture du système :
+- **Backend** : API REST avec stockage AWS S3
+- **Frontend** : Flutter avec services HTTP
+- **Stockage** : Sauvegardes et versions dans le cloud AWS
+
+---
+
+## 📱 1. Écrans à créer dans Flutter
+
+### A. Écran de gestion des sauvegardes
+```
+🔒 Sauvegardes
+├── 📋 Liste des sauvegardes
+├── ➕ Créer une sauvegarde
+├── 📥 Télécharger une sauvegarde
+├── 🔄 Restaurer une sauvegarde
+└── 🗑️ Supprimer une sauvegarde
+```
+
+### B. Écran de gestion des versions
+```
+📁 Versions
+├── 📋 Historique des versions
+├── ➕ Créer une version
+├── 📥 Télécharger une version
+├── 🔍 Comparer des versions
+├── 🔄 Restaurer une version
+└── 🗑️ Supprimer une version
+```
+
+---
+
+## 🔗 2. Endpoints API à utiliser
+
+### Sauvegardes :
+```http
+POST   /api/sauvegardes          # Créer une sauvegarde
+GET    /api/sauvegardes          # Lister les sauvegardes
+GET    /api/sauvegardes/{id}     # Obtenir une sauvegarde
+```
+
+### Versions :
+```http
+POST   /api/versions             # Créer une version
+GET    /api/versions/cible/history?cible_id=X&type=Y  # Historique
+GET    /api/versions/{id}/content # Contenu d'une version
+GET    /api/versions/{id}/download-url # URL de téléchargement
+POST   /api/versions/compare     # Comparer deux versions
+DELETE /api/versions/{id}        # Supprimer une version
+```
+
+### Restaurations :
+```http
+POST   /api/restaurations/backup/{id} # Restaurer une sauvegarde
+GET    /api/restaurations        # Lister les restaurations
+```
+
+---
+
+## 🎨 3. Interface utilisateur recommandée
+
+### A. Page principale "Sauvegardes"
+```
+┌─────────────────────────────────────┐
+│ 🔒 SAUVEGARDES                     │
+├─────────────────────────────────────┤
+│ [➕ Nouvelle sauvegarde]            │
+│                                     │
+│ 📋 Sauvegardes récentes :          │
+│ ┌─────────────────────────────────┐ │
+│ │ 📄 rapport.pdf                 │ │
+│ │ 🕐 15/01/2024 - 14:30         │ │
+│ │ 📦 2.5 MB                     │ │
+│ │ [📥] [🔄] [🗑️]                │ │
+│ └─────────────────────────────────┘ │
+│                                     │
+│ ┌─────────────────────────────────┐ │
+│ │ 📁 dossier_projet              │ │
+│ │ 🕐 14/01/2024 - 09:15         │ │
+│ │ 📦 15.2 MB                    │ │
+│ │ [📥] [🔄] [🗑️]                │ │
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
+
+### B. Page "Versions"
+```
+┌─────────────────────────────────────┐
+│ 📝 VERSIONS                        │
+├─────────────────────────────────────┤
+│ Sélectionner : [📄 Fichier] [📁 Dossier] │
+│                                     │
+│ 📋 Historique des versions :        │
+│ ┌─────────────────────────────────┐ │
+│ │ v2.1 - 15/01/2024 16:45       │ │
+│ │ "Correction finale"            │ │
+│ │ [👁️] [📥] [🔄] [🗑️]          │ │
+│ └─────────────────────────────────┘ │
+│                                     │
+│ ┌─────────────────────────────────┐ │
+│ │ v2.0 - 15/01/2024 14:20       │ │
+│ │ "Ajout section conclusion"     │ │
+│ │ [👁️] [📥] [🔄] [🗑️]          │ │
+│ └─────────────────────────────────┘ │
+│                                     │
+│ ┌─────────────────────────────────┐ │
+│ │ v1.0 - 14/01/2024 10:30       │ │
+│ │ "Version initiale"             │ │
+│ │ [👁️] [📥] [🔄] [🗑️]          │ │
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🔧 4. Fonctionnalités à implémenter
+
+### A. Création de sauvegarde
+- **Bouton** : "Nouvelle sauvegarde"
+- **Modal** : Sélectionner type (fichier/dossier/système)
+- **Action** : Appel API `POST /api/sauvegardes`
+- **Feedback** : Loading + succès/erreur
+
+### B. Téléchargement
+- **Bouton** : "📥 Télécharger"
+- **Action** : Utiliser l'URL S3 retournée
+- **Résultat** : Téléchargement du fichier ZIP
+
+### C. Restauration
+- **Bouton** : "🔄 Restaurer"
+- **Confirmation** : "Êtes-vous sûr ?"
+- **Action** : Appel API `POST /api/restaurations/backup/{id}`
+- **Feedback** : Progression + résultat
+
+### D. Gestion des versions
+- **Sélecteur** : Type d'élément (fichier/dossier/casier/armoire)
+- **Liste** : Historique des versions
+- **Actions** : Voir, télécharger, restaurer, supprimer
+
+---
+
+## 📊 5. États et gestion d'erreurs
+
+### États de chargement :
+```dart
+enum BackupState {
+  idle,
+  loading,
+  success,
+  error,
+  uploading,
+  downloading
+}
+```
+
+### Messages d'erreur courants :
+- "Erreur de connexion"
+- "Sauvegarde en cours, veuillez patienter"
+- "Fichier trop volumineux"
+- "Permissions insuffisantes"
+
+---
+
+## 🎯 6. Intégration dans l'app existante
+
+### Navigation :
+```
+Menu principal
+├── 📁 Fichiers
+├── 📁 Dossiers
+├── 🔒 Sauvegardes ← NOUVEAU
+├── 📝 Versions ← NOUVEAU
+└── ⚙️ Paramètres
+```
+
+### Actions contextuelles :
+- **Sur un fichier** : "Créer une version" / "Sauvegarder"
+- **Sur un dossier** : "Créer une version" / "Sauvegarder"
+- **Menu global** : "Sauvegarde système"
+
+---
+
+## 🔐 7. Sécurité et permissions
+
+### Vérifications :
+- ✅ Token JWT valide
+- ✅ Permissions utilisateur (admin/contributeur)
+- ✅ Taille des fichiers
+- ✅ Espace disponible
+
+### Messages utilisateur :
+- "Vous devez être admin pour créer une sauvegarde système"
+- "Espace insuffisant pour cette sauvegarde"
+- "Téléchargement en cours..."
+
+---
+
+## 📱 8. Expérience utilisateur
+
+### Indicateurs visuels :
+- 🔄 **Loading** : Pendant les opérations
+- ✅ **Succès** : Animation de validation
+- ❌ **Erreur** : Message clair
+- 📊 **Progression** : Barre de progression pour les gros fichiers
+
+### Notifications :
+- "Sauvegarde créée avec succès"
+- "Version 2.1 créée"
+- "Restauration terminée"
+- "Erreur lors du téléchargement"
+
+---
+
+## 🚀 9. Points d'attention
+
+### Performance :
+- ⚡ **Cache** : Mettre en cache les listes
+- ⚡ **Pagination** : Pour les gros historiques
+- ⚡ **Compression** : Pour les téléchargements
+
+### UX :
+- 🎯 **Simplicité** : Interface intuitive
+- 🔄 **Feedback** : Retour immédiat
+- 🛡️ **Récupération** : Gestion des erreurs
+
+---
+
+## ✅ 10. Checklist d'implémentation
+
+- [ ] Créer les services API
+- [ ] Créer les écrans UI
+- [ ] Implémenter la navigation
+- [ ] Gérer les états de chargement
+- [ ] Ajouter la gestion d'erreurs
+- [ ] Tester les fonctionnalités
+- [ ] Optimiser les performances
+- [ ] Ajouter les notifications
+- [ ] Documenter le code
+
+---
+
+## 📋 11. Exemples de requêtes API
+
+### Créer une sauvegarde de fichier :
+```json
+POST /api/sauvegardes
+{
+  "type": "fichier",
+  "cible_id": 123
+}
+```
+
+### Créer une version :
+```json
+POST /api/versions
+{
+  "cible_id": 123,
+  "type": "fichier",
+  "description": "Correction de la section 2.1"
+}
+```
+
+### Obtenir l'historique des versions :
+```json
+GET /api/versions/cible/history?cible_id=123&type=fichier
+```
+
+### Restaurer une sauvegarde :
+```json
+POST /api/restaurations/backup/backup-id-123
+```
+
+---
+
+## 🔗 12. Réponses API attendues
+
+### Sauvegarde créée :
+```json
+{
+  "message": "Sauvegarde de type fichier créée avec succès.",
+  "backup": {
+    "id": 1,
+    "type": "fichier",
+    "chemin_sauvegarde": "https://arkiva-storage.s3.amazonaws.com/uploads/backups/fichier_123_1703123456789.zip",
+    "contenu_json": {
+      "s3Key": "uploads/backups/fichier_123_1703123456789.zip",
+      "s3Size": 1024
+    }
+  },
+  "s3Location": "https://arkiva-storage.s3.amazonaws.com/uploads/backups/fichier_123_1703123456789.zip"
+}
+```
+
+### Version créée :
+```json
+{
+  "id": "uuid-version-1",
+  "cible_id": 123,
+  "type": "fichier",
+  "version_number": "1.0",
+  "storage_path": "uploads/versions/123/uuid-version-1_content",
+  "metadata": {
+    "s3Location": "https://arkiva-storage.s3.amazonaws.com/uploads/versions/123/uuid-version-1_content",
+    "s3Size": 512
+  }
+}
+```
+
+---
+
+## 🎯 13. Différence entre Versions et Sauvegardes
+
+### VERSIONS - Historique des modifications
+- **Objectif** : Garder un historique des modifications d'un élément
+- **Fréquence** : Automatique ou manuelle à chaque modification
+- **Granularité** : Par élément (fichier, dossier, casier, armoire)
+- **Rétention** : Long terme, pour l'historique complet
+
+### SAUVEGARDES - Protection contre la perte
+- **Objectif** : Protection contre la perte de données
+- **Fréquence** : Planifiée (quotidienne, hebdomadaire, mensuelle)
+- **Granularité** : Par élément OU système complet
+- **Rétention** : Selon politique de sauvegarde
+
+### Comparaison :
+| Aspect | VERSIONS | SAUVEGARDES |
+|--------|----------|-------------|
+| **Objectif** | Historique des modifications | Protection contre la perte |
+| **Déclenchement** | Automatique lors des modifications | Manuel ou planifié |
+| **Contenu** | Juste le contenu modifié | Archive complète |
+| **Compression** | Non | Oui (ZIP) |
+| **Récupération** | Restauration d'une version spécifique | Restauration complète |
+| **Espace** | Optimisé | Plus volumineux |
+| **Fréquence** | À chaque modification | Selon planning |
+
+---
+
+## 🚀 14. Conseils d'implémentation
+
+1. **Commencez par les sauvegardes** : Plus simple à implémenter
+2. **Ajoutez les versions ensuite** : Plus complexe mais plus utile
+3. **Testez avec de petits fichiers** : Pour valider le flux
+4. **Implémentez la gestion d'erreurs** : Essentiel pour l'UX
+5. **Ajoutez des indicateurs de progression** : Pour les gros fichiers
+6. **Optimisez les performances** : Cache et pagination
+7. **Documentez le code** : Pour la maintenance
+
+---
+
+**Le développeur frontend a maintenant toutes les informations pour intégrer le système de sauvegardes et versions dans l'application Flutter.** 🚀 

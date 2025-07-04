@@ -100,7 +100,8 @@ export const GetCasiersByArmoire = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM casiers WHERE armoire_id = $1 ORDER BY CAST(regexp_replace(nom, \'\\D\', \'\', \'g\') AS INTEGER)',
+      `SELECT * FROM casiers WHERE armoire_id = $1 AND is_deleted = false 
+      ORDER BY CAST(regexp_replace(nom, \'\\D\', \'\', \'g\') AS INTEGER)`,
       [armoire_id]
     );
 
