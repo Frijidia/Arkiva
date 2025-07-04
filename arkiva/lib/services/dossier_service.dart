@@ -100,4 +100,31 @@ class DossierService {
       throw Exception('Échec de la suppression du dossier');
     }
   }
+
+  // Déplacer un dossier vers un autre casier
+  Future<Dossier> deplacerDossier(String token, int dossierId, int nouveauCasierId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/api/dosier/$dossierId/deplacer'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'nouveau_casier_id': nouveauCasierId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return Dossier.fromJson(data['dossier']);
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error'] ?? 'Erreur lors du déplacement du dossier';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      throw Exception('Erreur lors du déplacement du dossier: $e');
+    }
+  }
 } 

@@ -122,4 +122,31 @@ class DocumentService {
       throw Exception('Erreur lors du chargement du nombre de documents');
     }
   }
+
+  // Déplacer un fichier vers un autre dossier
+  Future<Document> deplacerFichier(String token, String fichierId, int nouveauDossierId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/api/fichier/$fichierId/deplacer'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'nouveau_dossier_id': nouveauDossierId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return Document.fromJson(data['fichier']);
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error'] ?? 'Erreur lors du déplacement du fichier';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      throw Exception('Erreur lors du déplacement du fichier: $e');
+    }
+  }
 } 

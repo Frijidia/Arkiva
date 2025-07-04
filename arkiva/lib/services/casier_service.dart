@@ -91,4 +91,28 @@ class CasierService {
 
   // Note: La route backend pour GetAllCasiers (/api/casier/getcasiers) existe
   // mais n'est pas utilisée ici car nous affichons les casiers par armoire.
+
+  // Déplacer un casier vers une autre armoire
+  Future<Casier> deplacerCasier(int casierId, int nouvelleArmoireId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/casier/$casierId/deplacer'),
+        headers: await ApiConfig.getHeaders(),
+        body: json.encode({
+          'nouvelle_armoire_id': nouvelleArmoireId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return Casier.fromJson(data['casier']);
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error'] ?? 'Erreur lors du déplacement du casier';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      throw Exception('Erreur lors du déplacement du casier: $e');
+    }
+  }
 } 

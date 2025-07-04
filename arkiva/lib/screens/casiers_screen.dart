@@ -6,6 +6,7 @@ import 'package:arkiva/screens/upload_screen.dart';
 import 'package:arkiva/screens/scan_screen.dart';
 import 'package:arkiva/services/casier_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/widgets/deplacement_dialog.dart';
 import 'package:provider/provider.dart';
 
 class CasiersScreen extends StatefulWidget {
@@ -231,6 +232,29 @@ class _CasiersScreenState extends State<CasiersScreen> {
     }
   }
 
+  Future<void> _deplacerCasier(Casier casier) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => DeplacementDialog(
+        type: TypeDeplacement.casier,
+        titre: 'Déplacer le casier',
+        nomElement: casier.nom,
+        elementId: casier.casierId,
+        destinationActuelleId: widget.armoireId,
+        onDeplacementReussi: () async {
+          await _loadCasiers();
+        },
+      ),
+    );
+
+    if (result == true) {
+      // Le déplacement a été effectué avec succès, la liste sera rafraîchie automatiquement
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Casier déplacé avec succès')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -415,6 +439,11 @@ class _CasiersScreenState extends State<CasiersScreen> {
                     icon: const Icon(Icons.delete, size: 20, color: Colors.red),
                     tooltip: 'Supprimer le casier',
                     onPressed: () => _supprimerCasier(casier),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.move_to_inbox, size: 20),
+                    tooltip: 'Déplacer le casier',
+                    onPressed: () => _deplacerCasier(casier),
                   ),
                 ],
               ),

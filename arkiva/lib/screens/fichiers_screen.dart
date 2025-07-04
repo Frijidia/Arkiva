@@ -4,6 +4,7 @@ import 'package:arkiva/models/document.dart';
 import 'package:arkiva/services/document_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/screens/document_viewer_screen.dart';
+import 'package:arkiva/widgets/deplacement_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -357,6 +358,37 @@ class _FichiersScreenState extends State<FichiersScreen> {
           SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
       }
+    }
+  }
+
+  Future<void> _deplacerFichier(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour le déplacement.')),
+      );
+      return;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => DeplacementDialog(
+        type: TypeDeplacement.fichier,
+        titre: 'Déplacer le fichier',
+        nomElement: document.nomOriginal ?? document.nom,
+        elementId: int.parse(document.id!),
+        destinationActuelleId: widget.dossier.dossierId,
+        onDeplacementReussi: () async {
+          await _loadDocuments();
+        },
+      ),
+    );
+
+    if (result == true) {
+      // Le déplacement a été effectué avec succès, la liste sera rafraîchie automatiquement
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Fichier déplacé avec succès')),
+      );
     }
   }
 
@@ -1325,6 +1357,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     case 'modifier':
                                       _modifierDocument(document);
                                       break;
+                                    case 'deplacer':
+                                      _deplacerFichier(document);
+                                      break;
                                     case 'supprimer':
                                       _supprimerDocument(document);
                                       break;
@@ -1357,6 +1392,16 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                             Icon(Icons.edit),
                                         SizedBox(width: 8),
                                             Text('Renommer'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                        value: 'deplacer',
+                                    child: Row(
+                                      children: [
+                                            Icon(Icons.move_to_inbox),
+                                        SizedBox(width: 8),
+                                            Text('Déplacer'),
                                       ],
                                     ),
                                   ),
