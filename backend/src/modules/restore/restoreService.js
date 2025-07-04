@@ -4,6 +4,8 @@ import * as fileService from '../fichiers/fichierControllers.js';
 import * as dossierService from '../dosiers/dosierControllers.js';
 import * as casierService from '../cassiers/cassierContollers.js';
 import * as armoireService from '../armoires/armoireControllers.js';
+import awsStorageService from '../../services/awsStorageService.js';
+import { logAction } from '../audit/auditService.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -13,11 +15,17 @@ import extract from 'extract-zip';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Chemin où sont stockées les sauvegardes
-const BACKUP_DIR = path.join(__dirname, '../../../uploads/backups');
+// Chemin temporaire pour l'extraction
+const TEMP_DIR = path.join(__dirname, '../../../temp');
+
+// S'assurer que le répertoire temporaire existe
+if (!fs.existsSync(TEMP_DIR)) {
+    fs.mkdirSync(TEMP_DIR, { recursive: true });
+}
 
 // Restaurer une sauvegarde
 const restoreBackup = async (backupId, userId) => {
+    let tempExtractPath = null;
     try {
         // Récupérer les informations de la sauvegarde
         const backup = await backupModel.getBackupById(backupId);
@@ -25,37 +33,48 @@ const restoreBackup = async (backupId, userId) => {
             throw new Error('Sauvegarde non trouvée');
         }
 
-        // Vérifier que le fichier de sauvegarde existe
-        if (!fs.existsSync(backup.chemin_sauvegarde)) {
-            throw new Error('Fichier de sauvegarde non trouvé');
-        }
+        // Extraire la clé S3 depuis l'URL
+        const s3Key = backup.contenu_json?.s3Key || backup.chemin_sauvegarde.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`, '');
+
+        // Télécharger la sauvegarde depuis S3
+        const backupBuffer = await awsStorageService.downloadBackup(s3Key);
 
         // Créer un répertoire temporaire pour l'extraction
-        const tempDir = path.join(BACKUP_DIR, 'temp', backupId);
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
+        tempExtractPath = path.join(TEMP_DIR, `restore_${backupId}_${Date.now()}`);
+        if (!fs.existsSync(tempExtractPath)) {
+            fs.mkdirSync(tempExtractPath, { recursive: true });
         }
 
+        // Écrire le buffer dans un fichier temporaire
+        const tempBackupPath = path.join(tempExtractPath, 'backup.zip');
+        fs.writeFileSync(tempBackupPath, backupBuffer);
+
         // Extraire l'archive
-        await extract(backup.chemin_sauvegarde, { dir: tempDir });
+        await extract(tempBackupPath, { dir: tempExtractPath });
 
         // Lire les métadonnées
-        const metadata = JSON.parse(fs.readFileSync(path.join(tempDir, 'metadata.json'), 'utf8'));
+        const metadataFiles = fs.readdirSync(tempExtractPath).filter(file => file.includes('metadata'));
+        if (metadataFiles.length === 0) {
+            throw new Error('Aucun fichier de métadonnées trouvé dans la sauvegarde');
+        }
+
+        const metadataPath = path.join(tempExtractPath, metadataFiles[0]);
+        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
 
         // Restaurer selon le type
         let restoredData;
         switch (backup.type) {
             case 'fichier':
-                restoredData = await restoreFile(metadata, tempDir, userId);
+                restoredData = await restoreFile(metadata, tempExtractPath, userId);
                 break;
             case 'dossier':
-                restoredData = await restoreDossier(metadata, tempDir, userId);
+                restoredData = await restoreDossier(metadata, tempExtractPath, userId);
                 break;
             case 'casier':
-                restoredData = await restoreCasier(metadata, tempDir, userId);
+                restoredData = await restoreCasier(metadata, tempExtractPath, userId);
                 break;
             case 'armoire':
-                restoredData = await restoreArmoire(metadata, tempDir, userId);
+                restoredData = await restoreArmoire(metadata, tempExtractPath, userId);
                 break;
             default:
                 throw new Error('Type de sauvegarde non supporté');
@@ -72,12 +91,36 @@ const restoreBackup = async (backupId, userId) => {
 
         const restore = await restoreModel.createRestore(restoreData);
 
+        // Journaliser l'action
+        if (userId) {
+            await logAction(
+                userId,
+                'restore_backup',
+                'backup',
+                backupId,
+                {
+                    backup_id: backupId,
+                    restored_id: restoredData.id,
+                    type: backup.type,
+                    date: new Date()
+                }
+            );
+        }
+
         // Nettoyer le répertoire temporaire
-        fs.rmSync(tempDir, { recursive: true, force: true });
+        if (tempExtractPath && fs.existsSync(tempExtractPath)) {
+            fs.rmSync(tempExtractPath, { recursive: true, force: true });
+        }
 
         return restore;
     } catch (error) {
         console.error('Erreur lors de la restauration:', error);
+        
+        // Nettoyer le répertoire temporaire en cas d'erreur
+        if (tempExtractPath && fs.existsSync(tempExtractPath)) {
+            fs.rmSync(tempExtractPath, { recursive: true, force: true });
+        }
+        
         throw error;
     }
 };
@@ -85,10 +128,10 @@ const restoreBackup = async (backupId, userId) => {
 // Restaurer un fichier
 const restoreFile = async (metadata, tempDir, userId) => {
     const fileData = {
-        nom: metadata.nom,
-        type_mime: metadata.type_mime,
-        taille: metadata.taille,
-        dossier_id: metadata.dossier_id,
+        nom: metadata.originalFileName || metadata.name || `fichier_restaure_${Date.now()}`,
+        type_mime: metadata.type_mime || 'application/octet-stream',
+        taille: metadata.taille || metadata.size || 0,
+        dossier_id: metadata.dossier_id || null,
         created_by: userId
     };
 
@@ -98,8 +141,8 @@ const restoreFile = async (metadata, tempDir, userId) => {
 // Restaurer un dossier
 const restoreDossier = async (metadata, tempDir, userId) => {
     const dossierData = {
-        nom: metadata.nom,
-        casier_id: metadata.casier_id,
+        nom: metadata.name || `dossier_restaure_${Date.now()}`,
+        casier_id: metadata.casier_id || null,
         created_by: userId
     };
 
@@ -109,8 +152,8 @@ const restoreDossier = async (metadata, tempDir, userId) => {
 // Restaurer un casier
 const restoreCasier = async (metadata, tempDir, userId) => {
     const casierData = {
-        nom: metadata.nom,
-        armoire_id: metadata.armoire_id,
+        nom: metadata.name || `casier_restaure_${Date.now()}`,
+        armoire_id: metadata.armoire_id || null,
         created_by: userId
     };
 
@@ -120,8 +163,8 @@ const restoreCasier = async (metadata, tempDir, userId) => {
 // Restaurer une armoire
 const restoreArmoire = async (metadata, tempDir, userId) => {
     const armoireData = {
-        nom: metadata.nom,
-        entreprise_id: metadata.entreprise_id,
+        nom: metadata.name || `armoire_restaure_${Date.now()}`,
+        entreprise_id: metadata.entreprise_id || null,
         created_by: userId
     };
 

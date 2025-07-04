@@ -11,6 +11,7 @@ router.use(verifyToken);
 router.post('/', versionController.createVersion);
 router.get('/cible/history', versionController.getVersionHistory);
 router.get('/:id/content', versionController.getVersionContent);
+router.get('/:id/download-url', versionController.getVersionDownloadUrl);
 router.post('/compare', versionController.compareVersions);
 router.delete('/:id', versionController.deleteVersion);
 
