@@ -6,6 +6,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mime from "mime-types";
 import encryptionService from '../encryption/encryptionService.js';
 import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
+import backupService from '../backup/backupService.js';
 
 // import fs from 'fs/promises';
 
@@ -50,6 +51,32 @@ export const deleteFichier = async (req, res) => {
     const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [casier.armoire_id]);
     const armoire = armoireResult.rows[0] || { nom: '?' };
 
+    // 🗂️ CRÉER UNE SAUVEGARDE AUTOMATIQUE AVANT SUPPRESSION
+    try {
+      console.log(`🔄 [Auto-Backup] Création de sauvegarde automatique pour fichier ${fichier_id} avant suppression`);
+      
+      const backupData = {
+        type: 'fichier',
+        cible_id: fichier_id,
+        entreprise_id: armoire.entreprise_id,
+        mode: 'automatic',
+        reason: 'deletion'
+      };
+
+      // Créer la sauvegarde de manière asynchrone (ne pas bloquer la suppression)
+      backupService.createBackup(backupData, req.user?.user_id)
+        .then(() => {
+          console.log(`✅ [Auto-Backup] Sauvegarde automatique créée pour fichier ${fichier_id}`);
+        })
+        .catch((backupError) => {
+          console.error(`❌ [Auto-Backup] Erreur lors de la sauvegarde automatique:`, backupError);
+        });
+
+    } catch (backupError) {
+      console.error(`❌ [Auto-Backup] Erreur lors de la préparation de la sauvegarde:`, backupError);
+      // Continuer avec la suppression même si la sauvegarde échoue
+    }
+
     const filePath = fichier.chemin;
     const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
     const key = filePath.replace(s3BaseUrl, '');
@@ -63,10 +90,10 @@ export const deleteFichier = async (req, res) => {
     // Supprimer de la base
     await pool.query('DELETE FROM fichiers WHERE fichier_id = $1', [fichier_id]);
 
-    // Log humain
+    // Log humain avec information de sauvegarde
     const user = req.user;
     const now = new Date();
-    const message = `L'utilisateur ${user.username} a supprimé le fichier "${fichier.originalfilename || fichier.nom}" du casier "${casier.nom}" de l'armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}.`;
+    const message = `L'utilisateur ${user.username} a supprimé le fichier "${fichier.originalfilename || fichier.nom}" du casier "${casier.nom}" de l'armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}. Une sauvegarde automatique a été créée.`;
     await logAction(
       user.user_id,
       ACTIONS.DELETE,
@@ -77,11 +104,15 @@ export const deleteFichier = async (req, res) => {
         fichier_id,
         dossier_id: dossier.dossier_id,
         casier_id: casier.cassier_id,
-        armoire_id: armoire.armoire_id
+        armoire_id: armoire.armoire_id,
+        auto_backup_created: true
       }
     );
 
-    res.status(200).json({ message: "Fichier supprimé avec succès" });
+    res.status(200).json({ 
+      message: "Fichier supprimé avec succès",
+      backup_created: true
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors de la suppression du fichier" });
@@ -89,7 +120,6 @@ export const deleteFichier = async (req, res) => {
 };
 
 //renommer fichier
-
 export const renameFichier = async (req, res) => {
   const { fichier_id } = req.params;
   const { nouveauoriginalfilename } = req.body;
@@ -99,6 +129,56 @@ export const renameFichier = async (req, res) => {
   }
 
   try {
+    // Récupérer l'ancien nom avant modification
+    const oldFichierResult = await pool.query('SELECT * FROM fichiers WHERE fichier_id = $1', [fichier_id]);
+    if (oldFichierResult.rowCount === 0) {
+      return res.status(404).json({ error: "Fichier non trouvé" });
+    }
+    const oldFichier = oldFichierResult.rows[0];
+    const oldName = oldFichier.originalfilename || oldFichier.nom;
+
+    // 📝 CRÉER UNE VERSION AUTOMATIQUE AVANT RENOMMAGE
+    try {
+      console.log(`🔄 [Auto-Version] Création de version automatique pour fichier ${fichier_id} avant renommage`);
+      
+      const dossierResult = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [oldFichier.dossier_id]);
+      const dossier = dossierResult.rows[0] || { nom: '?' };
+      const casierResult = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [dossier.cassier_id]);
+      const casier = casierResult.rows[0] || { nom: '?' };
+      const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [casier.armoire_id]);
+      const armoire = armoireResult.rows[0] || { nom: '?' };
+
+      const versionData = {
+        cible_id: fichier_id,
+        type: 'fichier',
+        version_number: 'auto',
+        description: `Renommage: "${oldName}" → "${nouveauoriginalfilename}"`,
+        metadata: {
+          old_name: oldName,
+          new_name: nouveauoriginalfilename,
+          reason: 'rename',
+          type: 'fichier'
+        },
+        entreprise_id: armoire.entreprise_id
+      };
+
+      // Importer le service de versions
+      const versionService = await import('../versions/versionService.js');
+      
+      // Créer la version de manière asynchrone
+      versionService.default.createVersion(versionData, req.user?.user_id)
+        .then(() => {
+          console.log(`✅ [Auto-Version] Version automatique créée pour fichier ${fichier_id}`);
+        })
+        .catch((versionError) => {
+          console.error(`❌ [Auto-Version] Erreur lors de la création de version:`, versionError);
+        });
+
+    } catch (versionError) {
+      console.error(`❌ [Auto-Version] Erreur lors de la préparation de la version:`, versionError);
+      // Continuer avec le renommage même si la version échoue
+    }
+
     // Mise à jour du champ "nom" dans la base
     const result = await pool.query(
       'UPDATE fichiers SET originalfilename = $1 WHERE fichier_id = $2 RETURNING *',
@@ -109,7 +189,7 @@ export const renameFichier = async (req, res) => {
       return res.status(404).json({ error: "Fichier non trouvé" });
     }
 
-    // Log humain
+    // Log humain avec information de version
     const fichier = result.rows[0];
     const dossierResult = await pool.query('SELECT * FROM dossiers WHERE dossier_id = $1', [fichier.dossier_id]);
     const dossier = dossierResult.rows[0] || { nom: '?' };
@@ -119,7 +199,7 @@ export const renameFichier = async (req, res) => {
     const armoire = armoireResult.rows[0] || { nom: '?' };
     const user = req.user;
     const now = new Date();
-    const message = `L'utilisateur ${user.username} a modifié le fichier "${fichier.originalfilename}" du dossier "${dossier.nom}", casier "${casier.nom}", armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}.`;
+    const message = `L'utilisateur ${user.username} a renommé le fichier "${oldName}" en "${fichier.originalfilename}" du dossier "${dossier.nom}", casier "${casier.nom}", armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}. Une version automatique a été créée.`;
     await logAction(
       user.user_id,
       ACTIONS.UPDATE,
@@ -130,11 +210,18 @@ export const renameFichier = async (req, res) => {
         fichier_id,
         dossier_id: dossier.dossier_id,
         casier_id: casier.cassier_id,
-        armoire_id: armoire.armoire_id
+        armoire_id: armoire.armoire_id,
+        old_name: oldName,
+        new_name: fichier.originalfilename,
+        auto_version_created: true
       }
     );
 
-    res.status(200).json({ message: "Nom du fichier mis à jour", fichier: result.rows[0] });
+    res.status(200).json({ 
+      message: "Nom du fichier mis à jour", 
+      fichier: result.rows[0],
+      version_created: true
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors du renommage" });

@@ -1,4 +1,6 @@
 import pool from '../../config/database.js';
+import { logAction, ACTIONS, TARGET_TYPES } from '../audit/auditService.js';
+import backupService from '../backup/backupService.js';
 //import "./cassierModels.js";
 
 
@@ -118,16 +120,88 @@ export const RenameCasier = async (req, res) => {
   const { sous_titre } = req.body;
 
   try {
+    // Récupérer l'ancien sous-titre avant modification
+    const oldCasierResult = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [cassier_id]);
+    if (oldCasierResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Casier non trouvé' });
+    }
+    const oldCasier = oldCasierResult.rows[0];
+    const oldSousTitre = oldCasier.sous_titre || '';
+
+    // 📝 CRÉER UNE VERSION AUTOMATIQUE AVANT RENOMMAGE
+    try {
+      console.log(`🔄 [Auto-Version] Création de version automatique pour casier ${cassier_id} avant renommage`);
+      
+      const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [oldCasier.armoire_id]);
+      const armoire = armoireResult.rows[0] || { nom: '?' };
+
+      const versionData = {
+        cible_id: cassier_id,
+        type: 'casier',
+        version_number: 'auto',
+        description: `Renommage: "${oldSousTitre}" → "${sous_titre}"`,
+        metadata: {
+          old_sous_titre: oldSousTitre,
+          new_sous_titre: sous_titre,
+          reason: 'rename',
+          type: 'casier'
+        },
+        entreprise_id: armoire.entreprise_id
+      };
+
+      // Importer le service de versions
+      const versionService = await import('../versions/versionService.js');
+      
+      // Créer la version de manière asynchrone
+      versionService.default.createVersion(versionData, req.user?.user_id)
+        .then(() => {
+          console.log(`✅ [Auto-Version] Version automatique créée pour casier ${cassier_id}`);
+        })
+        .catch((versionError) => {
+          console.error(`❌ [Auto-Version] Erreur lors de la création de version:`, versionError);
+        });
+
+    } catch (versionError) {
+      console.error(`❌ [Auto-Version] Erreur lors de la préparation de la version:`, versionError);
+      // Continuer avec le renommage même si la version échoue
+    }
+
     const update = await pool.query(
       'UPDATE casiers SET sous_titre = $1 WHERE cassier_id = $2 RETURNING *',
       [sous_titre, cassier_id]
     );
 
     if (update.rowCount === 0) {
-      return res.status(404).json({ error: 'Cassier non trouvé' });
+      return res.status(404).json({ error: 'Casier non trouvé' });
     }
 
-    res.status(200).json({ message: 'Sous-titre du casier mis à jour', cassier: update.rows[0] });
+    // Log humain avec information de version
+    const casier = update.rows[0];
+    const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [casier.armoire_id]);
+    const armoire = armoireResult.rows[0] || { nom: '?' };
+    const user = req.user;
+    const now = new Date();
+    const message = `L'utilisateur ${user.username} a renommé le casier "${casier.nom}" (sous-titre: "${oldSousTitre}" → "${casier.sous_titre}") de l'armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}. Une version automatique a été créée.`;
+    await logAction(
+      user.user_id,
+      ACTIONS.UPDATE,
+      TARGET_TYPES.FOLDER,
+      cassier_id,
+      {
+        message,
+        casier_id,
+        armoire_id: armoire.armoire_id,
+        old_sous_titre: oldSousTitre,
+        new_sous_titre: casier.sous_titre,
+        auto_version_created: true
+      }
+    );
+
+    res.status(200).json({ 
+      message: 'Sous-titre du casier mis à jour', 
+      casier: update.rows[0],
+      version_created: true
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur lors de la mise à jour du casier' });
@@ -139,13 +213,71 @@ export const DeleteCasier = async (req, res) => {
   const { cassier_id } = req.params;
 
   try {
+    // Récupérer les infos du casier avant suppression
+    const casierResult = await pool.query('SELECT * FROM casiers WHERE cassier_id = $1', [cassier_id]);
+    if (casierResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Casier non trouvé' });
+    }
+    const casier = casierResult.rows[0];
+
+    // Récupérer les infos de l'armoire
+    const armoireResult = await pool.query('SELECT * FROM armoires WHERE armoire_id = $1', [casier.armoire_id]);
+    const armoire = armoireResult.rows[0] || { nom: '?' };
+
+    // 🗂️ CRÉER UNE SAUVEGARDE AUTOMATIQUE AVANT SUPPRESSION
+    try {
+      console.log(`🔄 [Auto-Backup] Création de sauvegarde automatique pour casier ${cassier_id} avant suppression`);
+      
+      const backupData = {
+        type: 'casier',
+        cible_id: cassier_id,
+        entreprise_id: armoire.entreprise_id,
+        mode: 'automatic',
+        reason: 'deletion'
+      };
+
+      // Créer la sauvegarde de manière asynchrone
+      backupService.createBackup(backupData, req.user?.user_id)
+        .then(() => {
+          console.log(`✅ [Auto-Backup] Sauvegarde automatique créée pour casier ${cassier_id}`);
+        })
+        .catch((backupError) => {
+          console.error(`❌ [Auto-Backup] Erreur lors de la sauvegarde automatique:`, backupError);
+        });
+
+    } catch (backupError) {
+      console.error(`❌ [Auto-Backup] Erreur lors de la préparation de la sauvegarde:`, backupError);
+      // Continuer avec la suppression même si la sauvegarde échoue
+    }
+
     const deletion = await pool.query('DELETE FROM casiers WHERE cassier_id = $1 RETURNING *', [cassier_id]);
 
     if (deletion.rowCount === 0) {
-      return res.status(404).json({ error: 'Cassier non trouvé' });
+      return res.status(404).json({ error: 'Casier non trouvé' });
     }
 
-    res.status(200).json({ message: 'Cassier supprimé avec succès', cassier: deletion.rows[0] });
+    // Log humain avec information de sauvegarde
+    const user = req.user;
+    const now = new Date();
+    const message = `L'utilisateur ${user.username} a supprimé le casier "${casier.nom}" de l'armoire "${armoire.nom}" le ${now.toLocaleDateString()} à ${now.toLocaleTimeString()}. Une sauvegarde automatique a été créée.`;
+    await logAction(
+      user.user_id,
+      ACTIONS.DELETE,
+      TARGET_TYPES.FOLDER,
+      cassier_id,
+      {
+        message,
+        casier_id,
+        armoire_id: armoire.armoire_id,
+        auto_backup_created: true
+      }
+    );
+
+    res.status(200).json({ 
+      message: 'Casier supprimé avec succès', 
+      casier: deletion.rows[0],
+      backup_created: true
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur lors de la suppression du casier' });

@@ -9,6 +9,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+// Import du cron de nettoyage
+import cleanupCron from './cron/cleanupCron.js';
 
 import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification (utilisateurs)
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'; // entreprises
@@ -76,6 +78,9 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`🚀 Server is running at: http://localhost:${PORT}`);
+  
+  // 🕐 Démarrage du cron de nettoyage automatique
+  cleanupCron.start();
 });
 
 export default app; 
