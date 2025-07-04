@@ -41,7 +41,7 @@ class DossierService {
         'Content-Type': 'application/json',
       },
       body: json.encode({
-        'casier_id': casierId,
+        'cassier_id': casierId, // <-- correction ici
         'nom': nom,
         'description': description,
         'user_id': userId,

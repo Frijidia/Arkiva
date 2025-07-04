@@ -125,11 +125,10 @@ class _FichiersScreenState extends State<FichiersScreen> {
   }
 
   Future<void> _ajouterDocument() async {
-    final TextEditingController nomController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
     _selectedFile = null;
 
-    final result = await showDialog<Map<String, String>?> (
+    final result = await showDialog<Map<String, String>?>(
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setStateSB) {
         return AlertDialog(
@@ -137,14 +136,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nomController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom du document',
-                  hintText: 'Entrez le nom du document',
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Suppression du champ Nom du document
               TextField(
                 controller: descriptionController,
                 decoration: const InputDecoration(
@@ -171,14 +163,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final nom = nomController.text.trim();
-                if (nom.isNotEmpty && _selectedFile != null) {
+                if (_selectedFile != null) {
                   Navigator.pop(context, {
-                    'nom': nom,
+                    'nom': _selectedFile!.name, // Utilise le vrai nom du fichier
                     'description': descriptionController.text.trim(),
                   });
                 } else {
-                  Navigator.pop(context, {'erreur': 'Veuillez saisir un nom et sélectionner un fichier'});
+                  Navigator.pop(context, {'erreur': 'Veuillez sélectionner un fichier'});
                 }
               },
               child: const Text('Ajouter'),
