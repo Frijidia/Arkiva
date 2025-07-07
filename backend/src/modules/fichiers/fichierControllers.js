@@ -212,22 +212,71 @@ export const getFichierCountByDossierId = async (req, res) => {
 
 // Déplacement d'un fichier vers un autre dossier
 export const deplacerFichier = async (req, res) => {
-  const { id } = req.params; // ID du fichier
+  const { id } = req.params; // ID du fichier à déplacer
   const { nouveau_dossier_id } = req.body;
 
   try {
-    const result = await pool.query(
+    // 1. Récupère les infos du fichier (notamment sa taille)
+    const fichierResult = await pool.query(
+      `SELECT taille FROM fichiers WHERE fichier_id = $1 AND is_deleted = false`,
+      [id]
+    );
+
+    if (fichierResult.rowCount === 0) {
+      return res.status(404).json({ error: "Fichier non trouvé ou supprimé" });
+    }
+
+    const tailleFichier = parseInt(fichierResult.rows[0].taille);
+
+    // 2. Récupère le casier et l'armoire associés au nouveau dossier
+    const dossierResult = await pool.query(
+      `SELECT c.armoire_id FROM dossiers d
+       JOIN casiers c ON d.casier_id = c.casier_id
+       WHERE d.dossier_id = $1`,
+      [nouveau_dossier_id]
+    );
+
+    if (dossierResult.rowCount === 0) {
+      return res.status(404).json({ error: "Nouveau dossier non trouvé" });
+    }
+
+    const armoireId = dossierResult.rows[0].armoire_id;
+
+    // 3. Récupère la taille maximale autorisée de l’armoire
+    const armoireResult = await pool.query(
+      `SELECT taille_max FROM armoires WHERE armoire_id = $1`,
+      [armoireId]
+    );
+
+    const tailleMax = parseInt(armoireResult.rows[0].taille_max);
+
+    // 4. Calcule l'espace actuellement utilisé dans l'armoire (sans les fichiers supprimés)
+    const usedSpaceResult = await pool.query(`
+      SELECT COALESCE(SUM(f.taille), 0) AS total
+      FROM fichiers f
+      JOIN dossiers d ON f.dossier_id = d.dossier_id
+      JOIN casiers c ON d.casier_id = c.casier_id
+      WHERE c.armoire_id = $1 AND f.is_deleted = false
+    `, [armoireId]);
+
+    const espaceUtilise = parseInt(usedSpaceResult.rows[0].total);
+
+    // 5. Vérifie si l’armoire a encore de l’espace
+    if (espaceUtilise + tailleFichier > tailleMax) {
+      return res.status(400).json({ error: "Pas assez d’espace dans l’armoire cible" });
+    }
+
+    // 6. Déplace le fichier vers le nouveau dossier
+    const updateResult = await pool.query(
       `UPDATE fichiers SET dossier_id = $1 WHERE fichier_id = $2 RETURNING *`,
       [nouveau_dossier_id, id]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Fichier non trouvé" });
-    }
+    res.status(200).json({ message: "Fichier déplacé avec succès", fichier: updateResult.rows[0] });
 
-    res.status(200).json({ message: "Fichier déplacé avec succès", fichier: result.rows[0] });
   } catch (err) {
     console.error("Erreur déplacement fichier :", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
+

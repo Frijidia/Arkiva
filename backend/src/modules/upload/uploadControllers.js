@@ -209,8 +209,9 @@ async function checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale) {
     SELECT COALESCE(SUM(fichiers.taille), 0) AS total_octets
     FROM fichiers
     JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
-    JOIN casiers ON dossiers.casier_id = casiers.cassier_id
+    JOIN casiers ON dossiers.casier_id = casiers.casier_id
     WHERE casiers.armoire_id = $1
+      AND fichiers.is_deleted = false
   `, [armoire_id]);
 
   const totalActuel = Number(totalResult.rows[0].total_octets) || 0;
