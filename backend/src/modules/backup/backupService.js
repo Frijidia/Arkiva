@@ -24,7 +24,7 @@ const createBackup = async (backupData, utilisateur_id, res) => {
         const { type, cible_id, mode } = backupData;
 
         // Valider le type de sauvegarde
-        if (!['fichier', 'dossier', 'système'].includes(type)) {
+        if (!['fichier', 'dossier', 'casier', 'armoire', 'système'].includes(type)) {
             if (res && !res.headersSent) res.status(400).json({ error: 'Type de sauvegarde invalide.' });
             throw new Error('Type de sauvegarde invalide.');
         }
@@ -256,6 +256,90 @@ const createBackup = async (backupData, utilisateur_id, res) => {
                         res.status(500).json({
                             error: 'Erreur lors de la préparation de la sauvegarde système',
                             details: systemError.message
+                        });
+                    }
+                    return;
+                }
+                break;
+
+            case 'casier':
+                if (!cible_id) {
+                    archive.finalize();
+                    if (res && !res.headersSent) res.status(400).json({ error: 'cible_id est requis pour la sauvegarde de casier.' });
+                    return;
+                }
+                
+                // ** Récupérer les données du casier et de ses contenus et les ajouter à l'archive **
+                try {
+                    // Pour l'instant, on simule les données du casier
+                    // TODO: Implémenter la récupération réelle des données de casier
+                    const casierContent = {
+                        id: cible_id,
+                        name: `casier_${cible_id}`,
+                        dossiers: []
+                    };
+
+                    // Ajouter les métadonnées
+                    dataToArchive = casierContent;
+                    archive.append(JSON.stringify(dataToArchive, null, 2), { name: `metadata_casier_${cible_id}.json` });
+
+                    // Mettre à jour le résumé
+                    backupSummary = {
+                        type: 'casier',
+                        id: casierContent.id,
+                        name: casierContent.name,
+                        dossierCount: casierContent.dossiers ? casierContent.dossiers.length : 0,
+                    };
+
+                } catch (casierError) {
+                    console.error(`Erreur lors de la récupération/ajout du casier à l'archive: ${casierError.message}`, casierError);
+                    archive.finalize();
+                    if (res && !res.headersSent) {
+                        res.status(500).json({
+                            error: 'Erreur lors de la préparation de la sauvegarde du casier',
+                            details: casierError.message
+                        });
+                    }
+                    return;
+                }
+                break;
+
+            case 'armoire':
+                if (!cible_id) {
+                    archive.finalize();
+                    if (res && !res.headersSent) res.status(400).json({ error: 'cible_id est requis pour la sauvegarde d\'armoire.' });
+                    return;
+                }
+                
+                // ** Récupérer les données de l'armoire et de ses contenus et les ajouter à l'archive **
+                try {
+                    // Pour l'instant, on simule les données de l'armoire
+                    // TODO: Implémenter la récupération réelle des données d'armoire
+                    const armoireContent = {
+                        id: cible_id,
+                        name: `armoire_${cible_id}`,
+                        casiers: []
+                    };
+
+                    // Ajouter les métadonnées
+                    dataToArchive = armoireContent;
+                    archive.append(JSON.stringify(dataToArchive, null, 2), { name: `metadata_armoire_${cible_id}.json` });
+
+                    // Mettre à jour le résumé
+                    backupSummary = {
+                        type: 'armoire',
+                        id: armoireContent.id,
+                        name: armoireContent.name,
+                        casierCount: armoireContent.casiers ? armoireContent.casiers.length : 0,
+                    };
+
+                } catch (armoireError) {
+                    console.error(`Erreur lors de la récupération/ajout de l'armoire à l'archive: ${armoireError.message}`, armoireError);
+                    archive.finalize();
+                    if (res && !res.headersSent) {
+                        res.status(500).json({
+                            error: 'Erreur lors de la préparation de la sauvegarde de l\'armoire',
+                            details: armoireError.message
                         });
                     }
                     return;

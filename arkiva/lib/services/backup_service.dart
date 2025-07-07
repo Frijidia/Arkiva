@@ -1,146 +1,123 @@
-import 'dart:io';
 import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
-import 'package:arkiva/services/encryption_service.dart';
-import 'package:arkiva/services/logging_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:arkiva/config/api_config.dart';
 
 class BackupService {
-  static const String _backupDirName = 'backups';
-  static const int _maxBackups = 5;
-  final EncryptionService _encryptionService;
-  final LoggingService _loggingService;
+  static const String baseUrl = ApiConfig.baseUrl;
 
-  BackupService(this._encryptionService, this._loggingService);
-
-  Future<String> createBackup({
-    required String userId,
-    required Map<String, dynamic> data,
+  // Créer une sauvegarde
+  static Future<Map<String, dynamic>> createBackup({
+    required String token,
+    required String type,
+    required int cibleId,
+    required int entrepriseId,
   }) async {
     try {
-      final backupDir = await _getBackupDirectory();
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final backupFileName = 'backup_$timestamp.json';
-      final backupFile = File(path.join(backupDir.path, backupFileName));
-
-      // Préparer les données de sauvegarde
-      final backupData = {
-        'timestamp': timestamp,
-        'version': '1.0.0',
-        'data': data,
-      };
-
-      // Chiffrer les données
-      final encryptedData = await _encryptionService.encryptFile(
-        utf8.encode(jsonEncode(backupData)) as Uint8List,
-      );
-
-      // Sauvegarder le fichier
-      await backupFile.writeAsBytes(encryptedData);
-
-      // Journaliser la sauvegarde
-      await _loggingService.log(
-        action: 'backup_created',
-        userId: userId,
-        level: LogLevel.info,
-        details: 'Sauvegarde créée: $backupFileName',
-        metadata: {
-          'backup_file': backupFileName,
-          'data_size': data.toString().length,
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/sauvegardes'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
         },
+        body: json.encode({
+          'type': type,
+          'cible_id': cibleId,
+          'entreprise_id': entrepriseId,
+        }),
       );
 
-      // Nettoyer les anciennes sauvegardes
-      await _cleanupOldBackups();
-
-      return backupFileName;
+      if (response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['error'] ?? 'Erreur lors de la création de la sauvegarde');
+      }
     } catch (e) {
-      await _loggingService.log(
-        action: 'backup_failed',
-        userId: userId,
-        level: LogLevel.error,
-        details: 'Erreur lors de la création de la sauvegarde: $e',
-      );
-      rethrow;
+      throw Exception('Erreur de connexion: $e');
     }
   }
 
-  Future<Map<String, dynamic>> restoreBackup({
-    required String userId,
-    required String backupFileName,
+  // Obtenir toutes les sauvegardes
+  static Future<List<Map<String, dynamic>>> getAllBackups({
+    required String token,
   }) async {
     try {
-      final backupDir = await _getBackupDirectory();
-      final backupFile = File(path.join(backupDir.path, backupFileName));
-
-      if (!await backupFile.exists()) {
-        throw Exception('Fichier de sauvegarde introuvable');
-      }
-
-      // Lire et déchiffrer les données
-      final encryptedData = await backupFile.readAsBytes();
-      final decryptedData = await _encryptionService.decryptFile(encryptedData);
-      final backupData = jsonDecode(utf8.decode(decryptedData));
-
-      // Journaliser la restauration
-      await _loggingService.log(
-        action: 'backup_restored',
-        userId: userId,
-        level: LogLevel.info,
-        details: 'Sauvegarde restaurée: $backupFileName',
-        metadata: {
-          'backup_file': backupFileName,
-          'backup_version': backupData['version'],
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/sauvegardes'),
+        headers: {
+          'Authorization': 'Bearer $token',
         },
       );
 
-      return backupData['data'];
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['error'] ?? 'Erreur lors de la récupération des sauvegardes');
+      }
     } catch (e) {
-      await _loggingService.log(
-        action: 'restore_failed',
-        userId: userId,
-        level: LogLevel.error,
-        details: 'Erreur lors de la restauration de la sauvegarde: $e',
-        metadata: {
-          'backup_file': backupFileName,
+      throw Exception('Erreur de connexion: $e');
+    }
+  }
+
+  // Obtenir une sauvegarde par ID
+  static Future<Map<String, dynamic>> getBackupById({
+    required String token,
+    required int backupId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/sauvegardes/$backupId'),
+        headers: {
+          'Authorization': 'Bearer $token',
         },
       );
-      rethrow;
-    }
-  }
 
-  Future<List<String>> listBackups() async {
-    final backupDir = await _getBackupDirectory();
-    final files = await backupDir.list().toList();
-    return files
-        .whereType<File>()
-        .map((file) => path.basename(file.path))
-        .where((name) => name.startsWith('backup_'))
-        .toList()
-      ..sort((a, b) => b.compareTo(a)); // Trier par ordre décroissant
-  }
-
-  Future<void> _cleanupOldBackups() async {
-    final backups = await listBackups();
-    if (backups.length <= _maxBackups) return;
-
-    final backupDir = await _getBackupDirectory();
-    for (var i = _maxBackups; i < backups.length; i++) {
-      final file = File(path.join(backupDir.path, backups[i]));
-      if (await file.exists()) {
-        await file.delete();
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['error'] ?? 'Erreur lors de la récupération de la sauvegarde');
       }
+    } catch (e) {
+      throw Exception('Erreur de connexion: $e');
     }
   }
 
-  Future<Directory> _getBackupDirectory() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final backupDir = Directory(path.join(appDir.path, _backupDirName));
-    
-    if (!await backupDir.exists()) {
-      await backupDir.create(recursive: true);
+  // Télécharger une sauvegarde
+  static Future<String> getBackupDownloadUrl({
+    required String token,
+    required int backupId,
+  }) async {
+    try {
+      final backup = await getBackupById(token: token, backupId: backupId);
+      return backup['s3Location'] ?? backup['contenu_json']['s3Location'];
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération de l\'URL de téléchargement: $e');
     }
-    
-    return backupDir;
+  }
+
+  // Nettoyage des sauvegardes
+  static Future<Map<String, dynamic>> runCleanup({
+    required String token,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/sauvegardes/cleanup'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['error'] ?? 'Erreur lors du nettoyage');
+      }
+    } catch (e) {
+      throw Exception('Erreur de connexion: $e');
+    }
   }
 } 

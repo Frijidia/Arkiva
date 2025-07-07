@@ -18,6 +18,8 @@ import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/favoris_service.dart';
 import 'package:arkiva/widgets/favori_button.dart';
 import 'dart:convert';
+import 'package:arkiva/services/backup_service.dart';
+import 'package:arkiva/services/version_service.dart';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -389,6 +391,119 @@ class _FichiersScreenState extends State<FichiersScreen> {
         if (!mounted) return;
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Erreur lors du déplacement: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sauvegarderFichier(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour la sauvegarde.')),
+      );
+      return;
+    }
+
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final token = authStateService.token;
+      final entrepriseId = authStateService.entrepriseId;
+
+      if (token == null || entrepriseId == null) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Erreur: Informations d\'authentification manquantes')),
+        );
+        return;
+      }
+
+      await BackupService.createBackup(
+        token: token,
+        type: 'fichier',
+        cibleId: int.parse(document.id),
+        entrepriseId: entrepriseId,
+      );
+
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Sauvegarde créée avec succès')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Erreur lors de la sauvegarde: $e')),
+      );
+    }
+  }
+
+  Future<void> _creerVersionFichier(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour la création de version.')),
+      );
+      return;
+    }
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Créer une version'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Description (facultatif)',
+                hintText: 'Ex: Correction de la section 2.1',
+                prefixIcon: Icon(Icons.description),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context, {
+                'description': 'Version créée depuis l\'écran fichiers',
+              });
+            },
+            child: const Text('Créer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      try {
+        final authStateService = context.read<AuthStateService>();
+        final token = authStateService.token;
+
+        if (token == null) {
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(content: Text('Token d\'authentification manquant')),
+          );
+          return;
+        }
+
+        await VersionService.createVersion(
+          token: token,
+          cibleId: int.parse(document.id),
+          type: 'fichier',
+          description: result['description'],
+        );
+
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Version créée avec succès')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Erreur lors de la création de version: $e')),
         );
       }
     }
@@ -1374,6 +1489,12 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                         case 'ouvrir_nouvel_onglet':
                                           _ouvrirDansNouvelOnglet(document);
                                           break;
+                                        case 'sauvegarder':
+                                          _sauvegarderFichier(document);
+                                          break;
+                                        case 'creer_version':
+                                          _creerVersionFichier(document);
+                                          break;
                                   }
                                 },
                                 itemBuilder: (context) => [
@@ -1444,6 +1565,26 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                             Icon(Icons.delete, color: Colors.red),
                                             SizedBox(width: 8),
                                             Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'sauvegarder',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.backup, color: Colors.orange),
+                                            SizedBox(width: 8),
+                                            Text('Sauvegarder'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'creer_version',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.history, color: Colors.purple),
+                                            SizedBox(width: 8),
+                                            Text('Créer une version'),
                                           ],
                                         ),
                                       ),

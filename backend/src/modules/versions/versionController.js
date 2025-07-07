@@ -6,6 +6,7 @@ import { logAction } from '../audit/auditService.js';
 // Créer une nouvelle version
 export const createVersion = async (req, res) => {
     try {
+        console.log('Requête reçue pour création de version :', req.body);
         const { cible_id, type, version_number, description } = req.body;
         const utilisateur_id = req.user.user_id;
 
@@ -122,6 +123,7 @@ export const createVersion = async (req, res) => {
 // Obtenir l'historique des versions
 export const getVersionHistory = async (req, res) => {
     try {
+        console.log('Requête reçue pour historique des versions :', req.query);
         const { cible_id, type } = req.query;
 
         if (!cible_id || !type) {

@@ -18,6 +18,7 @@ const __dirname = path.dirname(__filename);
 // Contrôleurs pour les sauvegardes
 export const createBackup = async (req, res) => {
     try {
+        console.log('Requête reçue pour création de sauvegarde :', req.body);
         const { type, cible_id, entreprise_id } = req.body;
 
         if (!type || !cible_id || !entreprise_id) {

@@ -992,6 +992,38 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                       ),
+                      Card(
+                        elevation: 2,
+                        margin: EdgeInsets.only(bottom: 8.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                          leading: Icon(Icons.backup, size: 28, color: Colors.orange[700]),
+                          title: Text('Sauvegardes', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/backups');
+                          },
+                        ),
+                      ),
+                      Card(
+                        elevation: 2,
+                        margin: EdgeInsets.only(bottom: 8.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                          leading: Icon(Icons.history, size: 28, color: Colors.purple[700]),
+                          title: Text('Versions', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/versions');
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ],
