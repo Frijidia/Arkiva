@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Import du cron de nettoyage
-import cleanupCron from './cron/cleanupCron.js';
+import cleanupCron from './modules/cleanup/cleanupCron.js';
 
 import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification (utilisateurs)
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'; // entreprises
@@ -24,6 +24,7 @@ import encryptionRoutes from './modules/encryption/encryptionRoutes.js'; // encr
 import backupRoutes from './modules/backup/backupRoutes.js'; // sauvegardes
 import versionRoutes from './modules/versions/versionRoutes.js'; // versions
 import restoreRoutes from './modules/restore/restoreRoutes.js'; // restaurations
+import cleanupRoutes from './modules/cleanup/cleanupRoutes.js'; // nettoyage automatique
 import uploadRoutes from './modules/upload/uploadRoutes.js'; // upload
 import ocrRoutes from './modules/ocr/ocrRoutes.js'; // ocr
 import searchRoutes from './modules/search/searchRoute.js'; // routes de recherche
@@ -57,6 +58,7 @@ app.use('/api/encryption', encryptionRoutes);
 app.use('/api/sauvegardes', backupRoutes);
 app.use('/api/versions', versionRoutes);
 app.use('/api/restaurations', restoreRoutes);
+app.use('/api/cleanup', cleanupRoutes); // Nettoyage automatique
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/search', searchRoutes);
