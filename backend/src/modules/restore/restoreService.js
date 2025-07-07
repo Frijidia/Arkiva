@@ -118,7 +118,23 @@ const restoreBackup = async (backupId, userId) => {
             type: backup.type,
             cible_id: restoredId,
             entreprise_id: backup.entreprise_id,
-            declenche_par_id: userId
+            declenche_par_id: userId,
+            metadata_json: {
+                source_type: 'backup',
+                source_id: backupId,
+                source_metadata: backup.contenu_json,
+                restored_metadata: {
+                    id: restoredId,
+                    type: backup.type,
+                    name: restoredData.nom || restoredData.name,
+                    created_at: new Date().toISOString()
+                },
+                restoration_details: {
+                    original_backup_date: backup.date_creation,
+                    restoration_date: new Date().toISOString(),
+                    user_id: userId
+                }
+            }
         };
 
         console.log('🔍 [DEBUG] restoreData:', restoreData);
@@ -231,7 +247,23 @@ const restoreVersion = async (versionId, userId) => {
             type: version.type,
             cible_id: restoredId,
             entreprise_id: version.metadata?.entreprise_id || null,
-            declenche_par_id: userId
+            declenche_par_id: userId,
+            metadata_json: {
+                source_type: 'version',
+                source_id: versionId,
+                source_metadata: version.metadata,
+                restored_metadata: {
+                    id: restoredId,
+                    type: version.type,
+                    name: restoredData.nom || restoredData.name,
+                    created_at: new Date().toISOString()
+                },
+                restoration_details: {
+                    original_version_date: version.created_at,
+                    restoration_date: new Date().toISOString(),
+                    user_id: userId
+                }
+            }
         };
 
         const restore = await restoreModel.createRestore(restoreData);

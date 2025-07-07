@@ -14,6 +14,7 @@ const createRestoresTable = `
         cible_id INTEGER NOT NULL,
         entreprise_id INTEGER,
         declenche_par_id INTEGER,
+        metadata_json JSONB,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP WITH TIME ZONE
@@ -30,6 +31,10 @@ const createRestoresTable = `
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restores' AND column_name = 'version_id') THEN
         ALTER TABLE restores ADD COLUMN version_id UUID;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restores' AND column_name = 'metadata_json') THEN
+        ALTER TABLE restores ADD COLUMN metadata_json JSONB;
     END IF;
 
     -- Modifier le type de backup_id si nécessaire
@@ -64,18 +69,18 @@ initializeTable();
 
 // Créer une nouvelle restauration
 const createRestore = async (restoreData) => {
-    const { backup_id, version_id, type, cible_id, entreprise_id, declenche_par_id } = restoreData;
+    const { backup_id, version_id, type, cible_id, entreprise_id, declenche_par_id, metadata_json } = restoreData;
     const id = uuidv4();
     
     const query = `
         INSERT INTO restores (
             id, backup_id, version_id, type, cible_id, entreprise_id, 
-            declenche_par_id, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+            declenche_par_id, metadata_json, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
         RETURNING *
     `;
     
-    const values = [id, backup_id, version_id, type, cible_id, entreprise_id, declenche_par_id];
+    const values = [id, backup_id, version_id, type, cible_id, entreprise_id, declenche_par_id, metadata_json];
     const result = await pool.query(query, values);
     return result.rows[0];
 };

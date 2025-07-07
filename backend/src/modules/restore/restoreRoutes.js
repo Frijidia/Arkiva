@@ -13,6 +13,7 @@ router.post('/backup/:id', restoreController.restoreBackup);
 router.post('/version/:id', restoreController.restoreVersion);
 router.get('/', restoreController.getAllRestores);
 router.get('/:id', restoreController.getRestoreById);
+router.get('/:id/details', restoreController.getRestoreDetails);
 router.get('/entreprise/:entrepriseId', restoreController.getRestoresByEntreprise);
 router.get('/type/:type', restoreController.getRestoresByType);
 router.get('/version/:versionId', restoreController.getRestoresByVersion);
