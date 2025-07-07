@@ -10,10 +10,13 @@ router.use(checkRole(['admin']));
 
 // Routes pour les restaurations
 router.post('/backup/:id', restoreController.restoreBackup);
+router.post('/version/:id', restoreController.restoreVersion);
 router.get('/', restoreController.getAllRestores);
 router.get('/:id', restoreController.getRestoreById);
 router.get('/entreprise/:entrepriseId', restoreController.getRestoresByEntreprise);
 router.get('/type/:type', restoreController.getRestoresByType);
+router.get('/version/:versionId', restoreController.getRestoresByVersion);
+router.get('/backup/:backupId', restoreController.getRestoresByBackup);
 router.delete('/:id', restoreController.deleteRestore);
 
-export default router; 
+export default router;
