@@ -211,6 +211,7 @@ async function checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale) {
     JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
     JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
     WHERE casiers.armoire_id = $1
+      AND fichiers.is_deleted = false
   `, [armoire_id]);
 
   const totalActuel = Number(totalResult.rows[0].total_octets) || 0;
