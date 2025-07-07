@@ -13,6 +13,7 @@ import 'package:arkiva/services/animation_service.dart';
 import 'package:arkiva/screens/admin_dashboard_screen.dart';
 import 'package:arkiva/screens/backups_screen.dart';
 import 'package:arkiva/screens/versions_screen.dart';
+import 'package:arkiva/screens/restorations_screen.dart';
 import 'screens/payment_screen.dart';
 
 void main() {
@@ -51,6 +52,7 @@ class ArkivaApp extends StatelessWidget {
         '/admin-dashboard': (context) => const AdminDashboardScreen(),
         '/backups': (context) => const BackupsScreen(),
         '/versions': (context) => const VersionsScreen(),
+        '/restorations': (context) => const RestorationsScreen(),
         '/payment': (context) => PaymentScreen(
           paymentId: '1', // ID de test
           authToken: 'your_test_token_here', // Token de test

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/services/backup_service.dart';
+import 'package:arkiva/services/restore_service.dart';
 import 'package:arkiva/models/backup.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -86,23 +87,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
         );
 
         await _loadBackups();
-        
         if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Réponse brute du backend'),
-              content: SingleChildScrollView(
-                child: Text(backendResponse.toString()),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Fermer'),
-                ),
-              ],
-            ),
-          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sauvegarde créée avec succès')),
           );
@@ -172,6 +157,75 @@ class _BackupsScreenState extends State<BackupsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fonctionnalité de suppression à implémenter')),
       );
+    }
+  }
+
+  Future<void> _restoreBackup(Backup backup) async {
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final token = authStateService.token;
+
+      if (token == null) {
+        throw Exception('Token d\'authentification manquant');
+      }
+
+      // Afficher le dialogue de confirmation
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirmer la restauration'),
+          content: Text(
+            'Êtes-vous sûr de vouloir restaurer cette sauvegarde ?\n\n'
+            'Type: ${backup.typeDisplay}\n'
+            'ID: ${backup.id}\n'
+            'Date: ${backup.formattedDate}\n\n'
+            '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Restaurer'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        setState(() => _isLoading = true);
+
+        final result = await RestoreService.restoreBackup(
+          token: token,
+          backupId: backup.id,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Sauvegarde restaurée avec succès !'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la restauration: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -285,6 +339,9 @@ class _BackupsScreenState extends State<BackupsScreen> {
               trailing: PopupMenuButton<String>(
                 onSelected: (value) {
                   switch (value) {
+                    case 'restore':
+                      _restoreBackup(backup);
+                      break;
                     case 'download':
                       _downloadBackup(backup);
                       break;
@@ -294,6 +351,16 @@ class _BackupsScreenState extends State<BackupsScreen> {
                   }
                 },
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'restore',
+                    child: Row(
+                      children: [
+                        Icon(Icons.restore, color: Colors.green),
+                        SizedBox(width: 8),
+                        Text('Restaurer', style: TextStyle(color: Colors.green)),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'download',
                     child: Row(

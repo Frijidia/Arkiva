@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/services/version_service.dart';
+import 'package:arkiva/services/restore_service.dart';
 import 'package:arkiva/models/version.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:arkiva/config/api_config.dart';
+import 'package:arkiva/widgets/select_target_dialog.dart';
 
 class VersionsScreen extends StatefulWidget {
   const VersionsScreen({super.key});
@@ -104,22 +106,6 @@ class _VersionsScreenState extends State<VersionsScreen> {
             cibleId: _selectedCibleId!,
             type: _selectedType,
             description: result['description'],
-          );
-          print('Réponse backend: $backendResponse');
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Réponse brute du backend'),
-              content: SingleChildScrollView(
-                child: Text(backendResponse.toString()),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Fermer'),
-                ),
-              ],
-            ),
           );
         } catch (e) {
           print('Erreur lors de la création de version: $e');
@@ -268,6 +254,76 @@ class _VersionsScreenState extends State<VersionsScreen> {
     }
   }
 
+  Future<void> _restoreVersion(Version version) async {
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final token = authStateService.token;
+
+      if (token == null) {
+        throw Exception('Token d\'authentification manquant');
+      }
+
+      // Afficher le dialogue de confirmation
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirmer la restauration'),
+          content: Text(
+            'Êtes-vous sûr de vouloir restaurer cette version ?\n\n'
+            'Type: ${version.typeDisplay}\n'
+            'Version: v${version.versionNumber}\n'
+            'Date: ${version.formattedDate}\n'
+            'Description: ${version.description ?? 'Aucune'}\n\n'
+            '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Restaurer'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        setState(() => _isLoading = true);
+
+        final result = await RestoreService.restoreVersion(
+          token: token,
+          versionId: version.id,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Version restaurée avec succès !'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la restauration: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -357,7 +413,7 @@ class _VersionsScreenState extends State<VersionsScreen> {
   Future<void> _showTargetSelectionDialog() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _SelectTargetDialog(selectedType: _selectedType),
+      builder: (context) => SelectTargetDialog(selectedType: _selectedType),
     );
 
     if (result != null) {
@@ -461,6 +517,9 @@ class _VersionsScreenState extends State<VersionsScreen> {
               trailing: PopupMenuButton<String>(
                 onSelected: (value) {
                   switch (value) {
+                    case 'restore':
+                      _restoreVersion(version);
+                      break;
                     case 'view':
                       _viewVersionContent(version);
                       break;
@@ -473,6 +532,16 @@ class _VersionsScreenState extends State<VersionsScreen> {
                   }
                 },
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'restore',
+                    child: Row(
+                      children: [
+                        Icon(Icons.restore, color: Colors.green),
+                        SizedBox(width: 8),
+                        Text('Restaurer', style: TextStyle(color: Colors.green)),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'view',
                     child: Row(
@@ -859,310 +928,5 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
         ),
       ],
     );
-  }
-} 
-
-class _SelectTargetDialog extends StatefulWidget {
-  final String selectedType;
-
-  const _SelectTargetDialog({required this.selectedType});
-
-  @override
-  State<_SelectTargetDialog> createState() => _SelectTargetDialogState();
-}
-
-class _SelectTargetDialogState extends State<_SelectTargetDialog> {
-  String? _selectedArmoire;
-  String? _selectedCasier;
-  String? _selectedDossier;
-  String? _selectedFichier;
-  
-  List<Map<String, dynamic>> _armoires = [];
-  List<Map<String, dynamic>> _casiers = [];
-  List<Map<String, dynamic>> _dossiers = [];
-  List<Map<String, dynamic>> _fichiers = [];
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadArmoires();
-  }
-
-  Future<void> _loadArmoires() async {
-    setState(() => _isLoading = true);
-    try {
-      final authStateService = context.read<AuthStateService>();
-      final token = authStateService.token;
-      final entrepriseId = authStateService.entrepriseId;
-
-      if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/armoire/$entrepriseId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _armoires = data.cast<Map<String, dynamic>>();
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadCasiers(String armoireId) async {
-    setState(() => _isLoading = true);
-    try {
-      final authStateService = context.read<AuthStateService>();
-      final token = authStateService.token;
-
-      if (token != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/casier/$armoireId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _casiers = data.cast<Map<String, dynamic>>();
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadDossiers(String casierId) async {
-    setState(() => _isLoading = true);
-    try {
-      final authStateService = context.read<AuthStateService>();
-      final token = authStateService.token;
-
-      if (token != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _dossiers = data.cast<Map<String, dynamic>>();
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadFichiers(String dossierId) async {
-    setState(() => _isLoading = true);
-    try {
-      final authStateService = context.read<AuthStateService>();
-      final token = authStateService.token;
-
-      if (token != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/fichier/$dossierId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _fichiers = data.cast<Map<String, dynamic>>();
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  int? get _selectedCibleId {
-    switch (widget.selectedType) {
-      case 'armoire':
-        return _selectedArmoire != null ? int.tryParse(_selectedArmoire!) : null;
-      case 'casier':
-        return _selectedCasier != null ? int.tryParse(_selectedCasier!) : null;
-      case 'dossier':
-        return _selectedDossier != null ? int.tryParse(_selectedDossier!) : null;
-      case 'fichier':
-        return _selectedFichier != null ? int.tryParse(_selectedFichier!) : null;
-      default:
-        return null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Sélectionner ${_getTypeDisplayName(widget.selectedType)}'),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.selectedType == 'armoire' || widget.selectedType == 'casier' || widget.selectedType == 'dossier' || widget.selectedType == 'fichier')
-              DropdownButtonFormField<String>(
-                value: _selectedArmoire,
-                decoration: const InputDecoration(
-                  labelText: 'Sélectionner une armoire',
-                  prefixIcon: Icon(Icons.warehouse),
-                ),
-                items: _armoires.map((armoire) => DropdownMenuItem(
-                  value: armoire['armoire_id'].toString(),
-                  child: Text(armoire['nom']),
-                )).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedArmoire = value;
-                    _selectedCasier = null;
-                    _selectedDossier = null;
-                    _selectedFichier = null;
-                    _casiers.clear();
-                    _dossiers.clear();
-                    _fichiers.clear();
-                  });
-                  if (value != null) {
-                    _loadCasiers(value);
-                  }
-                },
-              ),
-            
-            if (widget.selectedType == 'casier' || widget.selectedType == 'dossier' || widget.selectedType == 'fichier')
-              if (_selectedArmoire != null) ...[
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedCasier,
-                  decoration: const InputDecoration(
-                    labelText: 'Sélectionner un casier',
-                    prefixIcon: Icon(Icons.inventory_2),
-                  ),
-                  items: _casiers.map((casier) => DropdownMenuItem(
-                    value: casier['cassier_id'].toString(),
-                    child: Text('${casier['nom']}${casier['sous_titre'] != null && casier['sous_titre'].isNotEmpty ? ' - ${casier['sous_titre']}' : ''}'),
-                  )).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCasier = value;
-                      _selectedDossier = null;
-                      _selectedFichier = null;
-                      _dossiers.clear();
-                      _fichiers.clear();
-                    });
-                    if (value != null) {
-                      _loadDossiers(value);
-                    }
-                  },
-                ),
-              ],
-            
-            if (widget.selectedType == 'dossier' || widget.selectedType == 'fichier')
-              if (_selectedCasier != null) ...[
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedDossier,
-                  decoration: const InputDecoration(
-                    labelText: 'Sélectionner un dossier',
-                    prefixIcon: Icon(Icons.folder),
-                  ),
-                  items: _dossiers.map((dossier) => DropdownMenuItem(
-                    value: dossier['dossier_id'].toString(),
-                    child: Text(dossier['nom']),
-                  )).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedDossier = value;
-                      _selectedFichier = null;
-                      _fichiers.clear();
-                    });
-                    if (value != null && widget.selectedType == 'fichier') {
-                      _loadFichiers(value);
-                    }
-                  },
-                ),
-              ],
-            
-            if (widget.selectedType == 'fichier')
-              if (_selectedDossier != null) ...[
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedFichier,
-                  decoration: const InputDecoration(
-                    labelText: 'Sélectionner un fichier',
-                    prefixIcon: Icon(Icons.description),
-                  ),
-                  items: _fichiers.map((fichier) => DropdownMenuItem(
-                    value: fichier['id'].toString(),
-                    child: Text(fichier['nom'] ?? fichier['originalfilename'] ?? 'Fichier'),
-                  )).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedFichier = value;
-                    });
-                  },
-                ),
-              ],
-            
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
-        ),
-        ElevatedButton(
-          onPressed: _selectedCibleId != null
-              ? () {
-                  Navigator.pop(context, {
-                    'cibleId': _selectedCibleId,
-                  });
-                }
-              : null,
-          child: const Text('Sélectionner'),
-        ),
-      ],
-    );
-  }
-
-  String _getTypeDisplayName(String type) {
-    switch (type) {
-      case 'fichier':
-        return 'un fichier';
-      case 'dossier':
-        return 'un dossier';
-      case 'casier':
-        return 'un casier';
-      case 'armoire':
-        return 'une armoire';
-      default:
-        return type;
-    }
   }
 } 
