@@ -21,7 +21,7 @@ class CleanupService {
   
   async cleanupUnusedBackups() {
     try {
-      console.log('🧹 [Cleanup] Début du nettoyage des sauvegardes inutilisées...');
+      console.log('[Cleanup] Début du nettoyage des sauvegardes inutilisées...');
       
       // Récupérer les sauvegardes créées il y a plus de 10 jours
       const tenDaysAgo = new Date();
@@ -39,7 +39,7 @@ class CleanupService {
         )
       `, [tenDaysAgo]);
       
-      console.log(`📊 [Cleanup] ${result.rows.length} sauvegardes inutilisées trouvées`);
+      console.log(`[Cleanup] ${result.rows.length} sauvegardes inutilisées trouvées`);
       
       let deletedCount = 0;
       let errorCount = 0;
@@ -53,7 +53,7 @@ class CleanupService {
               Bucket: 'arkiva-storage',
               Key: key,
             }));
-            console.log(`🗑️ [Cleanup] Fichier S3 supprimé: ${key}`);
+            console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
           }
           
           // Marquer comme supprimé en base
@@ -79,19 +79,19 @@ class CleanupService {
           );
           
           deletedCount++;
-          console.log(`✅ [Cleanup] Sauvegarde ${backup.backup_id} supprimée`);
+          console.log(`[Cleanup] Sauvegarde ${backup.backup_id} supprimée`);
           
         } catch (error) {
-          console.error(`❌ [Cleanup] Erreur lors de la suppression de la sauvegarde ${backup.backup_id}:`, error);
+          console.error(`[Cleanup] Erreur lors de la suppression de la sauvegarde ${backup.backup_id}:`, error);
           errorCount++;
         }
       }
       
-      console.log(`🎯 [Cleanup] Nettoyage terminé: ${deletedCount} supprimées, ${errorCount} erreurs`);
+      console.log(`[Cleanup] Nettoyage terminé: ${deletedCount} supprimées, ${errorCount} erreurs`);
       return { deletedCount, errorCount };
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors du nettoyage des sauvegardes:', error);
+      console.error('[Cleanup] Erreur lors du nettoyage des sauvegardes:', error);
       throw error;
     }
   }
@@ -99,7 +99,7 @@ class CleanupService {
   // Nettoyer les versions inutilisées après 10 jours
   async cleanupUnusedVersions() {
     try {
-      console.log('🧹 [Cleanup] Début du nettoyage des versions inutilisées...');
+      console.log('[Cleanup] Début du nettoyage des versions inutilisées...');
       
       // Récupérer les versions créées il y a plus de 10 jours
       const tenDaysAgo = new Date();
@@ -117,7 +117,7 @@ class CleanupService {
         )
       `, [tenDaysAgo]);
       
-      console.log(`📊 [Cleanup] ${result.rows.length} versions inutilisées trouvées`);
+      console.log(`[Cleanup] ${result.rows.length} versions inutilisées trouvées`);
       
       let deletedCount = 0;
       let errorCount = 0;
@@ -131,7 +131,7 @@ class CleanupService {
               Bucket: 'arkiva-storage',
               Key: key,
             }));
-            console.log(`🗑️ [Cleanup] Fichier S3 supprimé: ${key}`);
+            console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
           }
           
           // Marquer comme supprimé en base
@@ -157,19 +157,19 @@ class CleanupService {
           );
           
           deletedCount++;
-          console.log(`✅ [Cleanup] Version ${version.version_id} supprimée`);
+          console.log(`[Cleanup] Version ${version.version_id} supprimée`);
           
         } catch (error) {
-          console.error(`❌ [Cleanup] Erreur lors de la suppression de la version ${version.version_id}:`, error);
+          console.error(`[Cleanup] Erreur lors de la suppression de la version ${version.version_id}:`, error);
           errorCount++;
         }
       }
       
-      console.log(`🎯 [Cleanup] Nettoyage terminé: ${deletedCount} supprimées, ${errorCount} erreurs`);
+      console.log(`[Cleanup] Nettoyage terminé: ${deletedCount} supprimées, ${errorCount} erreurs`);
       return { deletedCount, errorCount };
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors du nettoyage des versions:', error);
+      console.error('[Cleanup] Erreur lors du nettoyage des versions:', error);
       throw error;
     }
   }
@@ -177,7 +177,7 @@ class CleanupService {
   // Nettoyage complet (sauvegardes + versions)
   async performFullCleanup() {
     try {
-      console.log('🚀 [Cleanup] Début du nettoyage complet...');
+      console.log('[Cleanup] Début du nettoyage complet...');
       
       const backupResult = await this.cleanupUnusedBackups();
       const versionResult = await this.cleanupUnusedVersions();
@@ -185,7 +185,7 @@ class CleanupService {
       const totalDeleted = backupResult.deletedCount + versionResult.deletedCount;
       const totalErrors = backupResult.errorCount + versionResult.errorCount;
       
-      console.log(`🎯 [Cleanup] Nettoyage complet terminé:`);
+      console.log(`[Cleanup] Nettoyage complet terminé:`);
       console.log(`   - Sauvegardes supprimées: ${backupResult.deletedCount}`);
       console.log(`   - Versions supprimées: ${versionResult.deletedCount}`);
       console.log(`   - Total supprimé: ${totalDeleted}`);
@@ -198,7 +198,7 @@ class CleanupService {
       };
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors du nettoyage complet:', error);
+      console.error('[Cleanup] Erreur lors du nettoyage complet:', error);
       throw error;
     }
   }
@@ -244,7 +244,7 @@ class CleanupService {
       };
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors de la récupération des stats:', error);
+      console.error('[Cleanup] Erreur lors de la récupération des stats:', error);
       throw error;
     }
   }
@@ -252,7 +252,7 @@ class CleanupService {
   // Supprimer manuellement une sauvegarde spécifique
   async deleteSpecificBackup(backup_id, user_id) {
     try {
-      console.log(`🗑️ [Cleanup] Suppression manuelle de la sauvegarde ${backup_id}`);
+      console.log(`[Cleanup] Suppression manuelle de la sauvegarde ${backup_id}`);
       
       // Récupérer les infos de la sauvegarde
       const backupResult = await pool.query(
@@ -273,7 +273,7 @@ class CleanupService {
           Bucket: 'arkiva-storage',
           Key: key,
         }));
-        console.log(`🗑️ [Cleanup] Fichier S3 supprimé: ${key}`);
+        console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
       }
       
       // Marquer comme supprimé en base
@@ -282,7 +282,7 @@ class CleanupService {
         [backup_id]
       );
       
-      console.log(`✅ [Cleanup] Sauvegarde ${backup_id} supprimée manuellement`);
+      console.log(`[Cleanup] Sauvegarde ${backup_id} supprimée manuellement`);
       
       return {
         backup_id,
@@ -294,7 +294,7 @@ class CleanupService {
       };
       
     } catch (error) {
-      console.error(`❌ [Cleanup] Erreur lors de la suppression manuelle de la sauvegarde ${backup_id}:`, error);
+      console.error(`[Cleanup] Erreur lors de la suppression manuelle de la sauvegarde ${backup_id}:`, error);
       throw error;
     }
   }
@@ -302,7 +302,7 @@ class CleanupService {
   // Supprimer manuellement une version spécifique
   async deleteSpecificVersion(version_id, user_id) {
     try {
-      console.log(`🗑️ [Cleanup] Suppression manuelle de la version ${version_id}`);
+      console.log(`[Cleanup] Suppression manuelle de la version ${version_id}`);
       
       // Récupérer les infos de la version
       const versionResult = await pool.query(
@@ -323,7 +323,7 @@ class CleanupService {
           Bucket: 'arkiva-storage',
           Key: key,
         }));
-        console.log(`🗑️ [Cleanup] Fichier S3 supprimé: ${key}`);
+        console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
       }
       
       // Marquer comme supprimé en base
@@ -332,7 +332,7 @@ class CleanupService {
         [version_id]
       );
       
-      console.log(`✅ [Cleanup] Version ${version_id} supprimée manuellement`);
+      console.log(`[Cleanup] Version ${version_id} supprimée manuellement`);
       
       return {
         version_id,
@@ -344,7 +344,7 @@ class CleanupService {
       };
       
     } catch (error) {
-      console.error(`❌ [Cleanup] Erreur lors de la suppression manuelle de la version ${version_id}:`, error);
+      console.error(`[Cleanup] Erreur lors de la suppression manuelle de la version ${version_id}:`, error);
       throw error;
     }
   }
@@ -395,7 +395,7 @@ class CleanupService {
       };
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors de la récupération des sauvegardes:', error);
+      console.error('[Cleanup] Erreur lors de la récupération des sauvegardes:', error);
       throw error;
     }
   }
@@ -446,7 +446,7 @@ class CleanupService {
       };
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors de la récupération des versions:', error);
+      console.error('[Cleanup] Erreur lors de la récupération des versions:', error);
       throw error;
     }
   }
@@ -462,7 +462,7 @@ class CleanupService {
       return result.rows[0] || null;
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors de la récupération des détails de la sauvegarde:', error);
+      console.error('[Cleanup] Erreur lors de la récupération des détails de la sauvegarde:', error);
       throw error;
     }
   }
@@ -478,7 +478,7 @@ class CleanupService {
       return result.rows[0] || null;
       
     } catch (error) {
-      console.error('❌ [Cleanup] Erreur lors de la récupération des détails de la version:', error);
+      console.error('[Cleanup] Erreur lors de la récupération des détails de la version:', error);
       throw error;
     }
   }
