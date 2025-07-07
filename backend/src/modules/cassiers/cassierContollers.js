@@ -4,6 +4,7 @@ import backupService from '../backup/backupService.js';
 //import "./cassierModels.js";
 
 
+
 async function getArmoireUsedSpace(armoire_id) {
   const result = await pool.query(`
     SELECT COALESCE(SUM(fichiers.taille), 0) AS total_octets
@@ -11,10 +12,12 @@ async function getArmoireUsedSpace(armoire_id) {
     JOIN dossiers ON fichiers.dossier_id = dossiers.dossier_id
     JOIN casiers ON dossiers.cassier_id = casiers.cassier_id
     WHERE casiers.armoire_id = $1
+      AND fichiers.is_deleted = false
   `, [armoire_id]);
 
-  return parseInt(result.rows[0].total_octets);
+  return parseInt(result.rows[0].total_octets) || 0;
 }
+
 
 // création d’un casier
 export const CreateCasier = async (req, res) => {
@@ -305,12 +308,55 @@ export const getCasierById = async (req, res) => {
 };
 
 
+
+
 // Déplacement d'un casier vers une autre armoire
+
 export const deplacerCasier = async (req, res) => {
-  const { id } = req.params; // ID du casier
+  const { id } = req.params; // ID du casier à déplacer
   const { nouvelle_armoire_id } = req.body;
 
   try {
+    // 1. Calculer la taille totale des fichiers dans le casier (non supprimés)
+    const fichiersSizeResult = await pool.query(`
+      SELECT COALESCE(SUM(f.taille), 0) AS total_casier
+      FROM fichiers f
+      JOIN dossiers d ON f.dossier_id = d.dossier_id
+      WHERE d.casier_id = $1 AND f.is_deleted = false
+    `, [id]);
+
+    const tailleCasier = parseInt(fichiersSizeResult.rows[0].total_casier) || 0;
+
+    // 2. Récupérer la taille_max de la nouvelle armoire
+    const armoireResult = await pool.query(
+      `SELECT taille_max FROM armoires WHERE armoire_id = $1`,
+      [nouvelle_armoire_id]
+    );
+
+    if (armoireResult.rowCount === 0) {
+      return res.status(404).json({ error: "Nouvelle armoire non trouvée" });
+    }
+
+    const tailleMax = parseInt(armoireResult.rows[0].taille_max);
+
+    // 3. Calculer l'espace déjà utilisé dans la nouvelle armoire
+    const espaceUtiliseResult = await pool.query(`
+      SELECT COALESCE(SUM(f.taille), 0) AS total_utilise
+      FROM fichiers f
+      JOIN dossiers d ON f.dossier_id = d.dossier_id
+      JOIN casiers c ON d.casier_id = c.casier_id
+      WHERE c.armoire_id = $1 AND f.is_deleted = false
+    `, [nouvelle_armoire_id]);
+
+    const espaceUtilise = parseInt(espaceUtiliseResult.rows[0].total_utilise) || 0;
+    const espaceRestant = tailleMax - espaceUtilise;
+
+    // 4. Vérifier si l’espace est suffisant
+    if (tailleCasier > espaceRestant) {
+      return res.status(400).json({ error: "Pas assez d’espace dans la nouvelle armoire" });
+    }
+
+    // 5. Déplacement du casier
     const result = await pool.query(
       `UPDATE casiers SET armoire_id = $1 WHERE casier_id = $2 RETURNING *`,
       [nouvelle_armoire_id, id]
@@ -320,7 +366,11 @@ export const deplacerCasier = async (req, res) => {
       return res.status(404).json({ error: "Casier non trouvé" });
     }
 
-    res.status(200).json({ message: "Casier déplacé avec succès", casier: result.rows[0] });
+    res.status(200).json({
+      message: "Casier déplacé avec succès",
+      casier: result.rows[0]
+    });
+
   } catch (err) {
     console.error("Erreur déplacement casier :", err);
     res.status(500).json({ error: "Erreur serveur" });
