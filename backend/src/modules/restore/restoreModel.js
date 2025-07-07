@@ -8,11 +8,13 @@ const createRestoresTable = `
     -- Créer la table restores si elle n'existe pas
     CREATE TABLE IF NOT EXISTS restores (
         id UUID PRIMARY KEY,
-        backup_id UUID,
+        backup_id INTEGER,
+        version_id UUID,
         type VARCHAR(50) NOT NULL CHECK (type IN ('fichier', 'dossier', 'casier', 'armoire')),
         cible_id INTEGER NOT NULL,
         entreprise_id INTEGER,
         declenche_par_id INTEGER,
+        metadata_json JSONB,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP WITH TIME ZONE
@@ -27,8 +29,22 @@ const createRestoresTable = `
         ALTER TABLE restores ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
     END IF;
 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restores' AND column_name = 'version_id') THEN
+        ALTER TABLE restores ADD COLUMN version_id UUID;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restores' AND column_name = 'metadata_json') THEN
+        ALTER TABLE restores ADD COLUMN metadata_json JSONB;
+    END IF;
+
+    -- Modifier le type de backup_id si nécessaire
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restores' AND column_name = 'backup_id' AND data_type = 'uuid') THEN
+        ALTER TABLE restores ALTER COLUMN backup_id TYPE INTEGER USING backup_id::integer;
+    END IF;
+
     -- Créer les index
     CREATE INDEX IF NOT EXISTS idx_restores_backup_id ON restores(backup_id);
+    CREATE INDEX IF NOT EXISTS idx_restores_version_id ON restores(version_id);
     CREATE INDEX IF NOT EXISTS idx_restores_type ON restores(type);
     CREATE INDEX IF NOT EXISTS idx_restores_cible_id ON restores(cible_id);
     CREATE INDEX IF NOT EXISTS idx_restores_entreprise_id ON restores(entreprise_id);
@@ -53,18 +69,18 @@ initializeTable();
 
 // Créer une nouvelle restauration
 const createRestore = async (restoreData) => {
-    const { backup_id, type, cible_id, entreprise_id, declenche_par_id } = restoreData;
+    const { backup_id, version_id, type, cible_id, entreprise_id, declenche_par_id, metadata_json } = restoreData;
     const id = uuidv4();
     
     const query = `
         INSERT INTO restores (
-            id, backup_id, type, cible_id, entreprise_id, 
-            declenche_par_id, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+            id, backup_id, version_id, type, cible_id, entreprise_id, 
+            declenche_par_id, metadata_json, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
         RETURNING *
     `;
     
-    const values = [id, backup_id, type, cible_id, entreprise_id, declenche_par_id];
+    const values = [id, backup_id, version_id, type, cible_id, entreprise_id, declenche_par_id, metadata_json];
     const result = await pool.query(query, values);
     return result.rows[0];
 };
@@ -97,6 +113,20 @@ const getRestoresByType = async (type) => {
     return result.rows;
 };
 
+// Obtenir les restaurations par version
+const getRestoresByVersion = async (versionId) => {
+    const query = 'SELECT * FROM restores WHERE version_id = $1 ORDER BY created_at DESC';
+    const result = await pool.query(query, [versionId]);
+    return result.rows;
+};
+
+// Obtenir les restaurations par sauvegarde
+const getRestoresByBackup = async (backupId) => {
+    const query = 'SELECT * FROM restores WHERE backup_id = $1 ORDER BY created_at DESC';
+    const result = await pool.query(query, [backupId]);
+    return result.rows;
+};
+
 // Supprimer une restauration
 const deleteRestore = async (id) => {
     const query = 'DELETE FROM restores WHERE id = $1 RETURNING *';
@@ -110,5 +140,7 @@ export default {
     getRestoreById,
     getRestoresByEntreprise,
     getRestoresByType,
+    getRestoresByVersion,
+    getRestoresByBackup,
     deleteRestore
 }; 
