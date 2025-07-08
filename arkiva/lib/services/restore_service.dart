@@ -9,14 +9,25 @@ class RestoreService {
   static Future<Map<String, dynamic>> restoreBackup({
     required String token,
     required int backupId,
+    int? armoireId,
+    int? cassierId,
+    int? dossierId,
   }) async {
     try {
+      final body = <String, dynamic>{};
+      if (armoireId != null) body['armoire_id'] = armoireId;
+      if (cassierId != null) body['cassier_id'] = cassierId;
+      if (dossierId != null) body['dossier_id'] = dossierId;
+      print('[API] POST $baseUrl/api/restaurations/backup/$backupId');
+      print('[API] Headers: {Content-Type: application/json, Authorization: Bearer $token}');
+      print('[API] Body: ' + jsonEncode(body));
       final response = await http.post(
         Uri.parse('$baseUrl/api/restaurations/backup/$backupId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
+        body: body.isNotEmpty ? jsonEncode(body) : null,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -36,6 +47,8 @@ class RestoreService {
     required String versionId,
   }) async {
     try {
+      print('[API] POST $baseUrl/api/restaurations/version/$versionId');
+      print('[API] Headers: {Content-Type: application/json, Authorization: Bearer $token}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/restaurations/version/$versionId'),
         headers: {
@@ -60,6 +73,8 @@ class RestoreService {
     required String token,
   }) async {
     try {
+      print('[API] GET $baseUrl/api/restaurations');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/restaurations'),
         headers: {

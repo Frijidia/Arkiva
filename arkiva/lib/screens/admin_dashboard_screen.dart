@@ -336,7 +336,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   }),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+        children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: _logsPage > 0 ? () => setState(() => _logsPage--) : null,
@@ -345,7 +345,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       IconButton(
                         icon: const Icon(Icons.arrow_forward),
                         onPressed: () => setState(() => _logsPage++),
-                      ),
+            ),
                     ],
                   ),
                 ],

@@ -103,7 +103,7 @@ export const deleteFichier = async (req, res) => {
         message,
         fichier_id,
         dossier_id: dossier.dossier_id,
-        casier_id: casier.cassier_id,
+        cassier_id: casier.cassier_id,
         armoire_id: armoire.armoire_id,
         auto_backup_created: true
       }
@@ -209,7 +209,7 @@ export const renameFichier = async (req, res) => {
         message,
         fichier_id,
         dossier_id: dossier.dossier_id,
-        casier_id: casier.cassier_id,
+        cassier_id: casier.cassier_id,
         armoire_id: armoire.armoire_id,
         old_name: oldName,
         new_name: fichier.originalfilename,
@@ -374,7 +374,7 @@ export const deplacerFichier = async (req, res) => {
     // 2. Récupère le casier et l'armoire associés au nouveau dossier
     const dossierResult = await pool.query(
       `SELECT c.armoire_id FROM dossiers d
-       JOIN casiers c ON d.casier_id = c.casier_id
+       JOIN casiers c ON d.cassier_id = c.cassier_id
        WHERE d.dossier_id = $1`,
       [nouveau_dossier_id]
     );
@@ -398,7 +398,7 @@ export const deplacerFichier = async (req, res) => {
       SELECT COALESCE(SUM(f.taille), 0) AS total
       FROM fichiers f
       JOIN dossiers d ON f.dossier_id = d.dossier_id
-      JOIN casiers c ON d.casier_id = c.casier_id
+      JOIN casiers c ON d.cassier_id = c.cassier_id
       WHERE c.armoire_id = $1 AND f.is_deleted = false
     `, [armoireId]);
 

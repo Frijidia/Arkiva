@@ -14,6 +14,9 @@ class VersionService {
     String? description,
   }) async {
     try {
+      print('[API] POST $baseUrl/api/versions');
+      print('[API] Headers: {Content-Type: application/json, Authorization: Bearer $token}');
+      print('[API] Body: {cible_id: $cibleId, type: $type, version_number: $versionNumber, description: $description}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/versions'),
         headers: {
@@ -46,6 +49,8 @@ class VersionService {
     required String type,
   }) async {
     try {
+      print('[API] GET $baseUrl/api/versions/cible/history?cible_id=$cibleId&type=$type');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/versions/cible/history?cible_id=$cibleId&type=$type'),
         headers: {
@@ -71,6 +76,8 @@ class VersionService {
     required String versionId,
   }) async {
     try {
+      print('[API] GET $baseUrl/api/versions/$versionId/content');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/versions/$versionId/content'),
         headers: {
@@ -122,6 +129,9 @@ class VersionService {
     required String versionId2,
   }) async {
     try {
+      print('[API] POST $baseUrl/api/versions/compare');
+      print('[API] Headers: {Content-Type: application/json, Authorization: Bearer $token}');
+      print('[API] Body: {version_id_1: $versionId1, version_id_2: $versionId2}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/versions/compare'),
         headers: {
@@ -151,6 +161,8 @@ class VersionService {
     required String versionId,
   }) async {
     try {
+      print('[API] DELETE $baseUrl/api/versions/$versionId');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.delete(
         Uri.parse('$baseUrl/api/versions/$versionId'),
         headers: {

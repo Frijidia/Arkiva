@@ -235,12 +235,12 @@ class _CasiersScreenState extends State<CasiersScreen> {
   Future<void> _deplacerCasier(Casier casier) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => const DeplacementDialog(pourFichier: false),
+      builder: (context) => const DeplacementDialog(typeElement: 'casier'),
     );
 
     if (result != null) {
       try {
-        await _casierService.deplacerCasier(casier.casierId, result['cassier_id']);
+        await _casierService.deplacerCasier(casier.casierId, result['armoire_id']);
         await _loadCasiers();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Casier déplacé avec succès')),

@@ -5,6 +5,8 @@ class StatsService {
   static const String baseUrl = 'http://localhost:3000/api/stats';
 
   Future<Map<String, dynamic>> getStatsGenerales(int entrepriseId, String token) async {
+    print('[API] GET $baseUrl/entreprise/$entrepriseId');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
       Uri.parse('$baseUrl/entreprise/$entrepriseId'),
       headers: {'Authorization': 'Bearer $token'},
@@ -17,6 +19,8 @@ class StatsService {
   }
 
   Future<List<dynamic>> getAdmins(int entrepriseId, String token) async {
+    print('[API] GET $baseUrl/entreprise/$entrepriseId/admins');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
       Uri.parse('$baseUrl/entreprise/$entrepriseId/admins'),
       headers: {'Authorization': 'Bearer $token'},
@@ -29,6 +33,8 @@ class StatsService {
   }
 
   Future<List<dynamic>> getContributeurs(int entrepriseId, String token) async {
+    print('[API] GET $baseUrl/entreprise/$entrepriseId/contributeurs');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
       Uri.parse('$baseUrl/entreprise/$entrepriseId/contributeurs'),
       headers: {'Authorization': 'Bearer $token'},
@@ -41,6 +47,8 @@ class StatsService {
   }
 
   Future<List<dynamic>> getLecteurs(int entrepriseId, String token) async {
+    print('[API] GET $baseUrl/entreprise/$entrepriseId/lecteurs');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
       Uri.parse('$baseUrl/entreprise/$entrepriseId/lecteurs'),
       headers: {'Authorization': 'Bearer $token'},

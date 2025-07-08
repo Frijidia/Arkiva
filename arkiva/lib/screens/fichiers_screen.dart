@@ -373,7 +373,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => const DeplacementDialog(pourFichier: true),
+      builder: (context) => const DeplacementDialog(typeElement: 'fichier'),
     );
 
     if (result != null) {

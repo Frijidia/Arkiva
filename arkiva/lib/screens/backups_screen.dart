@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:arkiva/config/api_config.dart';
+import 'package:arkiva/services/armoire_service.dart';
 
 class BackupsScreen extends StatefulWidget {
   const BackupsScreen({super.key});
@@ -160,60 +161,221 @@ class _BackupsScreenState extends State<BackupsScreen> {
     }
   }
 
+  Future<List<Map<String, dynamic>>> _loadDossiersOfCasier(int casierId, String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      return [];
+    }
+  }
+
   Future<void> _restoreBackup(Backup backup) async {
     try {
       final authStateService = context.read<AuthStateService>();
       final token = authStateService.token;
+      final entrepriseId = authStateService.entrepriseId;
 
-      if (token == null) {
-        throw Exception('Token d\'authentification manquant');
+      if (token == null || entrepriseId == null) {
+        throw Exception('Token ou entrepriseId manquant');
       }
 
-      // Afficher le dialogue de confirmation
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirmer la restauration'),
-          content: Text(
-            'Êtes-vous sûr de vouloir restaurer cette sauvegarde ?\n\n'
-            'Type: ${backup.typeDisplay}\n'
-            'ID: ${backup.id}\n'
-            'Date: ${backup.formattedDate}\n\n'
-            '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+      int? selectedArmoireId;
+      int? selectedCasierId;
+      int? selectedDossierId;
+
+      if (backup.type == 'casier') {
+        final armoireService = ArmoireService();
+        final armoires = await armoireService.getAllArmoiresForDeplacement(entrepriseId);
+        selectedArmoireId = await showDialog<int>(
+          context: context,
+          builder: (context) {
+            int? tempSelectedId;
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: Text('Choisir une armoire de destination'),
+                  content: DropdownButton<int>(
+                    isExpanded: true,
+                    value: tempSelectedId,
+                    hint: Text('Sélectionner une armoire'),
+                    items: armoires.map<DropdownMenuItem<int>>((armoire) {
+                      return DropdownMenuItem<int>(
+                        value: armoire['armoire_id'],
+                        child: Text(armoire['nom']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        tempSelectedId = value;
+                      });
+                    },
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, null),
+                      child: Text('Annuler'),
+                    ),
+                    ElevatedButton(
+                      onPressed: tempSelectedId == null
+                          ? null
+                          : () => Navigator.pop(context, tempSelectedId),
+                      child: Text('Restaurer'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+        if (selectedArmoireId == null) return;
+      } else if (backup.type == 'dossier') {
+        final armoireService = ArmoireService();
+        final casiers = await armoireService.getAllCasiers(entrepriseId);
+        selectedCasierId = await showDialog<int>(
+          context: context,
+          builder: (context) {
+            int? tempSelectedId;
+            return AlertDialog(
+              title: Text('Choisir un casier de destination'),
+              content: DropdownButton<int>(
+                isExpanded: true,
+                value: tempSelectedId,
+                hint: Text('Sélectionner un casier'),
+                items: casiers.map<DropdownMenuItem<int>>((casier) {
+                  return DropdownMenuItem<int>(
+                    value: casier['cassier_id'],
+                    child: Text(casier['nom']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  tempSelectedId = value;
+                  (context as Element).markNeedsBuild();
+                },
               ),
-              child: const Text('Restaurer'),
-            ),
-          ],
-        ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: tempSelectedId == null
+                      ? null
+                      : () => Navigator.pop(context, tempSelectedId),
+                  child: Text('Restaurer'),
+                ),
+              ],
+            );
+          },
+        );
+        if (selectedCasierId == null) return;
+      } else if (backup.type == 'fichier') {
+        final armoireService = ArmoireService();
+        final casiers = await armoireService.getAllCasiers(entrepriseId);
+        int? tempSelectedCasierId;
+        int? tempSelectedDossierId;
+        tempSelectedCasierId = await showDialog<int>(
+          context: context,
+          builder: (context) {
+            int? tempId;
+            return AlertDialog(
+              title: Text('Choisir un casier'),
+              content: DropdownButton<int>(
+                isExpanded: true,
+                value: tempId,
+                hint: Text('Sélectionner un casier'),
+                items: casiers.map<DropdownMenuItem<int>>((casier) {
+                  return DropdownMenuItem<int>(
+                    value: casier['cassier_id'],
+                    child: Text(casier['nom']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  tempId = value;
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: tempId == null
+                      ? null
+                      : () => Navigator.pop(context, tempId),
+                  child: Text('Suivant'),
+                ),
+              ],
+            );
+          },
+        );
+        if (tempSelectedCasierId == null) return;
+        final dossiers = await _loadDossiersOfCasier(tempSelectedCasierId, token);
+        tempSelectedDossierId = await showDialog<int>(
+          context: context,
+          builder: (context) {
+            int? tempId;
+            return AlertDialog(
+              title: Text('Choisir un dossier de destination'),
+              content: DropdownButton<int>(
+                isExpanded: true,
+                value: tempId,
+                hint: Text('Sélectionner un dossier'),
+                items: dossiers.map<DropdownMenuItem<int>>((dossier) {
+                  return DropdownMenuItem<int>(
+                    value: dossier['dossier_id'],
+                    child: Text(dossier['nom']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  tempId = value;
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: tempId == null
+                      ? null
+                      : () => Navigator.pop(context, tempId),
+                  child: Text('Restaurer'),
+                ),
+              ],
+            );
+          },
+        );
+        if (tempSelectedDossierId == null) return;
+        selectedDossierId = tempSelectedDossierId;
+      }
+
+      setState(() => _isLoading = true);
+
+      final result = await RestoreService.restoreBackup(
+        token: token,
+        backupId: backup.id,
+        armoireId: selectedArmoireId,
+        cassierId: selectedCasierId,
+        dossierId: selectedDossierId,
       );
 
-      if (confirmed == true) {
-        setState(() => _isLoading = true);
-
-        final result = await RestoreService.restoreBackup(
-          token: token,
-          backupId: backup.id,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sauvegarde restaurée avec succès !'),
+            backgroundColor: Colors.green,
+          ),
         );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Sauvegarde restaurée avec succès !'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {

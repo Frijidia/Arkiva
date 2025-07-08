@@ -14,8 +14,8 @@ export const CreateDossier = async (req, res) => {
   try {
     // 1. Vérifie si le casier existe et récupère l’armoire
     const casierResult = await pool.query(
-      `SELECT armoire_id FROM casiers WHERE casier_id = $1`,
-      [casier_id]
+      `SELECT armoire_id FROM casiers WHERE cassier_id = $1`,
+      [cassier_id]
     );
 
     if (casierResult.rowCount === 0) {
@@ -42,7 +42,7 @@ export const CreateDossier = async (req, res) => {
       SELECT COALESCE(SUM(f.taille), 0) AS total_octets
       FROM fichiers f
       JOIN dossiers d ON f.dossier_id = d.dossier_id
-      JOIN casiers c ON d.casier_id = c.casier_id
+      JOIN casiers c ON d.cassier_id = c.cassier_id
       WHERE c.armoire_id = $1 AND f.is_deleted = false
       `,
       [armoire_id]
@@ -56,10 +56,10 @@ export const CreateDossier = async (req, res) => {
 
     // 4. Crée le dossier
     const result = await pool.query(
-      `INSERT INTO dossiers (casier_id, nom, description, user_id)
+      `INSERT INTO dossiers (cassier_id, nom, description, user_id)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [casier_id, nom, " ", user_id]
+      [cassier_id, nom, " ", user_id]
     );
 
     res.status(201).json({ message: 'Dossier créé', dossier: result.rows[0] });
@@ -77,7 +77,11 @@ export const GetDossiersByCasier = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM dossiers WHERE cassier_id = $1 ORDER BY dossier_id ASC',
+      `SELECT d.*, c.nom as casier_nom, c.sous_titre as casier_sous_titre
+      FROM dossiers d
+      JOIN casiers c ON d.cassier_id = c.cassier_id
+      WHERE d.cassier_id = $1 AND d.is_deleted = false
+      ORDER BY d.created_at DESC`,
       [cassier_id]
     );
 
@@ -154,7 +158,7 @@ export const DeleteDossier = async (req, res) => {
       {
         message,
         dossier_id,
-        casier_id: casier.cassier_id,
+        cassier_id: casier.cassier_id,
         armoire_id: armoire.armoire_id,
         auto_backup_created: true
       }
@@ -257,7 +261,7 @@ export const RenameDossier = async (req, res) => {
       {
         message,
         dossier_id,
-        casier_id: casier.cassier_id,
+        cassier_id: casier.cassier_id,
         armoire_id: armoire.armoire_id,
         old_name: oldName,
         new_name: dossier.nom,
@@ -322,13 +326,13 @@ export const getDossierCountByCasierId = async (req, res) => {
 // Déplacement d'un dossier vers un autre casier
 export const deplacerDossier = async (req, res) => {
   const { id } = req.params; // ID du dossier à déplacer
-  const { nouveau_casier_id } = req.body;
+  const { nouveau_cassier_id } = req.body;
 
   try {
     // 1. Récupérer l’armoire du nouveau casier
     const casierResult = await pool.query(
-      `SELECT armoire_id FROM casiers WHERE casier_id = $1`,
-      [nouveau_casier_id]
+      `SELECT armoire_id FROM casiers WHERE cassier_id = $1`,
+      [nouveau_cassier_id]
     );
 
     if (casierResult.rowCount === 0) {
@@ -350,7 +354,7 @@ export const deplacerDossier = async (req, res) => {
       SELECT COALESCE(SUM(f.taille), 0) AS total
       FROM fichiers f
       JOIN dossiers d ON f.dossier_id = d.dossier_id
-      JOIN casiers c ON d.casier_id = c.casier_id
+      JOIN casiers c ON d.cassier_id = c.cassier_id
       WHERE c.armoire_id = $1 AND f.is_deleted = false
     `, [nouvelleArmoireId]);
 
@@ -372,7 +376,7 @@ export const deplacerDossier = async (req, res) => {
     // 6. Déplacement du dossier
     const result = await pool.query(
       `UPDATE dossiers SET cassier_id = $1 WHERE dossier_id = $2 RETURNING *`,
-      [nouveau_casier_id, id]
+      [nouveau_cassier_id, id]
     );
 
     if (result.rowCount === 0) {

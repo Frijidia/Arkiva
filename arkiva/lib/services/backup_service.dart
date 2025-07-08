@@ -13,6 +13,9 @@ class BackupService {
     required int entrepriseId,
   }) async {
     try {
+      print('[API] POST $baseUrl/api/sauvegardes');
+      print('[API] Headers: {Content-Type: application/json, Authorization: Bearer $token}');
+      print('[API] Body: {type: $type, cible_id: $cibleId, entreprise_id: $entrepriseId}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/sauvegardes'),
         headers: {
@@ -42,6 +45,8 @@ class BackupService {
     required String token,
   }) async {
     try {
+      print('[API] GET $baseUrl/api/sauvegardes');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/sauvegardes'),
         headers: {
@@ -67,6 +72,8 @@ class BackupService {
     required int backupId,
   }) async {
     try {
+      print('[API] GET $baseUrl/api/sauvegardes/$backupId');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/sauvegardes/$backupId'),
         headers: {
@@ -95,14 +102,16 @@ class BackupService {
       return backup['s3Location'] ?? backup['contenu_json']['s3Location'];
     } catch (e) {
       throw Exception('Erreur lors de la récupération de l\'URL de téléchargement: $e');
+      }
     }
-  }
 
   // Nettoyage des sauvegardes
   static Future<Map<String, dynamic>> runCleanup({
     required String token,
   }) async {
     try {
+      print('[API] POST $baseUrl/api/sauvegardes/cleanup');
+      print('[API] Headers: {Authorization: Bearer $token}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/sauvegardes/cleanup'),
         headers: {

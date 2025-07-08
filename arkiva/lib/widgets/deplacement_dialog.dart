@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 
 class DeplacementDialog extends StatefulWidget {
-  final bool pourFichier; // true = déplacement fichier, false = dossier
-  const DeplacementDialog({super.key, this.pourFichier = false});
+  final String typeElement; // 'casier', 'dossier', 'fichier'
+  const DeplacementDialog({super.key, required this.typeElement});
 
   @override
   State<DeplacementDialog> createState() => _DeplacementDialogState();
@@ -98,8 +98,16 @@ class _DeplacementDialogState extends State<DeplacementDialog> {
 
   @override
   Widget build(BuildContext context) {
+    String titre = 'Déplacer l\'élément';
+    if (widget.typeElement == 'casier') {
+      titre = 'Déplacer le casier';
+    } else if (widget.typeElement == 'dossier') {
+      titre = 'Déplacer le dossier';
+    } else if (widget.typeElement == 'fichier') {
+      titre = 'Déplacer le fichier';
+    }
     return AlertDialog(
-      title: Text(widget.pourFichier ? 'Déplacer le fichier' : 'Déplacer le dossier'),
+      title: Text(titre),
       content: SizedBox(
         width: 350,
         child: Column(
@@ -122,31 +130,33 @@ class _DeplacementDialogState extends State<DeplacementDialog> {
                         _casiers = [];
                         _dossiers = [];
                       });
-                      if (value != null) _loadCasiers(value);
+                      if (value != null && widget.typeElement != 'casier') _loadCasiers(value);
                     },
                     decoration: const InputDecoration(labelText: 'Armoire de destination'),
                   ),
-            const SizedBox(height: 16),
-            // Casiers
-            _loadingCasiers
-                ? const CircularProgressIndicator()
-                : DropdownButtonFormField<int>(
-                    value: _selectedCasierId,
-                    items: _casiers.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(
-                          value: c.casierId ?? c['cassier_id'],
-                          child: Text(c.nom ?? c['nom']),
-                        )).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCasierId = value;
-                        _selectedDossierId = null;
-                        _dossiers = [];
-                      });
-                      if (value != null && widget.pourFichier) _loadDossiers(value);
-                    },
-                    decoration: const InputDecoration(labelText: 'Casier de destination'),
-                  ),
-            if (widget.pourFichier) ...[
+            if (widget.typeElement == 'dossier' || widget.typeElement == 'fichier') ...[
+              const SizedBox(height: 16),
+              // Casiers
+              _loadingCasiers
+                  ? const CircularProgressIndicator()
+                  : DropdownButtonFormField<int>(
+                      value: _selectedCasierId,
+                      items: _casiers.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(
+                            value: c.casierId ?? c['cassier_id'],
+                            child: Text(c.nom ?? c['nom']),
+                          )).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCasierId = value;
+                          _selectedDossierId = null;
+                          _dossiers = [];
+                        });
+                        if (value != null && widget.typeElement == 'fichier') _loadDossiers(value);
+                      },
+                      decoration: const InputDecoration(labelText: 'Casier de destination'),
+                    ),
+            ],
+            if (widget.typeElement == 'fichier') ...[
               const SizedBox(height: 16),
               // Dossiers
               _loadingDossiers
@@ -174,20 +184,26 @@ class _DeplacementDialogState extends State<DeplacementDialog> {
           child: const Text('Annuler'),
         ),
         ElevatedButton(
-          onPressed: (widget.pourFichier
-                  ? (_selectedArmoireId != null && _selectedCasierId != null && _selectedDossierId != null)
-                  : (_selectedArmoireId != null && _selectedCasierId != null))
+          onPressed: (
+            (widget.typeElement == 'casier' && _selectedArmoireId != null) ||
+            (widget.typeElement == 'dossier' && _selectedArmoireId != null && _selectedCasierId != null) ||
+            (widget.typeElement == 'fichier' && _selectedArmoireId != null && _selectedCasierId != null && _selectedDossierId != null)
+          )
               ? () {
-                  if (widget.pourFichier) {
+                  if (widget.typeElement == 'casier') {
+                    Navigator.pop(context, {
+                      'armoire_id': _selectedArmoireId,
+                    });
+                  } else if (widget.typeElement == 'dossier') {
+                    Navigator.pop(context, {
+                      'armoire_id': _selectedArmoireId,
+                      'cassier_id': _selectedCasierId,
+                    });
+                  } else if (widget.typeElement == 'fichier') {
                     Navigator.pop(context, {
                       'armoire_id': _selectedArmoireId,
                       'cassier_id': _selectedCasierId,
                       'dossier_id': _selectedDossierId,
-                    });
-                  } else {
-                    Navigator.pop(context, {
-                      'armoire_id': _selectedArmoireId,
-                      'cassier_id': _selectedCasierId,
                     });
                   }
                 }

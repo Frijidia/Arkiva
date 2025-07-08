@@ -9,6 +9,8 @@ class ArmoireService {
   // Récupérer toutes les armoires pour le déplacement
   Future<List<Map<String, dynamic>>> getAllArmoiresForDeplacement(int entrepriseId) async {
     try {
+      print('[API] GET $baseUrl/api/armoire/$entrepriseId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/armoire/$entrepriseId'),
         headers: await ApiConfig.getHeaders(),
@@ -28,6 +30,8 @@ class ArmoireService {
   // Récupérer les armoires par entreprise (méthode originale)
   Future<List<Armoire>> getAllArmoires(int entrepriseId) async {
     try {
+      print('[API] GET $baseUrl/api/armoire/$entrepriseId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/armoire/$entrepriseId'),
         headers: await ApiConfig.getHeaders(),
@@ -66,6 +70,9 @@ class ArmoireService {
   // Créer une armoire
   Future<Armoire> createArmoire(int userId, int entrepriseId) async {
     try {
+      print('[API] POST $baseUrl/api/armoire');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
+      print('[API] Body: {\'user_id\': $userId, \'entreprise_id\': $entrepriseId}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/armoire'),
         headers: await ApiConfig.getHeaders(),
@@ -91,6 +98,9 @@ class ArmoireService {
   // Renommer une armoire
   Future<Armoire> renameArmoire(int armoireId, String sousTitre) async {
     try {
+      print('[API] PUT $baseUrl/api/armoire/$armoireId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
+      print('[API] Body: {\'sous_titre\': $sousTitre}');
       final response = await http.put(
         Uri.parse('$baseUrl/api/armoire/$armoireId'),
         headers: await ApiConfig.getHeaders(),
@@ -113,6 +123,8 @@ class ArmoireService {
   // Supprimer une armoire
   Future<void> deleteArmoire(int armoireId) async {
     try {
+      print('[API] DELETE $baseUrl/api/armoire/$armoireId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
       final response = await http.delete(
         Uri.parse('$baseUrl/api/armoire/$armoireId'),
         headers: await ApiConfig.getHeaders(),

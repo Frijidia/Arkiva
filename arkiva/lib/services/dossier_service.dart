@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart'; // Import pour kDebugMode
 
 class DossierService {
   Future<List<Dossier>> getDossiers(String token, int casierId) async {
+    print('[API] GET ' + '${ApiConfig.baseUrl}/api/dosier/$casierId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
       headers: {
@@ -34,6 +36,9 @@ class DossierService {
     String description,
     int userId,
   ) async {
+    print('[API] POST ' + '${ApiConfig.baseUrl}/api/dosier');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+    print('[API] Body: {cassier_id: $casierId, nom: $nom, description: $description, user_id: $userId}');
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/dosier'),
       headers: {
@@ -67,6 +72,9 @@ class DossierService {
     if (dossierId == null) {
       throw Exception('Dossier ID cannot be null for update.');
     }
+    print('[API] PUT ' + '${ApiConfig.baseUrl}/api/dosier/$dossierId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+    print('[API] Body: {nom: $nom, description: $description}');
     final response = await http.put(
       Uri.parse('${ApiConfig.baseUrl}/api/dosier/$dossierId'),
       headers: {
@@ -88,6 +96,8 @@ class DossierService {
     if (dossierId == null) {
       throw Exception('Dossier ID cannot be null for delete.');
     }
+    print('[API] DELETE ' + '${ApiConfig.baseUrl}/api/dosier/$dossierId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
     final response = await http.delete(
       Uri.parse('${ApiConfig.baseUrl}/api/dosier/$dossierId'),
       headers: {
@@ -104,6 +114,9 @@ class DossierService {
   // Déplacer un dossier vers un autre casier
   Future<Dossier> deplacerDossier(String token, int dossierId, int nouveauCasierId) async {
     try {
+      print('[API] PUT ' + '${ApiConfig.baseUrl}/api/dosier/$dossierId/deplacer');
+      print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+      print('[API] Body: {nouveau_casier_id: $nouveauCasierId}');
       final response = await http.put(
         Uri.parse('${ApiConfig.baseUrl}/api/dosier/$dossierId/deplacer'),
         headers: {

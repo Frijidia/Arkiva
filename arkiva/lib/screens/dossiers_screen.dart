@@ -237,7 +237,7 @@ class _DossiersScreenState extends State<DossiersScreen> {
   Future<void> _deplacerDossier(Dossier dossier) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => const DeplacementDialog(pourFichier: false),
+      builder: (context) => const DeplacementDialog(typeElement: 'dossier'),
     );
 
     if (result != null) {

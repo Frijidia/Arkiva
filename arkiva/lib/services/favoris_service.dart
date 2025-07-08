@@ -9,6 +9,8 @@ class FavorisService {
   // Récupérer tous les favoris d'un utilisateur
   Future<List<Document>> getFavoris(String token, int userId) async {
     try {
+    print('[API] GET $_baseUrl/api/favoris/$userId');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
         Uri.parse('$_baseUrl/api/favoris/$userId'),
       headers: {
@@ -30,6 +32,9 @@ class FavorisService {
   // Ajouter un fichier aux favoris
   Future<bool> addFavori(String token, int userId, int fichierId, int entrepriseId) async {
     try {
+    print('[API] POST $_baseUrl/api/favoris');
+    print('[API] Headers: {Content-Type: application/json, Authorization: Bearer $token}');
+    print('[API] Body: {user_id: $userId, fichier_id: $fichierId, entreprise_id: $entrepriseId}');
     final response = await http.post(
         Uri.parse('$_baseUrl/api/favoris'),
       headers: {
@@ -56,6 +61,8 @@ class FavorisService {
   // Retirer un fichier des favoris
   Future<bool> removeFavori(String token, int userId, int fichierId) async {
     try {
+    print('[API] DELETE $_baseUrl/api/favoris/$userId/$fichierId');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.delete(
         Uri.parse('$_baseUrl/api/favoris/$userId/$fichierId'),
       headers: {

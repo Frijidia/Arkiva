@@ -192,7 +192,7 @@ export const RenameCasier = async (req, res) => {
       cassier_id,
       {
         message,
-        casier_id,
+        cassier_id,
         armoire_id: armoire.armoire_id,
         old_sous_titre: oldSousTitre,
         new_sous_titre: casier.sous_titre,
@@ -270,7 +270,7 @@ export const DeleteCasier = async (req, res) => {
       cassier_id,
       {
         message,
-        casier_id,
+        cassier_id,
         armoire_id: armoire.armoire_id,
         auto_backup_created: true
       }
@@ -322,7 +322,7 @@ export const deplacerCasier = async (req, res) => {
       SELECT COALESCE(SUM(f.taille), 0) AS total_casier
       FROM fichiers f
       JOIN dossiers d ON f.dossier_id = d.dossier_id
-      WHERE d.casier_id = $1 AND f.is_deleted = false
+      WHERE d.cassier_id = $1 AND f.is_deleted = false
     `, [id]);
 
     const tailleCasier = parseInt(fichiersSizeResult.rows[0].total_casier) || 0;
@@ -344,7 +344,7 @@ export const deplacerCasier = async (req, res) => {
       SELECT COALESCE(SUM(f.taille), 0) AS total_utilise
       FROM fichiers f
       JOIN dossiers d ON f.dossier_id = d.dossier_id
-      JOIN casiers c ON d.casier_id = c.casier_id
+      JOIN casiers c ON d.cassier_id = c.cassier_id
       WHERE c.armoire_id = $1 AND f.is_deleted = false
     `, [nouvelle_armoire_id]);
 

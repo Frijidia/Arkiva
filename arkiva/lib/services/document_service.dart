@@ -8,6 +8,8 @@ class DocumentService {
     if (dossierId == null) {
       throw Exception('Dossier ID cannot be null for fetching documents.');
     }
+    print('[API] GET ' + '${ApiConfig.baseUrl}/api/fichier/$dossierId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/api/fichier/$dossierId'),
       headers: {
@@ -37,6 +39,9 @@ class DocumentService {
     if (dossierId == null) {
       throw Exception('Dossier ID cannot be null for creating a document.');
     }
+    print('[API] POST ' + '${ApiConfig.baseUrl}/api/fichier');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+    print('[API] Body: {dossier_id: $dossierId, nom: $nom, description: $description, type: $type, taille: $taille, chemin: $chemin}');
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/fichier'),
       headers: {
@@ -71,6 +76,9 @@ class DocumentService {
     if (documentId == null) {
       throw Exception('Document ID cannot be null for update.');
     }
+    print('[API] PUT ' + '${ApiConfig.baseUrl}/api/fichier/$documentId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+    print('[API] Body: {nouveauoriginalfilename: $nom, description: $description}');
     final response = await http.put(
       Uri.parse('${ApiConfig.baseUrl}/api/fichier/$documentId'),
       headers: {
@@ -95,6 +103,8 @@ class DocumentService {
     if (documentId == null) {
       throw Exception('Document ID cannot be null for delete.');
     }
+    print('[API] DELETE ' + '${ApiConfig.baseUrl}/api/fichier/$documentId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
     final response = await http.delete(
       Uri.parse('${ApiConfig.baseUrl}/api/fichier/$documentId'),
       headers: {
