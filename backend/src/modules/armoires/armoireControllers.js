@@ -200,7 +200,7 @@ export const DeleteArmoire = async (req, res) => {
             // Continuer avec la suppression même si la sauvegarde échoue
         }
 
-        const deletion = await pool.query('DELETE FROM armoires WHERE armoire_id = $1 RETURNING *', [armoire_id]);
+        const deletion = await pool.query('UPDATE armoires SET is_deleted = true WHERE armoire_id = $1 RETURNING *', [armoire_id]);
 
         if (deletion.rowCount === 0) {
             return res.status(404).json({ error: 'Armoire non trouvée' });

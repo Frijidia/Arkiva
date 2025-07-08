@@ -8,7 +8,7 @@ import {
   getAllBackups,
   getBackupById
 } from './backupController.js';
-import cleanupService from './cleanupService.js';
+import cleanupService from '../cleanup/cleanupService.js';
 
 const router = express.Router();
 

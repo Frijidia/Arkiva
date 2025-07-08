@@ -253,7 +253,7 @@ export const DeleteCasier = async (req, res) => {
       // Continuer avec la suppression même si la sauvegarde échoue
     }
 
-    const deletion = await pool.query('DELETE FROM casiers WHERE cassier_id = $1 RETURNING *', [cassier_id]);
+    const deletion = await pool.query('UPDATE casiers SET is_deleted = true WHERE cassier_id = $1 RETURNING *', [cassier_id]);
 
     if (deletion.rowCount === 0) {
       return res.status(404).json({ error: 'Casier non trouvé' });

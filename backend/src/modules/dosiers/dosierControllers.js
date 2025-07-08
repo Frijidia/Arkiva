@@ -134,7 +134,7 @@ export const DeleteDossier = async (req, res) => {
     }
 
     const result = await pool.query(
-      'DELETE FROM dossiers WHERE dossier_id = $1 RETURNING *',
+      'UPDATE dossiers SET is_deleted = true WHERE dossier_id = $1 RETURNING *',
       [dossier_id]
     );
 

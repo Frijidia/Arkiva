@@ -87,8 +87,8 @@ export const deleteFichier = async (req, res) => {
       Key: key,
     }));
 
-    // Supprimer de la base
-    await pool.query('DELETE FROM fichiers WHERE fichier_id = $1', [fichier_id]);
+    // Soft delete - marquer comme supprimé
+    await pool.query('UPDATE fichiers SET is_deleted = true WHERE fichier_id = $1', [fichier_id]);
 
     // Log humain avec information de sauvegarde
     const user = req.user;
