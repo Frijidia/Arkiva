@@ -11,7 +11,13 @@ export const restoreBackup = async (req, res) => {
             return res.status(401).json({ error: 'Utilisateur non authentifié' });
         }
 
-        const result = await restoreService.restoreBackup(req.params.id, req.user.user_id);
+        const result = await restoreService.restoreBackup(
+          req.params.id,
+          req.user.user_id,
+          req.body.armoire_id,
+          req.body.cassier_id,
+          req.body.dossier_id
+        );
         res.json(result);
     } catch (error) {
         console.error('Erreur lors de la restauration:', error);

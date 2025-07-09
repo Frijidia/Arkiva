@@ -23,7 +23,7 @@ if (!fs.existsSync(TEMP_DIR)) {
 }
 
 // Restaurer une sauvegarde
-const restoreBackup = async (backupId, userId) => {
+const restoreBackup = async (backupId, userId, armoireId = null, cassierId = null, dossierId = null) => {
     let tempExtractPath = null;
     try {
         // Récupérer les informations de la sauvegarde
@@ -64,13 +64,17 @@ const restoreBackup = async (backupId, userId) => {
         let restoredData;
         switch (backup.type) {
             case 'fichier':
-                restoredData = await restoreFile(metadata, tempExtractPath, userId);
+                restoredData = await restoreFile(metadata, tempExtractPath, userId, dossierId);
                 break;
             case 'dossier':
-                restoredData = await restoreDossier(metadata, tempExtractPath, userId);
+                restoredData = await restoreDossier(metadata, tempExtractPath, userId, cassierId);
                 break;
             case 'casier':
-                restoredData = await restoreCasier(metadata, tempExtractPath, userId);
+                console.log('[RESTORE] restoreBackup appelle restoreCasier avec armoireId =', armoireId);
+                if (!armoireId && !metadata.armoire_id) {
+                    throw new Error("Aucune armoire de destination n'a été spécifiée pour la restauration du casier.");
+                }
+                restoredData = await restoreCasier(metadata, tempExtractPath, userId, armoireId);
                 break;
             case 'armoire':
                 restoredData = await restoreArmoire(metadata, tempExtractPath, userId);
@@ -80,7 +84,6 @@ const restoreBackup = async (backupId, userId) => {
         }
 
         console.log('🔍 [DEBUG] restoredData:', restoredData);
-        console.log('🔍 [DEBUG] restoredData.id:', restoredData?.id);
 
         // Vérifier que restoredData a un ID et l'extraire selon le type
         let restoredId;
@@ -292,12 +295,12 @@ const restoreVersion = async (versionId, userId) => {
 };
 
 // Restaurer un fichier
-const restoreFile = async (metadata, tempDir, userId) => {
+const restoreFile = async (metadata, tempDir, userId, dossierId = null) => {
     const fileData = {
         nom: metadata.originalFileName || metadata.name || `fichier_restaure_${Date.now()}`,
         type_mime: metadata.type_mime || 'application/octet-stream',
         taille: metadata.taille || metadata.size || 0,
-        dossier_id: metadata.dossier_id || null,
+        dossier_id: dossierId || metadata.dossier_id || null,
         user_id: userId
     };
 
@@ -320,13 +323,13 @@ const restoreFile = async (metadata, tempDir, userId) => {
 };
 
 // Restaurer un dossier
-const restoreDossier = async (metadata, tempDir, userId) => {
+const restoreDossier = async (metadata, tempDir, userId, cassierId = null) => {
     console.log('🔍 [DEBUG] restoreDossier - metadata:', metadata);
     console.log('🔍 [DEBUG] restoreDossier - userId:', userId);
     
     const dossierData = {
         nom: metadata.name || `dossier_restaure_${Date.now()}`,
-        casier_id: metadata.casier_id || null,
+        cassier_id: cassierId || metadata.cassier_id || null,
         user_id: userId
     };
 
@@ -340,11 +343,11 @@ const restoreDossier = async (metadata, tempDir, userId) => {
     `;
     
     console.log('🔍 [DEBUG] restoreDossier - query:', query);
-    console.log('🔍 [DEBUG] restoreDossier - values:', [dossierData.nom, dossierData.casier_id, " ", dossierData.user_id]);
+    console.log('🔍 [DEBUG] restoreDossier - values:', [dossierData.nom, dossierData.cassier_id, " ", dossierData.user_id]);
     
     const result = await pool.query(query, [
         dossierData.nom,
-        dossierData.casier_id,
+        dossierData.cassier_id,
         " ", // description vide
         dossierData.user_id
     ]);
@@ -355,12 +358,18 @@ const restoreDossier = async (metadata, tempDir, userId) => {
 };
 
 // Restaurer un casier
-const restoreCasier = async (metadata, tempDir, userId) => {
+const restoreCasier = async (metadata, tempDir, userId, armoireId = null) => {
     const casierData = {
         nom: metadata.name || `casier_restaure_${Date.now()}`,
-        armoire_id: metadata.armoire_id || null,
+        armoire_id: (armoireId !== null && armoireId !== undefined) ? Number(armoireId) : (metadata.armoire_id || null),
         user_id: userId
     };
+
+    console.log('[RESTORE] Insertion casier avec armoire_id =', casierData.armoire_id);
+
+    if (!casierData.armoire_id) {
+        throw new Error("Aucune armoire de destination n'a été spécifiée pour la restauration du casier.");
+    }
 
     // Créer directement dans la base de données
     const query = `
@@ -440,7 +449,7 @@ const restoreDossierFromVersion = async (versionContent, userId) => {
 
     const dossierData = {
         nom: metadata.original_name || `dossier_restaure_${Date.now()}`,
-        casier_id: metadata.casier_id || null,
+        cassier_id: metadata.cassier_id || null,
         user_id: userId
     };
 
@@ -453,7 +462,7 @@ const restoreDossierFromVersion = async (versionContent, userId) => {
     
     const result = await pool.query(query, [
         dossierData.nom,
-        dossierData.casier_id,
+        dossierData.cassier_id,
         " ", // description vide
         dossierData.user_id
     ]);
@@ -467,10 +476,16 @@ const restoreCasierFromVersion = async (versionContent, userId) => {
     const content = versionContent.content;
 
     const casierData = {
-        nom: metadata.original_name || `casier_restaure_${Date.now()}`,
-        armoire_id: metadata.armoire_id || null,
+        nom: metadata.original_name || metadata.name || `casier_restaure_${Date.now()}`,
+        armoire_id: (metadata.armoire_id !== null && metadata.armoire_id !== undefined) ? Number(metadata.armoire_id) : null,
         user_id: userId
     };
+
+    console.log('[RESTORE] Insertion casier avec armoire_id =', casierData.armoire_id);
+
+    if (!casierData.armoire_id) {
+        throw new Error("Aucune armoire de destination n'a été spécifiée pour la restauration du casier.");
+    }
 
     // Créer directement dans la base de données
     const query = `
@@ -488,34 +503,7 @@ const restoreCasierFromVersion = async (versionContent, userId) => {
     return result.rows[0];
 };
 
-// Restaurer une armoire depuis une version
-const restoreArmoireFromVersion = async (versionContent, userId) => {
-    const metadata = versionContent.metadata;
-    const content = versionContent.content;
-
-    const armoireData = {
-        nom: metadata.original_name || `armoire_restaure_${Date.now()}`,
-        entreprise_id: metadata.entreprise_id || null,
-        user_id: userId
-    };
-
-    // Créer directement dans la base de données
-    const query = `
-        INSERT INTO armoires (nom, entreprise_id, user_id) 
-        VALUES ($1, $2, $3) 
-        RETURNING *
-    `;
-    
-    const result = await pool.query(query, [
-        armoireData.nom,
-        armoireData.entreprise_id,
-        armoireData.user_id
-    ]);
-    
-    return result.rows[0];
-};
-
 export default {
-    restoreBackup,
-    restoreVersion
-}; 
+  restoreBackup,
+  restoreVersion
+};

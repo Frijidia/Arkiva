@@ -6,8 +6,32 @@ import '../config/api_config.dart';
 class ArmoireService {
   final String baseUrl = ApiConfig.baseUrl;
 
+  // Récupérer toutes les armoires pour le déplacement
+  Future<List<Map<String, dynamic>>> getAllArmoiresForDeplacement(int entrepriseId) async {
+    try {
+      print('[API] GET $baseUrl/api/armoire/$entrepriseId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/armoire/$entrepriseId'),
+        headers: await ApiConfig.getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Échec du chargement des armoires');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des armoires: $e');
+    }
+  }
+
+  // Récupérer les armoires par entreprise (méthode originale)
   Future<List<Armoire>> getAllArmoires(int entrepriseId) async {
     try {
+      print('[API] GET $baseUrl/api/armoire/$entrepriseId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
       final response = await http.get(
         Uri.parse('$baseUrl/api/armoire/$entrepriseId'),
         headers: await ApiConfig.getHeaders(),
@@ -24,8 +48,31 @@ class ArmoireService {
     }
   }
 
+  // Récupérer tous les casiers pour le déplacement
+  Future<List<Map<String, dynamic>>> getAllCasiers(int entrepriseId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/casier/getcasiers'),
+        headers: await ApiConfig.getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Échec du chargement des casiers');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des casiers: $e');
+    }
+  }
+
+  // Créer une armoire
   Future<Armoire> createArmoire(int userId, int entrepriseId) async {
     try {
+      print('[API] POST $baseUrl/api/armoire');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
+      print('[API] Body: {\'user_id\': $userId, \'entreprise_id\': $entrepriseId}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/armoire'),
         headers: await ApiConfig.getHeaders(),
@@ -48,8 +95,12 @@ class ArmoireService {
     }
   }
 
+  // Renommer une armoire
   Future<Armoire> renameArmoire(int armoireId, String sousTitre) async {
     try {
+      print('[API] PUT $baseUrl/api/armoire/$armoireId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
+      print('[API] Body: {\'sous_titre\': $sousTitre}');
       final response = await http.put(
         Uri.parse('$baseUrl/api/armoire/$armoireId'),
         headers: await ApiConfig.getHeaders(),
@@ -69,8 +120,11 @@ class ArmoireService {
     }
   }
 
+  // Supprimer une armoire
   Future<void> deleteArmoire(int armoireId) async {
     try {
+      print('[API] DELETE $baseUrl/api/armoire/$armoireId');
+      print('[API] Headers: ${await ApiConfig.getHeaders()}');
       final response = await http.delete(
         Uri.parse('$baseUrl/api/armoire/$armoireId'),
         headers: await ApiConfig.getHeaders(),

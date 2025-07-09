@@ -67,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadTags();
     _loadArmoires();
     _loadAllCasiers();
-    _loadAllDossiers();
   }
 
   @override
@@ -177,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/casier/all/$entrepriseId'),
+          Uri.parse('${ApiConfig.baseUrl}/api/casier/getcasiers'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -192,31 +191,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('Erreur chargement tous les casiers: $e');
-    }
-  }
-
-  Future<void> _loadAllDossiers() async {
-    try {
-      final authState = context.read<AuthStateService>();
-      final token = authState.token;
-      final entrepriseId = authState.entrepriseId;
-      if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/dosier/all/$entrepriseId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _allDossiers = data;
-          });
-        }
-      }
-    } catch (e) {
-      print('Erreur chargement tous les dossiers: $e');
     }
   }
 
@@ -1014,6 +988,54 @@ class _HomeScreenState extends State<HomeScreen> {
                           trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
                           onTap: () {
                             print('Tapped on Derniers documents');
+                          },
+                        ),
+                      ),
+                      Card(
+                        elevation: 2,
+                        margin: EdgeInsets.only(bottom: 8.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                          leading: Icon(Icons.backup, size: 28, color: Colors.orange[700]),
+                          title: Text('Sauvegardes', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/backups');
+                          },
+                        ),
+                      ),
+                      Card(
+                        elevation: 2,
+                        margin: EdgeInsets.only(bottom: 8.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                          leading: Icon(Icons.history, size: 28, color: Colors.purple[700]),
+                          title: Text('Versions', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/versions');
+                          },
+                        ),
+                      ),
+                      Card(
+                        elevation: 2,
+                        margin: EdgeInsets.only(bottom: 8.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                          leading: Icon(Icons.restore, size: 28, color: Colors.teal[700]),
+                          title: Text('Restaurations', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/restorations');
                           },
                         ),
                       ),

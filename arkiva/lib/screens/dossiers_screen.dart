@@ -3,6 +3,7 @@ import 'package:arkiva/models/casier.dart';
 import 'package:arkiva/models/dossier.dart';
 import 'package:arkiva/services/dossier_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/widgets/deplacement_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:arkiva/screens/fichiers_screen.dart';
 
@@ -233,6 +234,30 @@ class _DossiersScreenState extends State<DossiersScreen> {
     }
   }
 
+  Future<void> _deplacerDossier(Dossier dossier) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => const DeplacementDialog(typeElement: 'dossier'),
+    );
+
+    if (result != null) {
+      try {
+        final token = context.read<AuthStateService>().token;
+        if (token != null) {
+          await _dossierService.deplacerDossier(token, dossier.dossierId!, result['cassier_id']);
+          await _loadDossiers();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dossier déplacé avec succès')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du déplacement: $e')),
+        );
+      }
+    }
+  }
+
   void _naviguerVersDocuments(Dossier dossier) {
     Navigator.push(
       context,
@@ -310,6 +335,9 @@ class _DossiersScreenState extends State<DossiersScreen> {
                             case 'renommer':
                               _renommerDossier(dossier);
                               break;
+                            case 'deplacer':
+                              _deplacerDossier(dossier);
+                              break;
                             case 'supprimer':
                               _supprimerDossier(dossier);
                               break;
@@ -323,6 +351,16 @@ class _DossiersScreenState extends State<DossiersScreen> {
                                 Icon(Icons.edit),
                                 SizedBox(width: 8),
                                 Text('Renommer'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'deplacer',
+                            child: Row(
+                              children: [
+                                Icon(Icons.move_to_inbox),
+                                SizedBox(width: 8),
+                                Text('Déplacer'),
                               ],
                             ),
                           ),

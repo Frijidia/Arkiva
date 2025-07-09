@@ -4,6 +4,7 @@ import 'package:arkiva/models/document.dart';
 import 'package:arkiva/services/document_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/screens/document_viewer_screen.dart';
+import 'package:arkiva/widgets/deplacement_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
+import 'package:arkiva/services/backup_service.dart';
+import 'package:arkiva/services/version_service.dart';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -127,11 +130,10 @@ class _FichiersScreenState extends State<FichiersScreen> {
   }
 
   Future<void> _ajouterDocument() async {
-    final TextEditingController nomController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
     _selectedFile = null;
 
-    final result = await showDialog<Map<String, String>?> (
+    final result = await showDialog<Map<String, String>?>(
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setStateSB) {
         return AlertDialog(
@@ -139,14 +141,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nomController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom du document',
-                  hintText: 'Entrez le nom du document',
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Suppression du champ Nom du document
               TextField(
                 controller: descriptionController,
                 decoration: const InputDecoration(
@@ -173,14 +168,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final nom = nomController.text.trim();
-                if (nom.isNotEmpty && _selectedFile != null) {
+                if (_selectedFile != null) {
                   Navigator.pop(context, {
-                    'nom': nom,
+                    'nom': _selectedFile!.name, // Utilise le vrai nom du fichier
                     'description': descriptionController.text.trim(),
                   });
                 } else {
-                  Navigator.pop(context, {'erreur': 'Veuillez saisir un nom et sélectionner un fichier'});
+                  Navigator.pop(context, {'erreur': 'Veuillez sélectionner un fichier'});
                 }
               },
               child: const Text('Ajouter'),
@@ -366,6 +360,152 @@ class _FichiersScreenState extends State<FichiersScreen> {
       } catch (e) {
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deplacerFichier(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour le déplacement.')),
+      );
+      return;
+    }
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => const DeplacementDialog(typeElement: 'fichier'),
+    );
+
+    if (result != null) {
+      try {
+        final token = context.read<AuthStateService>().token;
+        if (token != null) {
+          await _documentService.deplacerFichier(token, document.id!, result['dossier_id']);
+          await _loadDocuments();
+          if (!mounted) return;
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(content: Text('Fichier déplacé avec succès')),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Erreur lors du déplacement: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sauvegarderFichier(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour la sauvegarde.')),
+      );
+      return;
+    }
+
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final token = authStateService.token;
+      final entrepriseId = authStateService.entrepriseId;
+
+      if (token == null || entrepriseId == null) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Erreur: Informations d\'authentification manquantes')),
+        );
+        return;
+      }
+
+      await BackupService.createBackup(
+        token: token,
+        type: 'fichier',
+        cibleId: int.parse(document.id),
+        entrepriseId: entrepriseId,
+      );
+
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Sauvegarde créée avec succès')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Erreur lors de la sauvegarde: $e')),
+      );
+    }
+  }
+
+  Future<void> _creerVersionFichier(Document document) async {
+    if (document.id == null) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Erreur: ID du document manquant pour la création de version.')),
+      );
+      return;
+    }
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Créer une version'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Description (facultatif)',
+                hintText: 'Ex: Correction de la section 2.1',
+                prefixIcon: Icon(Icons.description),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context, {
+                'description': 'Version créée depuis l\'écran fichiers',
+              });
+            },
+            child: const Text('Créer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      try {
+        final authStateService = context.read<AuthStateService>();
+        final token = authStateService.token;
+
+        if (token == null) {
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(content: Text('Token d\'authentification manquant')),
+          );
+          return;
+        }
+
+        await VersionService.createVersion(
+          token: token,
+          cibleId: int.parse(document.id),
+          type: 'fichier',
+          description: result['description'],
+        );
+
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Version créée avec succès')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Erreur lors de la création de version: $e')),
         );
       }
     }
@@ -1363,6 +1503,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                     case 'modifier':
                                       _modifierDocument(document);
                                       break;
+                                    case 'deplacer':
+                                      _deplacerFichier(document);
+                                      break;
                                     case 'supprimer':
                                       _supprimerDocument(document);
                                       break;
@@ -1374,6 +1517,12 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                           break;
                                         case 'ouvrir_nouvel_onglet':
                                           _ouvrirDansNouvelOnglet(document);
+                                          break;
+                                        case 'sauvegarder':
+                                          _sauvegarderFichier(document);
+                                          break;
+                                        case 'creer_version':
+                                          _creerVersionFichier(document);
                                           break;
                                   }
                                 },
@@ -1395,6 +1544,16 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                             Icon(Icons.edit),
                                         SizedBox(width: 8),
                                             Text('Renommer'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                        value: 'deplacer',
+                                    child: Row(
+                                      children: [
+                                            Icon(Icons.move_to_inbox),
+                                        SizedBox(width: 8),
+                                            Text('Déplacer'),
                                       ],
                                     ),
                                   ),
@@ -1435,6 +1594,26 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                             Icon(Icons.delete, color: Colors.red),
                                             SizedBox(width: 8),
                                             Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'sauvegarder',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.backup, color: Colors.orange),
+                                            SizedBox(width: 8),
+                                            Text('Sauvegarder'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'creer_version',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.history, color: Colors.purple),
+                                            SizedBox(width: 8),
+                                            Text('Créer une version'),
                                           ],
                                         ),
                                       ),

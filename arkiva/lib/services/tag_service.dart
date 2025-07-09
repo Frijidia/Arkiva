@@ -51,6 +51,9 @@ class TagService {
   }
 
   Future<void> deleteTag(String token, int entrepriseId, int tagId) async {
+    print('[API] DELETE $baseUrl/api/tag/deletetag/$tagId');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+    print('[API] Body: {entreprise_id: $entrepriseId}');
     final response = await http.delete(
       Uri.parse('$baseUrl/api/tag/deletetag/$tagId'),
       headers: {
@@ -65,6 +68,8 @@ class TagService {
   }
 
   Future<List<String>> getPopularTags(String token, int entrepriseId, {int limit = 10}) async {
+    print('[API] GET $baseUrl/api/tag/tagsPopular?entreprise_id=$entrepriseId');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
       Uri.parse('$baseUrl/api/tag/tagsPopular?entreprise_id=$entrepriseId'),
       headers: {'Authorization': 'Bearer $token'},
@@ -78,6 +83,9 @@ class TagService {
   }
 
   Future<void> addTagToFile(String token, int entrepriseId, int fichierId, String nomTag) async {
+    print('[API] POST $baseUrl/api/tag/addTagToFile');
+    print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+    print('[API] Body: {fichier_id: $fichierId, nom_tag: $nomTag, entreprise_id: $entrepriseId}');
     final response = await http.post(
       Uri.parse('$baseUrl/api/tag/addTagToFile'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
