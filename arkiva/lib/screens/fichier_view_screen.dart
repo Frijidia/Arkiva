@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:provider/provider.dart';
-import 'dart:html' as html;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class FichierViewScreen extends StatelessWidget {
   final Map<String, dynamic> doc;
@@ -44,7 +45,12 @@ class FichierViewScreen extends StatelessWidget {
                   icon: const Icon(Icons.open_in_new),
                   label: const Text('Ouvrir / Télécharger'),
                   onPressed: url.isNotEmpty
-                      ? () => html.window.open(url, '_blank')
+                      ? () async {
+                          final uri = Uri.parse(url);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        }
                       : null,
                 ),
               ],

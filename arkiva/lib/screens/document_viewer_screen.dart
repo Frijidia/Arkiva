@@ -4,8 +4,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/config/api_config.dart';
 import 'package:provider/provider.dart';
-import 'dart:html' as html;
 import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
 
 class DocumentViewerScreen extends StatefulWidget {
   final Document document;
@@ -32,38 +34,67 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       }
       return;
     }
+    
     final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      final fileName = widget.document.nomOriginal ?? widget.document.nom;
-      final mimeType = _getMimeType(fileName);
-      print('DEBUG: nom=$fileName, mimeType=$mimeType');
-      final blob = html.Blob([response.bodyBytes], mimeType);
-      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-      if (mimeType.startsWith('application/pdf')) {
-        html.window.open(blobUrl, '_blank');
+    
+    if (kIsWeb) {
+      // Pour le web, on utilise url_launcher
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ce type de fichier n\'est pas prévisualisable. Il va être téléchargé.')),
+            const SnackBar(
+              content: Text('Impossible d\'ouvrir le document'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
-        final anchor = html.AnchorElement(href: blobUrl)
-          ..setAttribute('download', fileName)
-          ..click();
-        html.Url.revokeObjectUrl(blobUrl);
       }
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de l\'ouverture du document'),
-            backgroundColor: Colors.red,
-          ),
+      // Pour mobile, on télécharge et ouvre avec l'application par défaut
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {'Authorization': 'Bearer $token'},
         );
+        
+        if (response.statusCode == 200) {
+          final fileName = widget.document.nomOriginal ?? widget.document.nom;
+          final mimeType = _getMimeType(fileName);
+          
+          // Sauvegarder temporairement et ouvrir
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/$fileName');
+          await file.writeAsBytes(response.bodyBytes);
+          
+          final uri = Uri.file(file.path);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Fichier téléchargé: ${file.path}')),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur lors de l\'ouverture du document'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: ${e.toString()}')),
+          );
+        }
       }
     }
   }
@@ -83,28 +114,72 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       }
       return;
     }
+    
     final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      final fileName = widget.document.nomOriginal ?? widget.document.nom;
-      final mimeType = _getMimeType(fileName);
-      final blob = html.Blob([response.bodyBytes], mimeType);
-      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: blobUrl)
-        ..setAttribute('download', fileName)
-        ..click();
-      html.Url.revokeObjectUrl(blobUrl);
+    
+    if (kIsWeb) {
+      // Pour le web, on utilise url_launcher pour télécharger
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de télécharger le document'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors du téléchargement du document'),
-            backgroundColor: Colors.red,
-          ),
+      // Pour mobile, on télécharge dans le dossier de téléchargements
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {'Authorization': 'Bearer $token'},
         );
+        
+        if (response.statusCode == 200) {
+          final fileName = widget.document.nomOriginal ?? widget.document.nom;
+          
+          // Sauvegarder dans le dossier de téléchargements
+          final downloadsDir = await getDownloadsDirectory();
+          if (downloadsDir != null) {
+            final file = File('${downloadsDir.path}/$fileName');
+            await file.writeAsBytes(response.bodyBytes);
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Document téléchargé: ${file.path}')),
+              );
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Impossible d\'accéder au dossier de téléchargements'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur lors du téléchargement du document'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: ${e.toString()}')),
+          );
+        }
       }
     }
   }
@@ -124,13 +199,66 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     final authStateService = context.read<AuthStateService>();
     final token = authStateService.token;
     final url = _fileUrl;
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    final blob = html.Blob([response.bodyBytes], 'application/pdf');
-    final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-    html.window.open(blobUrl, '_blank');
+    
+    if (kIsWeb) {
+      // Pour le web, on utilise url_launcher
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible d\'ouvrir le PDF'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      // Pour mobile, on télécharge et ouvre
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        
+        if (response.statusCode == 200) {
+          final fileName = widget.document.nomOriginal ?? widget.document.nom;
+          
+          // Sauvegarder temporairement et ouvrir
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/$fileName');
+          await file.writeAsBytes(response.bodyBytes);
+          
+          final uri = Uri.file(file.path);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('PDF téléchargé: ${file.path}')),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur lors de l\'ouverture du PDF'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: ${e.toString()}')),
+          );
+        }
+      }
+    }
   }
 
   // Construction de l'URL pour afficher le fichier déchiffré via la route backend

@@ -10,13 +10,15 @@ import 'package:provider/provider.dart';
 import 'package:arkiva/services/upload_service.dart';
 import 'package:arkiva/config/api_config.dart';
 import 'package:http/http.dart' as http;
-import 'dart:html' as html;
 import 'package:arkiva/screens/tags_screen.dart';
 import 'package:arkiva/services/tag_service.dart';
 import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/favoris_service.dart';
 import 'package:arkiva/widgets/favori_button.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -421,7 +423,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
     }
   }
 
-  void _ouvrirOuTelechargerDocument(Document document) {
+  Future<void> _ouvrirOuTelechargerDocument(Document document) async {
     final authStateService = context.read<AuthStateService>();
     final token = authStateService.token;
     final entrepriseId = authStateService.entrepriseId;
@@ -437,40 +439,67 @@ class _FichiersScreenState extends State<FichiersScreen> {
       return;
     }
     final url = '${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token';
-    http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
-    ).then((response) {
-      if (response.statusCode == 200) {
-        final fileName = document.nomOriginal ?? document.nom;
-        final mimeType = _getMimeType(fileName);
-        print('DEBUG: nom=$fileName, mimeType=$mimeType');
-        final blob = html.Blob([response.bodyBytes], mimeType);
-        final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-        if (mimeType.startsWith('application/pdf')) {
-          html.window.open(blobUrl, '_blank');
-        } else {
-          if (mounted) {
-            _scaffoldMessengerKey.currentState?.showSnackBar(
-              SnackBar(content: Text('Ce type de fichier n\'est pas prévisualisable. Il va être téléchargé.')),
-            );
-          }
-          final anchor = html.AnchorElement(href: blobUrl)
-            ..setAttribute('download', fileName)
-            ..click();
-          html.Url.revokeObjectUrl(blobUrl);
-        }
+    
+    if (kIsWeb) {
+      // Pour le web, on utilise url_launcher
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
           _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(
-              content: Text('Erreur lors de l\'ouverture du document'),
+              content: Text('Impossible d\'ouvrir le document'),
               backgroundColor: Colors.red,
             ),
           );
         }
       }
-    });
+    } else {
+      // Pour mobile, on télécharge et ouvre avec l'application par défaut
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        
+        if (response.statusCode == 200) {
+          final fileName = document.nomOriginal ?? document.nom;
+          final mimeType = _getMimeType(fileName);
+          
+          // Sauvegarder temporairement et ouvrir
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/$fileName');
+          await file.writeAsBytes(response.bodyBytes);
+          
+          final uri = Uri.file(file.path);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            if (mounted) {
+              _scaffoldMessengerKey.currentState?.showSnackBar(
+                SnackBar(content: Text('Fichier téléchargé: ${file.path}')),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            _scaffoldMessengerKey.currentState?.showSnackBar(
+              const SnackBar(
+                content: Text('Erreur lors de l\'ouverture du document'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            SnackBar(content: Text('Erreur: ${e.toString()}')),
+          );
+        }
+      }
+    }
   }
 
   String _getMimeType(String fileName) {

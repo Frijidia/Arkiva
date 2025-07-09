@@ -17,7 +17,6 @@ import 'package:arkiva/services/document_service.dart';
 import 'package:arkiva/screens/tags_screen.dart';
 import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/tag_service.dart';
-import 'dart:html' as html;
 import 'package:arkiva/screens/fichier_view_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
