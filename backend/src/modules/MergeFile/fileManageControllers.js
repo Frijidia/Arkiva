@@ -1,0 +1,182 @@
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { PDFDocument } from 'pdf-lib';
+// import { s3, bucket } from '../config/s3.js'; // s3 client configuré
+import downloadFileBufferFromS3 from '../fichiers/fichierControllers.js'; // utilitaire pour convertir ReadableStream
+import encryptionService from '../encryption/encryptionService.js';
+import {extractSmartText} from '../ocr/ocrControllers.js'
+import {uploadFileBufferToS3} from '../upload/uploadControllers.js'
+import pool from '../../config/database.js';
+
+// import { PDFDocument } from 'pdf-lib';
+
+export const mergePdfs = async (req, res) => {
+  const { fichiers, entreprise_id, dossier_id, fileName } = req.body;
+
+  try {
+    const mergedPdf = await PDFDocument.create();
+    const A4_WIDTH = 595.28;
+    const A4_HEIGHT = 841.89;
+
+    for (const chemin of fichiers) {
+      const s3BaseUrl = 'https://arkivabucket.s3.amazonaws.com/';
+      const key = chemin.replace(s3BaseUrl, '');
+
+      const encryptedBuffer = await downloadFileBufferFromS3(key);
+      const { content: decryptedBuffer, originalFileName } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
+
+      const ext = originalFileName.toLowerCase();
+
+      try {
+        if (ext.endsWith('.pdf')) {
+          const pdf = await PDFDocument.load(decryptedBuffer);
+          const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+
+          for (const copiedPage of copiedPages) {
+            const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+            const { width: origWidth, height: origHeight } = copiedPage.getSize();
+            const scale = Math.min(A4_WIDTH / origWidth, A4_HEIGHT / origHeight);
+
+            page.drawPage(copiedPage, {
+              x: (A4_WIDTH - origWidth * scale) / 2,
+              y: (A4_HEIGHT - origHeight * scale) / 2,
+              xScale: scale,
+              yScale: scale,
+            });
+          }
+
+        } else if (ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png')) {
+          const imagePdf = await PDFDocument.create();
+          let image;
+
+          if (ext.endsWith('.jpg') || ext.endsWith('.jpeg')) {
+            image = await imagePdf.embedJpg(decryptedBuffer);
+          } else if (ext.endsWith('.png')) {
+            image = await imagePdf.embedPng(decryptedBuffer);
+          }
+
+          // Crée une page A4 dans ce PDF
+          const page = imagePdf.addPage([A4_WIDTH, A4_HEIGHT]);
+
+          // Calcul échelle pour que l'image tienne dans la page A4
+          const scale = Math.min(A4_WIDTH / image.width, A4_HEIGHT / image.height);
+          const imgWidth = image.width * scale;
+          const imgHeight = image.height * scale;
+
+          // Centre l'image
+          const x = (A4_WIDTH - imgWidth) / 2;
+          const y = (A4_HEIGHT - imgHeight) / 2;
+
+          page.drawImage(image, {
+            x,
+            y,
+            width: imgWidth,
+            height: imgHeight,
+          });
+
+          // Convertit le PDF image en bytes
+          const imagePdfBytes = await imagePdf.save();
+
+          // Recharge ce PDF temporaire pour copier la page dans mergedPdf
+          const pdfFromImage = await PDFDocument.load(imagePdfBytes);
+          const pages = await mergedPdf.copyPages(pdfFromImage, pdfFromImage.getPageIndices());
+
+          pages.forEach(page => mergedPdf.addPage(page));
+
+        } else {
+          console.warn(`Format non supporté : ${originalFileName}, ignoré.`);
+          continue;
+        }
+      } catch (error) {
+        console.warn(`Erreur lors du traitement du fichier ${originalFileName}:`, error);
+        continue;
+      }
+    }
+
+    const finalPdfBytes = await mergedPdf.save();
+    const base64Pdf = Buffer.from(finalPdfBytes).toString('base64');
+
+    // Sauvegarde le PDF fusionné via ta fonction utilitaire
+    const savedFile = await saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(Buffer.from(finalPdfBytes));
+
+  } catch (err) {
+    console.error('Erreur fusion PDF', err);
+    res.status(500).json({ error: 'Fusion échouée' });
+  }
+};
+
+
+
+
+export async function saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf) {
+
+  const finalBuffer = Buffer.from(base64Pdf, 'base64');
+
+  const contenu_ocr =  await extractSmartText(finalBuffer, fileName + 'pdf'); // ou null
+  const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, fileName, entreprise_id);
+  const s3Data = await uploadFileBufferToS3(encryptedBuffer, fileName + '.enc');
+
+  const result = await pool.query(
+    `INSERT INTO fichiers (nom, chemin, type, taille, dossier_id, contenu_ocr, originalFileName)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+    [
+      s3Data.originalName,
+      s3Data.location,
+      s3Data.type,
+      s3Data.size,
+      dossier_id,
+      contenu_ocr,
+      fileName,
+    ]
+  );
+  return result.rows[0];
+
+};
+
+
+export const mergeSelectedPages = async (req, res) => {
+  const { fichiers, entreprise_id } = req.body;
+
+  if (!fichiers || !Array.isArray(fichiers) || fichiers.length === 0 || !entreprise_id) {
+    return res.status(400).json({ error: 'Paramètres invalides. Assurez-vous d\'envoyer fichiers[] et entreprise_id.' });
+  }
+
+  try {
+    const mergedPdf = await PDFDocument.create();
+
+    for (let fichier of fichiers) {
+      const { chemin, pages } = fichier;
+
+      const s3BaseUrl = 'https://arkivabucket.s3.amazonaws.com/';
+      const key = chemin.replace(s3BaseUrl, '');
+
+      // Télécharger et déchiffrer
+      const encryptedBuffer = await downloadFileBufferFromS3(key);
+      const { content: decryptedBuffer } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
+
+      const pdf = await PDFDocument.load(decryptedBuffer);
+      const totalPages = pdf.getPageCount();
+
+      // Pages valides (dans pdf-lib, les indices commencent à 0)
+      const selectedIndices = (pages || [])
+        .map(p => p - 1)
+        .filter(i => i >= 0 && i < totalPages);
+
+      const copiedPages = await mergedPdf.copyPages(pdf, selectedIndices);
+      copiedPages.forEach(page => mergedPdf.addPage(page));
+    }
+
+    const finalPdfBytes = await mergedPdf.save();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(Buffer.from(finalPdfBytes));
+  } catch (error) {
+    console.error('Erreur fusion avec sélection de pages :', error);
+    res.status(500).json({ error: 'Fusion échouée lors de l\'extraction des pages' });
+  }
+};
+
