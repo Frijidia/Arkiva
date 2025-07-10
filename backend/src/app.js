@@ -12,6 +12,9 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 // Import du cron de nettoyage
 import cleanupCron from './modules/cleanup/cleanupCron.js';
 
+// Import des modèles pour initialiser les tables
+import './modules/dosiers/dosierModels.js';
+
 import authRoutes from './modules/auth/authRoutes.js'; // Routes d'authentification (utilisateurs)
 import entrepriseRoutes from './modules/entreprises/entrepriseRoutes.js'; // entreprises
 import armoireRoutes from './modules/armoires/armoiresRoutes.js'; // armoires
@@ -31,6 +34,7 @@ import searchRoutes from './modules/search/searchRoute.js'; // routes de recherc
 import favorisRoutes from './modules/favoris/favorisRoutes.js'; // favoris
 import payments from './modules/payments/paymentsRoutes.js'; // payments et abonnements
 import statsRoutes from './modules/stats/statsRoutes.js'; // statistiques
+import fileManagerRoutes from './modules/MergeFile/fileManageRoute.js'; // gestion de fusion de fichiers
 // app.use('/api/search', searchRoutes);
 
 const app = express();
@@ -65,8 +69,8 @@ app.use('/api/search', searchRoutes);
 app.use('/api/favoris', favorisRoutes);
 app.use('/api/payments', payments);
 app.use('/api/stats', statsRoutes);
+app.use('/api/fileManager', fileManagerRoutes); // Gestion de fusion de fichiers
 // app.use('/api/search', searchRoutes);
-//app.use('/api/fileManager', fileManagerRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

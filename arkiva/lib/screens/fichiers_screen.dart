@@ -16,6 +16,7 @@ import 'package:arkiva/services/tag_service.dart';
 import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/favoris_service.dart';
 import 'package:arkiva/widgets/favori_button.dart';
+import 'package:arkiva/screens/merge_files_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -599,13 +600,13 @@ class _FichiersScreenState extends State<FichiersScreen> {
       // Pour mobile, on télécharge et ouvre avec l'application par défaut
       try {
         final response = await http.get(
-          Uri.parse(url),
-          headers: {'Authorization': 'Bearer $token'},
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
         );
         
-        if (response.statusCode == 200) {
-          final fileName = document.nomOriginal ?? document.nom;
-          final mimeType = _getMimeType(fileName);
+      if (response.statusCode == 200) {
+        final fileName = document.nomOriginal ?? document.nom;
+        final mimeType = _getMimeType(fileName);
           
           // Sauvegarder temporairement et ouvrir
           final tempDir = await getTemporaryDirectory();
@@ -615,23 +616,23 @@ class _FichiersScreenState extends State<FichiersScreen> {
           final uri = Uri.file(file.path);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else {
-            if (mounted) {
-              _scaffoldMessengerKey.currentState?.showSnackBar(
-                SnackBar(content: Text('Fichier téléchargé: ${file.path}')),
-              );
-            }
-          }
         } else {
           if (mounted) {
             _scaffoldMessengerKey.currentState?.showSnackBar(
-              const SnackBar(
-                content: Text('Erreur lors de l\'ouverture du document'),
-                backgroundColor: Colors.red,
-              ),
+                SnackBar(content: Text('Fichier téléchargé: ${file.path}')),
             );
           }
         }
+      } else {
+        if (mounted) {
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('Erreur lors de l\'ouverture du document'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
       } catch (e) {
         if (mounted) {
           _scaffoldMessengerKey.currentState?.showSnackBar(
@@ -1312,6 +1313,16 @@ class _FichiersScreenState extends State<FichiersScreen> {
         appBar: AppBar(
           title: Text(widget.dossier.nom),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.merge),
+              onPressed: () => Navigator.push(
+                context, 
+                MaterialPageRoute(
+                  builder: (context) => MergeFilesScreen(dossier: widget.dossier),
+                ),
+              ),
+              tooltip: 'Fusionner des fichiers',
+            ),
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: _ajouterDocument,

@@ -504,6 +504,6 @@ const restoreCasierFromVersion = async (versionContent, userId) => {
 };
 
 export default {
-  restoreBackup,
-  restoreVersion
-};
+    restoreBackup,
+    restoreVersion
+}; 

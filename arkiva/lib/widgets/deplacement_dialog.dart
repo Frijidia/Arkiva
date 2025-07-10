@@ -135,26 +135,26 @@ class _DeplacementDialogState extends State<DeplacementDialog> {
                     decoration: const InputDecoration(labelText: 'Armoire de destination'),
                   ),
             if (widget.typeElement == 'dossier' || widget.typeElement == 'fichier') ...[
-              const SizedBox(height: 16),
-              // Casiers
-              _loadingCasiers
-                  ? const CircularProgressIndicator()
-                  : DropdownButtonFormField<int>(
-                      value: _selectedCasierId,
-                      items: _casiers.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(
-                            value: c.casierId ?? c['cassier_id'],
-                            child: Text(c.nom ?? c['nom']),
-                          )).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCasierId = value;
-                          _selectedDossierId = null;
-                          _dossiers = [];
-                        });
+            const SizedBox(height: 16),
+            // Casiers
+            _loadingCasiers
+                ? const CircularProgressIndicator()
+                : DropdownButtonFormField<int>(
+                    value: _selectedCasierId,
+                    items: _casiers.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(
+                          value: c.casierId ?? c['cassier_id'],
+                          child: Text(c.nom ?? c['nom']),
+                        )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCasierId = value;
+                        _selectedDossierId = null;
+                        _dossiers = [];
+                      });
                         if (value != null && widget.typeElement == 'fichier') _loadDossiers(value);
-                      },
-                      decoration: const InputDecoration(labelText: 'Casier de destination'),
-                    ),
+                    },
+                    decoration: const InputDecoration(labelText: 'Casier de destination'),
+                  ),
             ],
             if (widget.typeElement == 'fichier') ...[
               const SizedBox(height: 16),

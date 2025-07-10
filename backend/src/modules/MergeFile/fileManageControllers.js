@@ -27,9 +27,22 @@ export const mergePdfs = async (req, res) => {
 
       const ext = originalFileName.toLowerCase();
 
+      // Ajout de logs et vérification du buffer
+      console.log('Nom:', originalFileName, 'Taille buffer déchiffré:', decryptedBuffer?.length);
+      if (!decryptedBuffer || decryptedBuffer.length < 100) {
+        console.warn(`Fichier ${originalFileName} vide ou trop petit, ignoré.`);
+        continue;
+      }
+
       try {
         if (ext.endsWith('.pdf')) {
-          const pdf = await PDFDocument.load(decryptedBuffer);
+          let pdf;
+          try {
+            pdf = await PDFDocument.load(decryptedBuffer);
+          } catch (e) {
+            console.warn(`Impossible de charger le PDF ${originalFileName}:`, e);
+            continue;
+          }
           const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
 
           for (const copiedPage of copiedPages) {
