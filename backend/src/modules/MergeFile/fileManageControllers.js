@@ -4,8 +4,8 @@ import { PDFDocument } from 'pdf-lib';
 // import { s3, bucket } from '../config/s3.js'; // s3 client configuré
 import downloadFileBufferFromS3 from '../fichiers/fichierControllers.js'; // utilitaire pour convertir ReadableStream
 import encryptionService from '../encryption/encryptionService.js';
-import {extractSmartText} from '../ocr/ocrControllers.js'
-import {uploadFileBufferToS3} from '../upload/uploadControllers.js'
+import { extractSmartText } from '../ocr/ocrControllers.js'
+import { uploadFileBufferToS3 } from '../upload/uploadControllers.js'
 import pool from '../../config/database.js';
 import fs from 'fs';
 
@@ -49,16 +49,7 @@ export const mergePdfs = async (req, res) => {
           const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
 
           for (const copiedPage of copiedPages) {
-            const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-            const { width: origWidth, height: origHeight } = copiedPage.getSize();
-            const scale = Math.min(A4_WIDTH / origWidth, A4_HEIGHT / origHeight);
-
-            page.drawPage(copiedPage, {
-              x: (A4_WIDTH - origWidth * scale) / 2,
-              y: (A4_HEIGHT - origHeight * scale) / 2,
-              xScale: scale,
-              yScale: scale,
-            });
+            mergedPdf.addPage(copiedPage);
           }
 
         } else if (ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png')) {
@@ -113,7 +104,7 @@ export const mergePdfs = async (req, res) => {
     const base64Pdf = Buffer.from(finalPdfBytes).toString('base64');
 
     // Sauvegarde le PDF fusionné via ta fonction utilitaire
-    const savedFile = await saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf);
+    // const savedFile = await saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.send(Buffer.from(finalPdfBytes));
