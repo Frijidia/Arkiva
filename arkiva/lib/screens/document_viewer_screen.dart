@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 class DocumentViewerScreen extends StatefulWidget {
   final Document document;
@@ -19,6 +20,57 @@ class DocumentViewerScreen extends StatefulWidget {
 }
 
 class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
+  File? _localFile;
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb) {
+      _loadAndShowFile();
+    }
+  }
+
+  Future<void> _loadAndShowFile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final authStateService = context.read<AuthStateService>();
+      final token = authStateService.token;
+      final entrepriseId = authStateService.entrepriseId;
+      if (token == null || entrepriseId == null) {
+        throw Exception('Token ou ID entreprise manquant');
+      }
+      final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final fileName = widget.document.nomOriginal ?? widget.document.nom;
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/$fileName');
+        await file.writeAsBytes(response.bodyBytes);
+        setState(() {
+          _localFile = file;
+        });
+      } else {
+        throw Exception('Erreur lors du téléchargement du fichier');
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _ouvrirDocument() async {
     final authStateService = context.read<AuthStateService>();
     final token = authStateService.token;
@@ -292,81 +344,119 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.document.nom),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _telechargerDocument,
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: _partagerDocument,
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.insert_drive_file,
-              size: 64,
-              color: Theme.of(context).primaryColor,
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.document.nom),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: _telechargerDocument,
             ),
-            const SizedBox(height: 16),
-            Text(
-              widget.document.nom,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Type: ${widget.document.type}',
-              style: TextStyle(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Taille: ${_formatTaille(widget.document.taille)}',
-              style: TextStyle(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Ajouté le ${widget.document.dateAjout.toString().split(' ')[0]}',
-              style: TextStyle(
-                color: Colors.grey[600],
-              ),
-            ),
-            if (widget.document.description?.isNotEmpty ?? false) ...[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  widget.document.description!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _ouvrirPDFWeb,
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('Ouvrir le document'),
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: _partagerDocument,
             ),
           ],
         ),
-      ),
-    );
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.insert_drive_file,
+                size: 64,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                widget.document.nom,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Type: ${widget.document.type}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Taille: ${_formatTaille(widget.document.taille)}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Ajouté le ${widget.document.dateAjout.toString().split(' ')[0]}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+              if (widget.document.description?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    widget.document.description!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: _ouvrirPDFWeb,
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Ouvrir le document'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Aperçu natif sur mobile
+      if (_isLoading) {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (_error != null) {
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.document.nom)),
+          body: Center(child: Text('Erreur: $_error', style: TextStyle(color: Colors.red))),
+        );
+      }
+      if (_localFile == null) {
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.document.nom)),
+          body: const Center(child: Text('Aucun fichier à afficher.')),
+        );
+      }
+      final ext = (widget.document.nomOriginal ?? widget.document.nom).split('.').last.toLowerCase();
+      if (['pdf'].contains(ext)) {
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.document.nom)),
+          body: SfPdfViewer.file(_localFile!),
+        );
+      } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext)) {
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.document.nom)),
+          body: Center(child: Image.file(_localFile!)),
+        );
+      } else {
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.document.nom)),
+          body: Center(child: Text('Aperçu non supporté pour ce type de fichier.')),
+        );
+      }
+    }
   }
 
   String _formatTaille(int? octets) {
