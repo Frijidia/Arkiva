@@ -222,8 +222,6 @@ export const mergeSelectedPages = async (req, res) => {
   }
 };
 
-
-<<<<<<< HEAD
 export const getPdfPageCount = async (req, res) => {
   const { chemin, entreprise_id } = req.body;
 
@@ -248,6 +246,3 @@ export const getPdfPageCount = async (req, res) => {
     res.status(500).json({ error: 'Impossible de récupérer le nombre de pages' });
   }
 };
-=======
->>>>>>> 7fe3e99f06f3cd3c783d8224572770cff47c7a5d
-
