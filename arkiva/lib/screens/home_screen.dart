@@ -722,27 +722,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.camera_alt),
-            onPressed: () {
-              _navigateToScreen(context, const ScanScreen());
-            },
-            tooltip: 'Scanner un document',
-          ),
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            onPressed: () {
-              _navigateToScreen(context, const UploadScreen());
-            },
-            tooltip: 'Téléverser un fichier',
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              print('Notifications button pressed');
-            },
-            tooltip: 'Notifications',
-          ),
-          IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
               _navigateToScreen(context, const SettingsScreen());
