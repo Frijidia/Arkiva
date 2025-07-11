@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:arkiva/config/api_config.dart';
 
 class VersionService {
-  static const String baseUrl = ApiConfig.baseUrl;
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // Créer une nouvelle version
   static Future<Map<String, dynamic>> createVersion({

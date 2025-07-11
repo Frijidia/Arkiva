@@ -3,6 +3,7 @@ import 'package:arkiva/services/auth_state_service.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:arkiva/config/api_config.dart';
 
 class FichierViewScreen extends StatelessWidget {
   final Map<String, dynamic> doc;
@@ -19,7 +20,7 @@ class FichierViewScreen extends StatelessWidget {
     final cheminAffiche = [armoire, casier, dossier].where((e) => e != null && e.toString().isNotEmpty).join(' > ');
     final fichierId = doc['fichier_id'];
     final url = (fichierId != null && entrepriseId != null && token != null)
-        ? 'http://localhost:3000/api/fichier/$fichierId/$entrepriseId?token=$token'
+        ? '${ApiConfig.baseUrl}/api/fichier/$fichierId/$entrepriseId?token=$token'
         : '';
 
     return Scaffold(

@@ -5,6 +5,7 @@ import 'package:arkiva/services/admin_service.dart';
 import 'package:arkiva/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:arkiva/config/api_config.dart';
 import 'package:arkiva/screens/admin_dashboard_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -180,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         return;
       }
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/auth/2fa/enable'),
+        Uri.parse('${ApiConfig.baseUrl}/api/auth/2fa/enable'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -223,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         return;
       }
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/auth/2fa/verify'),
+        Uri.parse('${ApiConfig.baseUrl}/api/auth/2fa/verify'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

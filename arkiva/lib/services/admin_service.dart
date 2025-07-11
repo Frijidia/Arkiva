@@ -1,15 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:arkiva/config/api_config.dart';
 
 class AdminService {
-  static const String baseUrl = 'http://localhost:3000/api';
+  static String get baseUrl => '${ApiConfig.baseUrl}/api';
 
   // Récupérer les statistiques de l'entreprise
   Future<Map<String, dynamic>> getEntrepriseStats(int entrepriseId, String token) async {
     print('🔄 Récupération des statistiques de l\'entreprise...');
     
     final response = await http.get(
-      Uri.parse('http://localhost:3000/api/stats/entreprise/$entrepriseId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/stats/entreprise/$entrepriseId'),
       headers: {
         'Authorization': 'Bearer $token',
       },

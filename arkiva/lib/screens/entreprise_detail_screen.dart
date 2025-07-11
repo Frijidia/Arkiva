@@ -6,6 +6,8 @@ import 'package:arkiva/screens/edit_entreprise_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:feexpay_flutter/feexpay_flutter.dart';
+import 'package:arkiva/config/api_config.dart';
+import 'package:arkiva/screens/payment_screen.dart';
 
 class EntrepriseDetailScreen extends StatefulWidget {
   const EntrepriseDetailScreen({super.key});
@@ -64,7 +66,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
 
   Future<Map<String, dynamic>> _getCurrentSubscription(String token) async {
     final response = await http.get(
-      Uri.parse('http://localhost:3000/api/payments/current-subscription'),
+      Uri.parse('${ApiConfig.baseUrl}/api/payments/current-subscription'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -80,7 +82,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
 
   Future<List<dynamic>> _getAvailableSubscriptions(String token) async {
     final response = await http.get(
-      Uri.parse('http://localhost:3000/api/payments/subscriptions'),
+      Uri.parse('${ApiConfig.baseUrl}/api/payments/subscriptions'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -108,7 +110,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/payments/choose-subscription'),
+        Uri.parse('${ApiConfig.baseUrl}/api/payments/choose-subscription'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -124,7 +126,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
         final paymentId = data['paiement']['payment_id'];
         // Appel backend pour générer les infos FeexPay
         final processResponse = await http.post(
-          Uri.parse('http://localhost:3000/api/payments/process-payment'),
+          Uri.parse('${ApiConfig.baseUrl}/api/payments/process-payment'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',

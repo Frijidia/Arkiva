@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:feexpay_flutter/feexpay_flutter.dart';
+import 'package:arkiva/config/api_config.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String paymentId;
@@ -51,7 +52,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       // Récupérer les informations de paiement depuis le backend
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/payments/current-subscription'),
+        Uri.parse('${ApiConfig.baseUrl}/api/payments/current-subscription'),
         headers: {
           'Authorization': 'Bearer ${widget.authToken}',
           'Content-Type': 'application/json',
@@ -98,7 +99,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/payments/process-payment'),
+        Uri.parse('${ApiConfig.baseUrl}/api/payments/process-payment'),
         headers: {
           'Authorization': 'Bearer ${widget.authToken}',
           'Content-Type': 'application/json',

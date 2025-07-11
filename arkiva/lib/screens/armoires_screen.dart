@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../services/casier_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:arkiva/config/api_config.dart';
 
 class ArmoiresScreen extends StatefulWidget {
   final int entrepriseId;
@@ -43,7 +44,7 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
       final token = authState.token;
       if (token != null) {
         final response = await http.get(
-          Uri.parse('http://localhost:3000/api/payments/current-subscription'),
+          Uri.parse('${ApiConfig.baseUrl}/api/payments/current-subscription'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',

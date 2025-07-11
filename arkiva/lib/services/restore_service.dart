@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:arkiva/config/api_config.dart';
 
 class RestoreService {
-  static const String baseUrl = ApiConfig.baseUrl;
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // Restaurer une sauvegarde
   static Future<Map<String, dynamic>> restoreBackup({

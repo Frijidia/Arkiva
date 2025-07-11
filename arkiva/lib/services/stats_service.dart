@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:arkiva/config/api_config.dart';
 
 class StatsService {
-  static const String baseUrl = 'http://localhost:3000/api/stats';
+  static String get baseUrl => '${ApiConfig.baseUrl}/api/stats';
 
   Future<Map<String, dynamic>> getStatsGenerales(int entrepriseId, String token) async {
     print('[API] GET $baseUrl/entreprise/$entrepriseId');

@@ -5,6 +5,7 @@ import 'package:arkiva/services/auth_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:arkiva/config/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     setState(() { _isLoading = true; _errorMsg = null; });
     final response = await http.post(
-      Uri.parse('http://localhost:3000/api/auth/login'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': _emailController.text.trim(),
@@ -61,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() { _show2FA = true; });
         // Optionnel : renvoyer un code à chaque tentative de login
         await http.post(
-          Uri.parse('http://localhost:3000/api/auth/2fa/enable'),
+          Uri.parse('${ApiConfig.baseUrl}/api/auth/2fa/enable'),
           headers: {
             'Authorization': 'Bearer $_token',
             'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _verify2FA() async {
     setState(() { _isLoading = true; _errorMsg = null; });
     final response = await http.post(
-      Uri.parse('http://localhost:3000/api/auth/2fa/verify'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/2fa/verify'),
       headers: {
         'Authorization': 'Bearer $_token',
         'Content-Type': 'application/json',
