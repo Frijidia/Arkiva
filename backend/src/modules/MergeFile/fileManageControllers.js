@@ -7,6 +7,7 @@ import encryptionService from '../encryption/encryptionService.js';
 import {extractSmartText} from '../ocr/ocrControllers.js'
 import {uploadFileBufferToS3} from '../upload/uploadControllers.js'
 import pool from '../../config/database.js';
+import fs from 'fs';
 
 // import { PDFDocument } from 'pdf-lib';
 
@@ -27,8 +28,9 @@ export const mergePdfs = async (req, res) => {
 
       const ext = originalFileName.toLowerCase();
 
-      // Ajout de logs et vérification du buffer
+      // Log taille du buffer déchiffré
       console.log('Nom:', originalFileName, 'Taille buffer déchiffré:', decryptedBuffer?.length);
+
       if (!decryptedBuffer || decryptedBuffer.length < 100) {
         console.warn(`Fichier ${originalFileName} vide ou trop petit, ignoré.`);
         continue;
@@ -39,6 +41,7 @@ export const mergePdfs = async (req, res) => {
           let pdf;
           try {
             pdf = await PDFDocument.load(decryptedBuffer);
+            console.log('Nombre de pages dans', originalFileName, ':', pdf.getPageCount());
           } catch (e) {
             console.warn(`Impossible de charger le PDF ${originalFileName}:`, e);
             continue;
@@ -127,6 +130,14 @@ export const mergePdfs = async (req, res) => {
 export async function saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf) {
 
   const finalBuffer = Buffer.from(base64Pdf, 'base64');
+
+  // Écriture locale pour debug
+  try {
+    fs.writeFileSync('/tmp/test_fusion.pdf', finalBuffer);
+    console.log('PDF fusionné écrit dans /tmp/test_fusion.pdf');
+  } catch (e) {
+    console.error('Erreur lors de l\'écriture du PDF fusionné en local:', e);
+  }
 
   const contenu_ocr =  await extractSmartText(finalBuffer, fileName + 'pdf'); // ou null
   const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, fileName, entreprise_id);

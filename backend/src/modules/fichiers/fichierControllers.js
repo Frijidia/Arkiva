@@ -78,12 +78,12 @@ export const deleteFichier = async (req, res) => {
     }
 
     const filePath = fichier.chemin;
-    const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
+    const s3BaseUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`;
     const key = filePath.replace(s3BaseUrl, '');
 
     // Supprimer le fichier physique de S3
     await s3.send(new DeleteObjectCommand({
-      Bucket: 'arkiva-storage',
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: key,
     }));
 
@@ -301,6 +301,7 @@ export default async function downloadFileBufferFromS3(key) {
 // afficher le fichier
 
 export const displayFichier = async (req, res) => {
+  console.log('displayFichier params:', req.params);
   const { fichier_id, entreprise_id } = req.params;
 
   try {
@@ -309,8 +310,10 @@ export const displayFichier = async (req, res) => {
 
     const fichier = rows[0];
     const chemin = fichier.chemin;
-    const s3BaseUrl = 'https://arkiva-storage.s3.amazonaws.com/';
-    const key = chemin.replace(s3BaseUrl, '');
+    let key = chemin;
+    if (key.startsWith('http')) {
+      key = key.replace(/^https?:\/\/[^/]+\//, '');
+    }
 
     // Étape 1 : Télécharger le fichier chiffré depuis S3
     const encryptedBuffer = await downloadFileBufferFromS3(key);

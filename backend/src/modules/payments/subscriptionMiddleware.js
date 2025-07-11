@@ -116,7 +116,7 @@ export const checkDossierAccess = async (req, res, next) => {
 
     // Vérifier si le dossier appartient à l'entreprise
     const dossierResult = await pool.query(
-      `SELECT d.* FROM dosier d
+      `SELECT d.* FROM dossiers d
        JOIN armoires a ON d.armoire_id = a.armoire_id
        WHERE d.dossier_id = $1 AND a.entreprise_id = $2`,
       [dossierId, entrepriseId]
@@ -156,24 +156,29 @@ export const checkDossierAccess = async (req, res, next) => {
 
 // Middleware pour vérifier l'accès aux fichiers
 export const checkFichierAccess = async (req, res, next) => {
+  console.log('checkFichierAccess params:', req.params, req.body);
   try {
     const entrepriseId = req.user.entreprise_id;
-    const fichierId = req.params.fichierId || req.body.fichier_id;
+    const fichierId = req.params.fichier_id || req.body.fichier_id;
 
     if (!fichierId) {
+      console.error('ID du fichier manquant dans checkFichierAccess');
       return res.status(400).json({ error: "ID du fichier requis" });
     }
 
     // Vérifier si le fichier appartient à l'entreprise
     const fichierResult = await pool.query(
       `SELECT f.* FROM fichiers f
-       JOIN dosier d ON f.dossier_id = d.dossier_id
-       JOIN armoires a ON d.armoire_id = a.armoire_id
+       JOIN dossiers d ON f.dossier_id = d.dossier_id
+       JOIN casiers c ON d.cassier_id = c.cassier_id
+       JOIN armoires a ON c.armoire_id = a.armoire_id
        WHERE f.fichier_id = $1 AND a.entreprise_id = $2`,
       [fichierId, entrepriseId]
     );
 
-    if (fichierResult.rowCount === 0) {
+    const fichier = fichierResult.rows[0];
+    if (!fichier) {
+      console.error('Fichier undefined dans checkFichierAccess');
       return res.status(404).json({ error: "Fichier introuvable" });
     }
 

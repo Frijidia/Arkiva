@@ -10,6 +10,8 @@ const s3 = new S3Client({
   },
 });
 
+const s3BaseUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`;
+
 /**
  * Service de nettoyage automatique des sauvegardes et versions inutilisées
  * Supprime les éléments après 10 jours d'inactivité
@@ -48,9 +50,9 @@ class CleanupService {
         try {
           // Supprimer le fichier S3
           if (backup.chemin_s3) {
-            const key = backup.chemin_s3.replace('https://arkiva-storage.s3.amazonaws.com/', '');
+            const key = backup.chemin_s3.replace(s3BaseUrl, '');
             await s3.send(new DeleteObjectCommand({
-              Bucket: 'arkiva-storage',
+              Bucket: process.env.AWS_S3_BUCKET_NAME,
               Key: key,
             }));
             console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
@@ -126,9 +128,9 @@ class CleanupService {
         try {
           // Supprimer le fichier S3
           if (version.chemin_s3) {
-            const key = version.chemin_s3.replace('https://arkiva-storage.s3.amazonaws.com/', '');
+            const key = version.chemin_s3.replace(s3BaseUrl, '');
             await s3.send(new DeleteObjectCommand({
-              Bucket: 'arkiva-storage',
+              Bucket: process.env.AWS_S3_BUCKET_NAME,
               Key: key,
             }));
             console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
@@ -268,9 +270,9 @@ class CleanupService {
       
       // Supprimer le fichier S3
       if (backup.chemin_s3) {
-        const key = backup.chemin_s3.replace('https://arkiva-storage.s3.amazonaws.com/', '');
+        const key = backup.chemin_s3.replace(s3BaseUrl, '');
         await s3.send(new DeleteObjectCommand({
-          Bucket: 'arkiva-storage',
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
           Key: key,
         }));
         console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
@@ -318,9 +320,9 @@ class CleanupService {
       
       // Supprimer le fichier S3
       if (version.chemin_s3) {
-        const key = version.chemin_s3.replace('https://arkiva-storage.s3.amazonaws.com/', '');
+        const key = version.chemin_s3.replace(s3BaseUrl, '');
         await s3.send(new DeleteObjectCommand({
-          Bucket: 'arkiva-storage',
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
           Key: key,
         }));
         console.log(`[Cleanup] Fichier S3 supprimé: ${key}`);
