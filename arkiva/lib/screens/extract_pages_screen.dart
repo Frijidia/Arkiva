@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 // Import conditionnel pour le web
-import 'dart:html' as html;
+// import 'dart:html' as html;
 
 class ExtractPagesScreen extends StatefulWidget {
   final Dossier dossier;
@@ -160,13 +160,15 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
 
   Future<void> _saveExtractedFile(Uint8List pdfBytes) async {
     if (kIsWeb) {
-      // Pour le web, télécharger directement
-      final blob = html.Blob([pdfBytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', 'pages_extractes_${DateTime.now().millisecondsSinceEpoch}.pdf')
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      // Pour le web, afficher un message d'information
+      if (mounted) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Fonctionnalité de téléchargement non disponible sur le web'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } else {
       // Pour mobile, sauvegarder dans le dossier temporaire
       final tempDir = await getTemporaryDirectory();
