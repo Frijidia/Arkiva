@@ -31,9 +31,12 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
   
   List<Document> _availableDocuments = [];
   Map<String, List<int>> _selectedPages = {};
+  Map<String, int> _documentPageCounts = {}; // Stocke le nombre de pages par document
   bool _isLoading = false;
   bool _isLoadingDocuments = true;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  // Clé unique pour forcer le rebuild
+  Key _rebuildKey = UniqueKey();
 
   @override
   void initState() {
@@ -46,21 +49,50 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
     try {
       final authStateService = context.read<AuthStateService>();
       final token = authStateService.token;
+      final entrepriseId = authStateService.entrepriseId;
       
       if (token != null && widget.dossier.dossierId != null) {
         final documents = await _documentService.getDocuments(token, widget.dossier.dossierId);
+        final pdfDocuments = documents.where((doc) {
+          final type = doc.type.toLowerCase();
+          final nom = (doc.nomOriginal ?? doc.nom).toLowerCase();
+          return type.contains('pdf') || nom.endsWith('.pdf');
+        }).toList();
+        
         setState(() {
-          _availableDocuments = documents.where((doc) => 
-            doc.type.toLowerCase() == 'pdf'
-          ).toList();
+          _availableDocuments = pdfDocuments;
           _isLoadingDocuments = false;
         });
+        
+        // Récupérer le nombre de pages pour chaque PDF
+        await _loadPageCounts(token!, entrepriseId!);
       }
     } catch (e) {
       _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Erreur lors du chargement des documents: ${e.toString()}')),
       );
       setState(() => _isLoadingDocuments = false);
+    }
+  }
+
+  Future<void> _loadPageCounts(String token, int entrepriseId) async {
+    for (final document in _availableDocuments) {
+      try {
+        final pageCount = await _fileService.getPdfPageCount(
+          token: token,
+          chemin: document.chemin,
+          entrepriseId: entrepriseId,
+        );
+        setState(() {
+          _documentPageCounts[document.chemin] = pageCount;
+        });
+      } catch (e) {
+        print('Erreur récupération pages pour ${document.nom}: $e');
+        // En cas d'erreur, utiliser 10 pages par défaut
+        setState(() {
+          _documentPageCounts[document.chemin] = 10;
+        });
+      }
     }
   }
 
@@ -178,9 +210,19 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
   }
 
   void _clearSelection(String documentPath) {
+    print('DEBUG: Effacement de la sélection pour $documentPath');
+    print('DEBUG: Sélection avant: $_selectedPages');
+    
     setState(() {
-      _selectedPages.remove(documentPath);
+      // Créer une nouvelle map pour forcer le rebuild
+      final newMap = Map<String, List<int>>.from(_selectedPages);
+      newMap.remove(documentPath);
+      _selectedPages = newMap;
+      // Forcer un rebuild complet
+      _rebuildKey = UniqueKey();
     });
+    
+    print('DEBUG: Sélection après: $_selectedPages');
   }
 
   @override
@@ -227,11 +269,12 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
                 ),
               )
             : ListView.builder(
+                key: _rebuildKey,
                 padding: const EdgeInsets.all(16),
                 itemCount: _availableDocuments.length,
                 itemBuilder: (context, index) {
                   final document = _availableDocuments[index];
-                  final selectedPages = _selectedPages[document.chemin] ?? [];
+                  final selectedPages = List<int>.from(_selectedPages[document.chemin] ?? []);
                   
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -269,13 +312,13 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Sélectionner des pages (PDF simulé avec 10 pages)',
+                                    'Sélectionner des pages (${_documentPageCounts[document.chemin] ?? 10} pages)',
                                     style: Theme.of(context).textTheme.titleSmall,
                                   ),
                                   Row(
                                     children: [
                                       TextButton(
-                                        onPressed: () => _selectAllPages(document.chemin, 10),
+                                        onPressed: () => _selectAllPages(document.chemin, _documentPageCounts[document.chemin] ?? 10),
                                         child: const Text('Tout sélectionner'),
                                       ),
                                       TextButton(
@@ -290,35 +333,38 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: List.generate(10, (index) {
-                                  final pageNumber = index + 1;
-                                  final isSelected = selectedPages.contains(pageNumber);
-                                  
-                                  return InkWell(
-                                    onTap: () => _togglePageSelection(document.chemin, pageNumber),
-                                    child: Container(
-                                      width: 50,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? Colors.blue : Colors.grey[200],
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isSelected ? Colors.blue : Colors.grey[300]!,
-                                          width: 2,
+                                children: List.generate(
+                                  _documentPageCounts[document.chemin] ?? 10,
+                                  (index) {
+                                    final pageNumber = index + 1;
+                                    final isSelected = selectedPages.contains(pageNumber);
+                                    
+                                    return InkWell(
+                                      onTap: () => _togglePageSelection(document.chemin, pageNumber),
+                                      child: Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? Colors.blue : Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: isSelected ? Colors.blue : Colors.grey[300]!,
+                                            width: 2,
+                                          ),
                                         ),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '$pageNumber',
-                                          style: TextStyle(
-                                            color: isSelected ? Colors.white : Colors.grey[700],
-                                            fontWeight: FontWeight.bold,
+                                        child: Center(
+                                          child: Text(
+                                            '$pageNumber',
+                                            style: TextStyle(
+                                              color: isSelected ? Colors.white : Colors.grey[700],
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                }),
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                           ),

@@ -130,12 +130,9 @@ class _MergeFilesScreenState extends State<MergeFilesScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        
-        // Recharger les documents
-        await _loadDocuments();
-        setState(() {
-          _selectedDocuments.clear();
-        });
+        // Fermer l'écran de fusion et signaler le succès
+        Navigator.pop(context, true);
+        return;
       }
 
     } catch (e) {

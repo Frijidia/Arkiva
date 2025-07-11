@@ -48,9 +48,7 @@ class Document {
   }
 
   factory Document.fromJson(Map<String, dynamic> json) {
-    print('Document JSON reçu: $json'); // DEBUG
     final contenuOcr = json['contenu_ocr'] as String? ?? json['contenuOcr'] as String?;
-    print('DEBUG: contenuOcr = "$contenuOcr"'); // DEBUG
     return Document(
       id: json['fichier_id'].toString(),
       nom: json['nom'] as String,

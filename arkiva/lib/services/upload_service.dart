@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:arkiva/config/api_config.dart';
 import 'package:file_picker/file_picker.dart';
@@ -42,7 +44,6 @@ class UploadService {
 
     try {
       final response = await request.send();
-
       if (response.statusCode == 200) {
         print('Upload successful');
       } else {
@@ -52,6 +53,68 @@ class UploadService {
       }
     } catch (e) {
       throw Exception('Erreur lors du téléversement du fichier: $e');
+    }
+  }
+
+  Future<void> uploadScannedDocuments({
+    required String token,
+    required List<File> files,
+    required int dossierId,
+    required int entrepriseId,
+  }) async {
+    try {
+      print('[API] POST ${ApiConfig.baseUrl}/api/upload');
+      print('[API] Upload de ${files.length} documents scannés');
+
+      // Créer la requête multipart
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.baseUrl}/api/upload'),
+      );
+
+      // Ajouter les headers
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Ajouter les champs
+      request.fields['dossier_id'] = dossierId.toString();
+      request.fields['entreprise_id'] = entrepriseId.toString();
+
+      // Ajouter les fichiers
+      for (int i = 0; i < files.length; i++) {
+        final file = files[i];
+        final fileName = 'scanned_document_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        
+        final stream = http.ByteStream(file.openRead());
+        final length = await file.length();
+        
+        final multipartFile = http.MultipartFile(
+          'files',
+          stream,
+          length,
+          filename: fileName,
+        );
+        
+        request.files.add(multipartFile);
+      }
+
+      print('[API] Envoi de la requête...');
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print('[API] Status: ${response.statusCode}');
+      print('[API] Response: $responseBody');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(responseBody);
+        print('[API] Upload réussi: ${data['fichiers']?.length ?? 0} fichiers uploadés');
+      } else {
+        final errorData = jsonDecode(responseBody);
+        final errorMessage = errorData['error'] ?? 'Erreur lors de l\'upload';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('[API] Erreur uploadScannedDocuments: $e');
+      rethrow;
     }
   }
 } 

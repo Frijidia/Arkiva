@@ -20,6 +20,7 @@ import 'package:arkiva/screens/merge_files_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:arkiva/screens/scan_document_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:arkiva/services/backup_service.dart';
 import 'package:arkiva/services/version_service.dart';
@@ -1315,12 +1316,17 @@ class _FichiersScreenState extends State<FichiersScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.merge),
-              onPressed: () => Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (context) => MergeFilesScreen(dossier: widget.dossier),
-                ),
-              ),
+              onPressed: () async {
+                final fusionEffectuee = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MergeFilesScreen(dossier: widget.dossier),
+                  ),
+                );
+                if (fusionEffectuee == true) {
+                  await _loadDocuments();
+                }
+              },
               tooltip: 'Fusionner des fichiers',
             ),
             IconButton(
@@ -1332,6 +1338,22 @@ class _FichiersScreenState extends State<FichiersScreen> {
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TagsScreen())),
               tooltip: 'Tags',
             ),
+            if (!kIsWeb)
+              IconButton(
+                icon: const Icon(Icons.camera_alt),
+                onPressed: () async {
+                  final scanEffectue = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScanDocumentScreen(dossier: widget.dossier),
+                    ),
+                  );
+                  if (scanEffectue == true) {
+                    await _loadDocuments();
+                  }
+                },
+                tooltip: 'Scanner un document',
+              ),
           ],
         ),
         body: Column(
@@ -1424,7 +1446,6 @@ class _FichiersScreenState extends State<FichiersScreen> {
                           final document = _filteredDocuments[index];
                           // Debug: afficher les informations du document
                           print('DEBUG: Affichage document ${index + 1}/${_filteredDocuments.length}: ${document.nom}');
-                          print('DEBUG: contenuOcr = "${document.contenuOcr}"');
                           
                           return Card(
                             child: ListTile(
@@ -1435,23 +1456,24 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                 children: [
                                   if (document.description != null && document.description!.isNotEmpty)
                                     Text(document.description!),
-                                  if (document.contenuOcr != null && document.contenuOcr!.isNotEmpty)
-                                    Container(
-                                      margin: const EdgeInsets.only(top: 4.0),
-                                      padding: const EdgeInsets.all(8.0),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4.0),
-                                      ),
-                                      child: Text(
-                                        'OCR: ${document.contenuOcr!.length > 100 ? '${document.contenuOcr!.substring(0, 100)}...' : document.contenuOcr!}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    ),
+                                  // Suppression de l'affichage OCR
+                                  // if (document.contenuOcr != null && document.contenuOcr!.isNotEmpty)
+                                  //   Container(
+                                  //     margin: const EdgeInsets.only(top: 4.0),
+                                  //     padding: const EdgeInsets.all(8.0),
+                                  //     decoration: BoxDecoration(
+                                  //       color: Colors.blue.withOpacity(0.1),
+                                  //       borderRadius: BorderRadius.circular(4.0),
+                                  //     ),
+                                  //     child: Text(
+                                  //       'OCR: ${document.contenuOcr!.length > 100 ? '${document.contenuOcr!.substring(0, 100)}...' : document.contenuOcr!}',
+                                  //       style: const TextStyle(
+                                  //         fontSize: 12,
+                                  //         fontStyle: FontStyle.italic,
+                                  //         color: Colors.blue,
+                                  //       ),
+                                  //     ),
+                                  //   ),
                                   if (document.tags.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0),

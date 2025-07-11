@@ -50,9 +50,13 @@ class FileService {
     required int entrepriseId,
   }) async {
     try {
-      print('[API] POST ${ApiConfig.baseUrl}/api/fileManager/extracfile');
+      print('[API] POST \\${ApiConfig.baseUrl}/api/fileManager/extracfile');
+      print('[API] Payload envoyé :');
+      print(jsonEncode({
+        'fichiers': fichiers,
+        'entreprise_id': entrepriseId,
+      }));
       print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
-      print('[API] Body: {fichiers: $fichiers, entreprise_id: $entrepriseId}');
       
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/api/fileManager/extracfile'),
@@ -75,6 +79,45 @@ class FileService {
       }
     } catch (e) {
       throw Exception('Erreur lors de l\'extraction des pages: $e');
+    }
+  }
+
+  Future<int> getPdfPageCount({
+    required String token,
+    required String chemin,
+    required int entrepriseId,
+  }) async {
+    try {
+      print('[API] POST ${ApiConfig.baseUrl}/api/fileManager/getpagecount');
+      print('[API] Payload envoyé :');
+      print(jsonEncode({
+        'chemin': chemin,
+        'entreprise_id': entrepriseId,
+      }));
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/fileManager/getpagecount'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'chemin': chemin,
+          'entreprise_id': entrepriseId,
+        }),
+      );
+
+      print('[API] Headers: ${response.headers}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['pageCount'] as int;
+      } else {
+        throw Exception('Erreur ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('[API] Erreur getPdfPageCount: $e');
+      rethrow;
     }
   }
 }
