@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:arkiva/screens/extract_pages_screen.dart';
+import 'package:open_filex/open_filex.dart';
 
 // Import conditionnel pour le web
 // import 'dart:html' as html;
@@ -165,7 +166,7 @@ class _MergeFilesScreenState extends State<MergeFilesScreen> {
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/${_fileNameController.text.trim()}.pdf');
       await file.writeAsBytes(pdfBytes);
-      
+      await OpenFilex.open(file.path);
       if (mounted) {
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(
