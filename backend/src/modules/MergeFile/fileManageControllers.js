@@ -104,7 +104,7 @@ export const mergePdfs = async (req, res) => {
     const base64Pdf = Buffer.from(finalPdfBytes).toString('base64');
 
     // Sauvegarde le PDF fusionné via ta fonction utilitaire
-    // const savedFile = await saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf);
+    const savedFile = await saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.send(Buffer.from(finalPdfBytes));
@@ -192,6 +192,32 @@ export const mergeSelectedPages = async (req, res) => {
   } catch (error) {
     console.error('Erreur fusion avec sélection de pages :', error);
     res.status(500).json({ error: 'Fusion échouée lors de l\'extraction des pages' });
+  }
+};
+
+
+export const getPdfPageCount = async (req, res) => {
+  const { chemin, entreprise_id } = req.body;
+
+  if (!chemin || !entreprise_id) {
+    return res.status(400).json({ error: 'Paramètres invalides. Assurez-vous d\'envoyer chemin et entreprise_id.' });
+  }
+
+  try {
+    const s3BaseUrl = 'https://arkivabucket.s3.amazonaws.com/';
+    const key = chemin.replace(s3BaseUrl, '');
+
+    // Télécharger et déchiffrer
+    const encryptedBuffer = await downloadFileBufferFromS3(key);
+    const { content: decryptedBuffer } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
+
+    const pdf = await PDFDocument.load(decryptedBuffer);
+    const totalPages = pdf.getPageCount();
+
+    res.json({ pageCount: totalPages });
+  } catch (error) {
+    console.error('Erreur récupération nombre de pages :', error);
+    res.status(500).json({ error: 'Impossible de récupérer le nombre de pages' });
   }
 };
 
