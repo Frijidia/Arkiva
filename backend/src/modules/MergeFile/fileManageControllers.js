@@ -120,6 +120,10 @@ export const mergePdfs = async (req, res) => {
 
 export async function saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf) {
 
+   if (!fileName || !dossier_id) {
+    throw new Error('fileName et dossier_id sont requis pour sauvegarder le fichier');
+  }
+  
   const finalBuffer = Buffer.from(base64Pdf, 'base64');
 
   // Écriture locale pour debug
@@ -153,49 +157,73 @@ export async function saveMergedPdfFile(entreprise_id, dossier_id, fileName, bas
 };
 
 
+
+
 export const mergeSelectedPages = async (req, res) => {
-  const { fichiers, entreprise_id } = req.body;
+  const { fichiers, entreprise_id, dossier_id, fileName } = req.body;
 
   if (!fichiers || !Array.isArray(fichiers) || fichiers.length === 0 || !entreprise_id) {
-    return res.status(400).json({ error: 'Paramètres invalides. Assurez-vous d\'envoyer fichiers[] et entreprise_id.' });
+    return res.status(400).json({ error: "Paramètres invalides. Assurez-vous d'envoyer fichiers[], entreprise_id." });
   }
 
   try {
     const mergedPdf = await PDFDocument.create();
+    const fichiersIgnores = [];
 
-    for (let fichier of fichiers) {
+    for (const fichier of fichiers) {
       const { chemin, pages } = fichier;
-
       const s3BaseUrl = 'https://arkivabucket.s3.amazonaws.com/';
       const key = chemin.replace(s3BaseUrl, '');
 
-      // Télécharger et déchiffrer
-      const encryptedBuffer = await downloadFileBufferFromS3(key);
-      const { content: decryptedBuffer } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
+      try {
+        const encryptedBuffer = await downloadFileBufferFromS3(key);
+        const { content: decryptedBuffer, originalFileName } = await encryptionService.decryptFile(encryptedBuffer, entreprise_id);
 
-      const pdf = await PDFDocument.load(decryptedBuffer);
-      const totalPages = pdf.getPageCount();
+        const ext = originalFileName.toLowerCase();
+        if (!ext.endsWith('.pdf')) {
+          fichiersIgnores.push(originalFileName);
+          continue;
+        }
 
-      // Pages valides (dans pdf-lib, les indices commencent à 0)
-      const selectedIndices = (pages || [])
-        .map(p => p - 1)
-        .filter(i => i >= 0 && i < totalPages);
+        const pdf = await PDFDocument.load(decryptedBuffer);
+        const totalPages = pdf.getPageCount();
 
-      const copiedPages = await mergedPdf.copyPages(pdf, selectedIndices);
-      copiedPages.forEach(page => mergedPdf.addPage(page));
+        const selectedIndices = (pages || [])
+          .map(p => p - 1)
+          .filter(i => i >= 0 && i < totalPages);
+
+        const copiedPages = await mergedPdf.copyPages(pdf, selectedIndices);
+        copiedPages.forEach(page => mergedPdf.addPage(page));
+      } catch (err) {
+        console.warn(`Erreur avec le fichier ${chemin}:`, err.message);
+        fichiersIgnores.push(chemin);
+        continue;
+      }
     }
 
     const finalPdfBytes = await mergedPdf.save();
+    const base64Pdf = Buffer.from(finalPdfBytes).toString('base64');
+
+    // sauvegarder le PDF fusionné, vérifier que dossier_id et fileName sont présents
+      const savedFile = await  saveMergedPdfFile(entreprise_id, dossier_id, fileName, base64Pdf);
+
+    const message = fichiersIgnores.length > 0
+      ? `Fusion terminée. Les fichiers suivants ont été ignorés : ${fichiersIgnores.join(', ')}`
+      : 'Fusion terminée avec succès.';
 
     res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="fusion.pdf"');
+    res.setHeader('X-Message', message); // Optionnel : pour message dans le header
+
     res.send(Buffer.from(finalPdfBytes));
   } catch (error) {
-    console.error('Erreur fusion avec sélection de pages :', error);
-    res.status(500).json({ error: 'Fusion échouée lors de l\'extraction des pages' });
+    console.error('Erreur fusion avec sélection de pages :', error.message);
+    res.status(500).json({ error: "Fusion échouée lors de l'extraction des pages." });
   }
 };
 
 
+<<<<<<< HEAD
 export const getPdfPageCount = async (req, res) => {
   const { chemin, entreprise_id } = req.body;
 
@@ -220,4 +248,6 @@ export const getPdfPageCount = async (req, res) => {
     res.status(500).json({ error: 'Impossible de récupérer le nombre de pages' });
   }
 };
+=======
+>>>>>>> 7fe3e99f06f3cd3c783d8224572770cff47c7a5d
 
