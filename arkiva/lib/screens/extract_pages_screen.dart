@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:open_filex/open_filex.dart';
 
 // Import conditionnel pour le web
 // import 'dart:html' as html;
@@ -174,7 +175,7 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/pages_extractes_${DateTime.now().millisecondsSinceEpoch}.pdf');
       await file.writeAsBytes(pdfBytes);
-      
+      await OpenFilex.open(file.path);
       if (mounted) {
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(

@@ -4,6 +4,7 @@ import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/services/upload_service.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -133,6 +134,26 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
                                       ),
                                     ),
                                   ),
+                                  // Bouton crop
+                                  Positioned(
+                                    bottom: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _cropImage(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.blue,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.crop,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             );
@@ -222,6 +243,35 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
     setState(() {
       _scannedImages.removeAt(index);
     });
+  }
+
+  // Fonction de crop
+  Future<void> _cropImage(int index) async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: _scannedImages[index].path,
+      aspectRatioPresets: [
+        CropAspectRatioPreset.a4,
+        CropAspectRatioPreset.original,
+        CropAspectRatioPreset.square,
+      ],
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Recadrer',
+          toolbarColor: Theme.of(context).primaryColor,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.a4,
+          lockAspectRatio: false,
+        ),
+        IOSUiSettings(
+          title: 'Recadrer',
+        ),
+      ],
+    );
+    if (croppedFile != null) {
+      setState(() {
+        _scannedImages[index] = File(croppedFile.path);
+      });
+    }
   }
 
   Future<void> _uploadScannedDocuments() async {
