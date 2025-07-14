@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:open_filex/open_filex.dart';
 
 class DocumentViewerScreen extends StatefulWidget {
   final Document document;
@@ -87,10 +88,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       return;
     }
     
-    final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
-    
     if (kIsWeb) {
       // Pour le web, on utilise url_launcher
+      final url = '${ApiConfig.baseUrl}/api/fichier/${widget.document.id}/$entrepriseId?token=$token';
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -105,8 +105,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         }
       }
     } else {
-      // Pour mobile, on télécharge et ouvre avec l'application par défaut
+      // Pour mobile, on télécharge et ouvre avec open_filex
       try {
+        final url = '${ApiConfig.baseUrl}/api/fichier/${widget.document.id}/$entrepriseId?token=$token';
         final response = await http.get(
           Uri.parse(url),
           headers: {'Authorization': 'Bearer $token'},
@@ -114,28 +115,29 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         
         if (response.statusCode == 200) {
           final fileName = widget.document.nomOriginal ?? widget.document.nom;
-          final mimeType = _getMimeType(fileName);
           
           // Sauvegarder temporairement et ouvrir
           final tempDir = await getTemporaryDirectory();
           final file = File('${tempDir.path}/$fileName');
           await file.writeAsBytes(response.bodyBytes);
           
-          final uri = Uri.file(file.path);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else {
+          // Ouvrir avec open_filex
+          final result = await OpenFilex.open(file.path);
+          if (result.type != ResultType.done) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Fichier téléchargé: ${file.path}')),
+                SnackBar(
+                  content: Text('Erreur lors de l\'ouverture: ${result.message}'),
+                  backgroundColor: Colors.orange,
+                ),
               );
             }
           }
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Erreur lors de l\'ouverture du document'),
+              SnackBar(
+                content: Text('Erreur lors du téléchargement: ${response.statusCode}'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -144,7 +146,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${e.toString()}')),
+            SnackBar(
+              content: Text('Erreur: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -268,7 +273,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         }
       }
     } else {
-      // Pour mobile, on télécharge et ouvre
+      // Pour mobile, on télécharge et ouvre avec open_filex
       try {
         final response = await http.get(
           Uri.parse(url),
@@ -283,21 +288,23 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           final file = File('${tempDir.path}/$fileName');
           await file.writeAsBytes(response.bodyBytes);
           
-          final uri = Uri.file(file.path);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else {
+          // Ouvrir avec open_filex
+          final result = await OpenFilex.open(file.path);
+          if (result.type != ResultType.done) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('PDF téléchargé: ${file.path}')),
+                SnackBar(
+                  content: Text('Erreur lors de l\'ouverture: ${result.message}'),
+                  backgroundColor: Colors.orange,
+                ),
               );
             }
           }
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Erreur lors de l\'ouverture du PDF'),
+              SnackBar(
+                content: Text('Erreur lors du téléchargement: ${response.statusCode}'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -306,7 +313,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${e.toString()}')),
+            SnackBar(
+              content: Text('Erreur: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -345,81 +355,81 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.document.nom),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: _telechargerDocument,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.document.nom),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: _telechargerDocument,
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _partagerDocument,
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.insert_drive_file,
+              size: 64,
+              color: Theme.of(context).primaryColor,
             ),
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: _partagerDocument,
+            const SizedBox(height: 16),
+            Text(
+              widget.document.nom,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Type: ${widget.document.type}',
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Taille: ${_formatTaille(widget.document.taille)}',
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Ajouté le ${widget.document.dateAjout.toString().split(' ')[0]}',
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+            ),
+            if (widget.document.description?.isNotEmpty ?? false) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  widget.document.description!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: _ouvrirPDFWeb,
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Ouvrir le document'),
             ),
           ],
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.insert_drive_file,
-                size: 64,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.document.nom,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Type: ${widget.document.type}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Taille: ${_formatTaille(widget.document.taille)}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Ajouté le ${widget.document.dateAjout.toString().split(' ')[0]}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
-              if (widget.document.description?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    widget.document.description!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: _ouvrirPDFWeb,
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('Ouvrir le document'),
-              ),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
     } else {
       // Aperçu natif sur mobile
       if (_isLoading) {

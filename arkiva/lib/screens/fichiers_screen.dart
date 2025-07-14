@@ -24,6 +24,8 @@ import 'package:arkiva/screens/scan_document_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:arkiva/services/backup_service.dart';
 import 'package:arkiva/services/version_service.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:flutter/services.dart';
 
 class FichiersScreen extends StatefulWidget {
   final Dossier dossier;
@@ -580,10 +582,10 @@ class _FichiersScreenState extends State<FichiersScreen> {
       }
       return;
     }
-    final url = '${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token';
     
     if (kIsWeb) {
       // Pour le web, on utilise url_launcher
+      final url = '${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token';
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -598,46 +600,51 @@ class _FichiersScreenState extends State<FichiersScreen> {
         }
       }
     } else {
-      // Pour mobile, on télécharge et ouvre avec l'application par défaut
+      // Pour mobile, on télécharge et ouvre avec open_filex
       try {
+        final url = '${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token';
         final response = await http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
+          Uri.parse(url),
+          headers: {'Authorization': 'Bearer $token'},
         );
         
-      if (response.statusCode == 200) {
-        final fileName = document.nomOriginal ?? document.nom;
-        final mimeType = _getMimeType(fileName);
+        if (response.statusCode == 200) {
+          final fileName = document.nomOriginal ?? document.nom;
           
           // Sauvegarder temporairement et ouvrir
           final tempDir = await getTemporaryDirectory();
           final file = File('${tempDir.path}/$fileName');
           await file.writeAsBytes(response.bodyBytes);
           
-          final uri = Uri.file(file.path);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          // Ouvrir avec open_filex
+          final result = await OpenFilex.open(file.path);
+          if (result.type != ResultType.done) {
+            if (mounted) {
+              _scaffoldMessengerKey.currentState?.showSnackBar(
+                SnackBar(
+                  content: Text('Erreur lors de l\'ouverture: ${result.message}'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
         } else {
           if (mounted) {
             _scaffoldMessengerKey.currentState?.showSnackBar(
-                SnackBar(content: Text('Fichier téléchargé: ${file.path}')),
+              SnackBar(
+                content: Text('Erreur lors du téléchargement: ${response.statusCode}'),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         }
-      } else {
-        if (mounted) {
-          _scaffoldMessengerKey.currentState?.showSnackBar(
-            const SnackBar(
-              content: Text('Erreur lors de l\'ouverture du document'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
       } catch (e) {
         if (mounted) {
           _scaffoldMessengerKey.currentState?.showSnackBar(
-            SnackBar(content: Text('Erreur: ${e.toString()}')),
+            SnackBar(
+              content: Text('Erreur: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -1318,10 +1325,10 @@ class _FichiersScreenState extends State<FichiersScreen> {
               icon: const Icon(Icons.merge),
               onPressed: () async {
                 final fusionEffectuee = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MergeFilesScreen(dossier: widget.dossier),
-                  ),
+                context, 
+                MaterialPageRoute(
+                  builder: (context) => MergeFilesScreen(dossier: widget.dossier),
+                ),
                 );
                 if (fusionEffectuee == true) {
                   await _loadDocuments();
@@ -1353,7 +1360,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                   }
                 },
                 tooltip: 'Scanner un document',
-              ),
+            ),
           ],
         ),
         body: Column(

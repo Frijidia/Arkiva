@@ -27,21 +27,23 @@ class _RechercheScreenState extends State<RechercheScreen> {
     setState(() => _isLoading = true);
     final authState = context.read<AuthStateService>();
     final token = authState.token;
-    if (token == null) return;
+    final entrepriseId = authState.entrepriseId;
+    if (token == null || entrepriseId == null) return;
     try {
       List<dynamic> results = [];
       if (_selectedTag != null && _selectedTag!.isNotEmpty) {
         // Recherche par tag
-        results = await _searchService.getFilesByTag(token, int.parse(_selectedTag!));
+        results = await _searchService.getFilesByTag(token, int.parse(_selectedTag!), entrepriseId);
       } else if (_selectedDateRange != null) {
         // Recherche par date
         final debut = _selectedDateRange!.start.toIso8601String().substring(0, 10);
         final fin = _selectedDateRange!.end.toIso8601String().substring(0, 10);
-        results = await _searchService.searchByDate(token, debut, fin);
+        results = await _searchService.searchByDate(token, debut, fin, entrepriseId);
       } else if (_selectedArmoire != null || _selectedCasier != null || _selectedDossier != null || _searchController.text.isNotEmpty) {
         // Recherche flexible
         results = await _searchService.searchFlexible(
           token,
+          entrepriseId,
           armoire: _selectedArmoire,
           casier: _selectedCasier,
           dossier: _selectedDossier,
@@ -49,7 +51,7 @@ class _RechercheScreenState extends State<RechercheScreen> {
         );
       } else if (_searchController.text.isNotEmpty) {
         // Recherche OCR/nom
-        results = await _searchService.searchByOcr(token, _searchController.text);
+        results = await _searchService.searchByOcr(token, _searchController.text, entrepriseId);
       }
       setState(() {
         _results = results;

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EncryptionService {
   static const String _keyPrefs = 'encryption_key';
@@ -41,12 +41,13 @@ class EncryptionService {
 
   Future<Uint8List> encryptFile(Uint8List fileBytes) async {
     final encrypted = _encrypter.encryptBytes(fileBytes, iv: _iv);
-    return encrypted.bytes;
+    return Uint8List.fromList(encrypted.bytes);
   }
 
   Future<Uint8List> decryptFile(Uint8List encryptedBytes) async {
     final encrypted = encrypt.Encrypted(encryptedBytes);
-    return _encrypter.decryptBytes(encrypted, iv: _iv);
+    final decrypted = _encrypter.decryptBytes(encrypted, iv: _iv);
+    return Uint8List.fromList(decrypted);
   }
 
   String hashFile(Uint8List fileBytes) {

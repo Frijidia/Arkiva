@@ -249,7 +249,6 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
   Future<void> _cropImage(int index) async {
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: _scannedImages[index].path,
-      // Pour forcer un ratio 4:3, décommente la ligne suivante :
       // aspectRatio: const CropAspectRatio(ratioX: 4, ratioY: 3),
       uiSettings: [
         AndroidUiSettings(

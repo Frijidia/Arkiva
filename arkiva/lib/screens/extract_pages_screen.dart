@@ -339,33 +339,33 @@ class _ExtractPagesScreenState extends State<ExtractPagesScreen> {
                                 children: List.generate(
                                   _documentPageCounts[document.chemin] ?? 10,
                                   (index) {
-                                    final pageNumber = index + 1;
-                                    final isSelected = selectedPages.contains(pageNumber);
-                                    
-                                    return InkWell(
-                                      onTap: () => _togglePageSelection(document.chemin, pageNumber),
-                                      child: Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? Colors.blue : Colors.grey[200],
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: isSelected ? Colors.blue : Colors.grey[300]!,
-                                            width: 2,
-                                          ),
+                                  final pageNumber = index + 1;
+                                  final isSelected = selectedPages.contains(pageNumber);
+                                  
+                                  return InkWell(
+                                    onTap: () => _togglePageSelection(document.chemin, pageNumber),
+                                    child: Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? Colors.blue : Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected ? Colors.blue : Colors.grey[300]!,
+                                          width: 2,
                                         ),
-                                        child: Center(
-                                          child: Text(
-                                            '$pageNumber',
-                                            style: TextStyle(
-                                              color: isSelected ? Colors.white : Colors.grey[700],
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$pageNumber',
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white : Colors.grey[700],
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
-                                    );
+                                    ),
+                                  );
                                   },
                                 ),
                               ),
