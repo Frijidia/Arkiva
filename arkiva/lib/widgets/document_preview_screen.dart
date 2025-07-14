@@ -123,12 +123,11 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
       filtered = img.adjustColor(filtered, contrast: 2.2, brightness: 0.1);
       // Applique un léger flou puis un renforcement (convolution)
       filtered = img.gaussianBlur(filtered, radius: 1);
-      filtered = img.convolution(filtered, kernel: [
+      filtered = img.convolution(filtered, filter: [
         0, -1, 0,
         -1, 5, -1,
         0, -1, 0,
-      ],
-      div: 1);
+      ]);
     } else {
       filtered = image;
     }
