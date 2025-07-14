@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:arkiva/models/document.dart';
-import 'package:arkiva/services/favoris_service.dart';
-import 'package:arkiva/services/auth_state_service.dart';
-import 'package:arkiva/screens/document_viewer_screen.dart';
-import 'package:arkiva/widgets/favori_button.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:arkiva/services/document_service.dart';
+import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/services/favoris_service.dart';
+import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/tag_service.dart';
 import 'package:arkiva/config/api_config.dart';
+import 'package:provider/provider.dart';
+import 'package:arkiva/widgets/favori_button.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 class FavorisScreen extends StatefulWidget {
   const FavorisScreen({super.key});
@@ -246,13 +251,27 @@ class _FavorisScreenState extends State<FavorisScreen> {
 
     try {
       final url = Uri.parse('${ApiConfig.baseUrl}/api/fichier/${document.id}/$entrepriseId?token=$token');
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url);
-      } else {
+      if (kIsWeb) {
+        // For web, you might want to open a new tab or window
+        // For now, we'll just show a snackbar
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible d\'ouvrir le document')),
+          const SnackBar(content: Text('Ouverture du document non supportée sur le web.')),
         );
+      } else {
+        // For mobile, use open_filex
+        final response = await http.get(url);
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/${document.nomOriginal ?? document.nom}');
+          await file.writeAsBytes(response.bodyBytes);
+          await OpenFilex.open(file.path);
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur lors de l\'ouverture du document: ${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
       if (!mounted) return;
