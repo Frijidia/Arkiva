@@ -110,12 +110,25 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
     img.Image filtered;
     if (filter == 'bw') {
       filtered = img.grayscale(image);
-      filtered = img.threshold(filtered, threshold: 128);
+      // Augmente le contraste et applique un seuillage simple
+      filtered = img.adjustColor(filtered, contrast: 2.0, brightness: 0.0);
+      for (int y = 0; y < filtered.height; y++) {
+        for (int x = 0; x < filtered.width; x++) {
+          int luma = img.getLuminance(filtered.getPixel(x, y));
+          filtered.setPixel(x, y, luma > 128 ? img.getColor(255, 255, 255) : img.getColor(0, 0, 0));
+        }
+      }
     } else if (filter == 'magic') {
       filtered = img.grayscale(image);
-      filtered = img.contrast(filtered, 150);
-      filtered = img.brightness(filtered, 20);
-      filtered = img.sharpen(filtered, amount: 100);
+      filtered = img.adjustColor(filtered, contrast: 2.2, brightness: 0.1);
+      // Applique un léger flou puis un renforcement (convolution)
+      filtered = img.gaussianBlur(filtered, radius: 1);
+      filtered = img.convolution(filtered, [
+        0, -1, 0,
+        -1, 5, -1,
+        0, -1, 0,
+      ],
+      div: 1);
     } else {
       filtered = image;
     }
