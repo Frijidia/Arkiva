@@ -142,8 +142,8 @@ class ImageProcessingService {
     
     while (stack.isNotEmpty) {
       final current = stack.removeLast();
-      final x = current.x;
-      final y = current.y;
+      final x = current.x.toInt();
+      final y = current.y.toInt();
       
       if (x < 0 || x >= edges.width || y < 0 || y >= edges.height || visited[y][x]) {
         continue;
@@ -207,16 +207,16 @@ class ImageProcessingService {
   }
 
   Rectangle _calculateBoundingBox(List<Point> contour) {
-    int minX = contour[0].x;
-    int maxX = contour[0].x;
-    int minY = contour[0].y;
-    int maxY = contour[0].y;
+    int minX = contour[0].x.toInt();
+    int maxX = contour[0].x.toInt();
+    int minY = contour[0].y.toInt();
+    int maxY = contour[0].y.toInt();
     
     for (final point in contour) {
-      minX = min(minX, point.x);
-      maxX = max(maxX, point.x);
-      minY = min(minY, point.y);
-      maxY = max(maxY, point.y);
+      minX = min(minX, point.x.toInt());
+      maxX = max(maxX, point.x.toInt());
+      minY = min(minY, point.y.toInt());
+      maxY = max(maxY, point.y.toInt());
     }
     
     return Rectangle(minX, minY, maxX - minX, maxY - minY);
