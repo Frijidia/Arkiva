@@ -114,8 +114,8 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
       filtered = img.adjustColor(filtered, contrast: 2.0, brightness: 0.0);
       for (int y = 0; y < filtered.height; y++) {
         for (int x = 0; x < filtered.width; x++) {
-          int luma = img.getLuminance(filtered.getPixel(x, y));
-          filtered.setPixel(x, y, luma > 128 ? img.getColor(255, 255, 255) : img.getColor(0, 0, 0));
+          int luma = img.getLuminance(filtered.getPixel(x, y)).toInt();
+          filtered.setPixel(x, y, luma > 128 ? img.ColorUint8.rgb(255, 255, 255) : img.ColorUint8.rgb(0, 0, 0));
         }
       }
     } else if (filter == 'magic') {
@@ -123,7 +123,7 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
       filtered = img.adjustColor(filtered, contrast: 2.2, brightness: 0.1);
       // Applique un léger flou puis un renforcement (convolution)
       filtered = img.gaussianBlur(filtered, radius: 1);
-      filtered = img.convolution(filtered, [
+      filtered = img.convolution(filtered, kernel: [
         0, -1, 0,
         -1, 5, -1,
         0, -1, 0,

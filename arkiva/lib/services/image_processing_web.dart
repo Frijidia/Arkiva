@@ -13,5 +13,16 @@ class ImageProcessingService {
     return null;
   }
 
+  // Méthode pour compatibilité avec le scan simple
+  Future<File?> processImage(File imageFile) async {
+    // Sur le web, retourne simplement l'image d'origine
+    return imageFile;
+  }
+
+  // Méthode dispose pour compatibilité
+  void dispose() {
+    _textRecognizer.close();
+  }
+
   // Les autres méthodes (processImage, etc.) restent inchangées et compatibles web.
 } 
