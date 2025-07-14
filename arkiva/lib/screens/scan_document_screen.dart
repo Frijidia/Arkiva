@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:arkiva/models/dossier.dart';
 import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/services/upload_service.dart';
+import 'package:arkiva/services/image_processing_service.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
 
 class ScanDocumentScreen extends StatefulWidget {
   final Dossier dossier;
@@ -20,13 +22,39 @@ class ScanDocumentScreen extends StatefulWidget {
   State<ScanDocumentScreen> createState() => _ScanDocumentScreenState();
 }
 
-class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
+class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProviderStateMixin {
   final ImagePicker _picker = ImagePicker();
   final UploadService _uploadService = UploadService();
+  final ImageProcessingService _imageProcessingService = ImageProcessingService();
   
   List<File> _scannedImages = [];
+  List<File> _processedImages = [];
   bool _isUploading = false;
+  bool _isProcessing = false;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _imageProcessingService.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +86,14 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
     return ScaffoldMessenger(
       key: _scaffoldMessengerKey,
       child: Scaffold(
+        backgroundColor: Colors.grey[100],
         appBar: AppBar(
-          title: const Text('Scanner des documents'),
+          title: const Text('Scanner CamScanner'),
           backgroundColor: Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
+          elevation: 0,
           actions: [
-            if (_scannedImages.isNotEmpty)
+            if (_processedImages.isNotEmpty)
               TextButton.icon(
                 onPressed: _isUploading ? null : _uploadScannedDocuments,
                 icon: _isUploading 
@@ -83,118 +113,321 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
         body: Column(
           children: [
             // Section des images scannées
-            if (_scannedImages.isNotEmpty)
-              Expanded(
-                flex: 2,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Documents scannés (${_scannedImages.length})',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _scannedImages.length,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              width: 120,
-                              margin: const EdgeInsets.only(right: 8),
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      _scannedImages[index],
-                                      width: 120,
-                                      height: 160,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () => _removeImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  // Bouton crop
-                                  Positioned(
-                                    bottom: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () => _cropImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.blue,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.crop,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+            if (_processedImages.isNotEmpty)
+              Container(
+                height: 200,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.document_scanner, color: Theme.of(context).primaryColor),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Documents scannés (${_processedImages.length})',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _processedImages.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            width: 140,
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    _processedImages[index],
+                                    width: 140,
+                                    height: 180,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Indicateur de traitement
+                                Positioned(
+                                  bottom: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white, size: 12),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Traité',
+                                          style: TextStyle(color: Colors.white, fontSize: 10),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             
-            // Section des boutons d'action
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _scanDocument,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Scanner'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            // Section principale avec les boutons d'action
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Titre et description
+                    Column(
+                      children: [
+                        Icon(
+                          Icons.document_scanner_outlined,
+                          size: 80,
+                          color: Theme.of(context).primaryColor.withOpacity(0.7),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Scanner comme CamScanner',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Transformez votre téléphone en scanner professionnel\navec détection automatique des bords et amélioration d\'image',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _pickFromGallery,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Galerie'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    
+                    const SizedBox(height: 48),
+                    
+                    // Boutons d'action
+                    if (_isProcessing)
+                      Column(
+                        children: [
+                          AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _pulseAnimation.value,
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        spreadRadius: 5,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Traitement en cours...',
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildActionButton(
+                              icon: Icons.camera_alt,
+                              label: 'Scanner',
+                              color: Theme.of(context).primaryColor,
+                              onPressed: _scanDocument,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildActionButton(
+                              icon: Icons.photo_library,
+                              label: 'Galerie',
+                              color: Colors.green,
+                              onPressed: _pickFromGallery,
+                            ),
+                          ),
+                        ],
+                      ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Conseils d'utilisation
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.lightbulb_outline, color: Colors.blue[700]),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Conseils pour un meilleur scan',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '• Placez le document sur une surface plane\n• Assurez-vous d\'un bon éclairage\n• Évitez les ombres et reflets\n• Gardez l\'appareil stable',
+                            style: TextStyle(
+                              color: Colors.blue[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -204,18 +437,19 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 80,
+        imageQuality: 90,
         preferredCameraDevice: CameraDevice.rear,
       );
 
       if (image != null) {
-        setState(() {
-          _scannedImages.add(File(image.path));
-        });
+        await _processImage(File(image.path));
       }
     } catch (e) {
       _scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text('Erreur lors du scan: ${e.toString()}')),
+        SnackBar(
+          content: Text('Erreur lors du scan: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -224,32 +458,75 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        imageQuality: 90,
       );
 
       if (image != null) {
-        setState(() {
-          _scannedImages.add(File(image.path));
-        });
+        await _processImage(File(image.path));
       }
     } catch (e) {
       _scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text('Erreur lors de la sélection: ${e.toString()}')),
+        SnackBar(
+          content: Text('Erreur lors de la sélection: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
+    }
+  }
+
+  Future<void> _processImage(File imageFile) async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      // Traiter l'image avec le service CamScanner-like
+      final processedImage = await _imageProcessingService.processImage(imageFile);
+      
+      if (processedImage != null) {
+        setState(() {
+          _scannedImages.add(imageFile);
+          _processedImages.add(processedImage);
+        });
+        
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Document scanné et traité avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors du traitement de l\'image'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du traitement: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
     }
   }
 
   void _removeImage(int index) {
     setState(() {
       _scannedImages.removeAt(index);
+      _processedImages.removeAt(index);
     });
   }
 
-  // Fonction de crop
   Future<void> _cropImage(int index) async {
     final croppedFile = await ImageCropper().cropImage(
-      sourcePath: _scannedImages[index].path,
-      // aspectRatio: const CropAspectRatio(ratioX: 4, ratioY: 3),
+      sourcePath: _processedImages[index].path,
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Recadrer',
@@ -264,13 +541,13 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
     );
     if (croppedFile != null) {
       setState(() {
-        _scannedImages[index] = File(croppedFile.path);
+        _processedImages[index] = File(croppedFile.path);
       });
     }
   }
 
   Future<void> _uploadScannedDocuments() async {
-    if (_scannedImages.isEmpty) {
+    if (_processedImages.isEmpty) {
       _scaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(
           content: Text('Aucun document à uploader'),
@@ -293,7 +570,7 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> {
 
       await _uploadService.uploadScannedDocuments(
         token: token,
-        files: _scannedImages,
+        files: _processedImages,
         dossierId: widget.dossier.dossierId!,
         entrepriseId: entrepriseId,
       );
