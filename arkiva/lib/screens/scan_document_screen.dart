@@ -9,6 +9,8 @@ import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
+import 'package:arkiva/widgets/manual_corner_selector.dart';
+import 'package:arkiva/widgets/document_preview_screen.dart';
 
 class ScanDocumentScreen extends StatefulWidget {
   final Dossier dossier;
@@ -480,53 +482,22 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
     });
 
     try {
-      debugPrint('Début du traitement de l\'image: ${imageFile.path}');
-      
-      // Traiter l'image avec un timeout de 30 secondes
-      final processedImage = await _imageProcessingService.processImage(imageFile)
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              debugPrint('Timeout lors du traitement de l\'image');
-              return null;
-            },
-          );
-      
+      debugPrint('Début du traitement avancé de l\'image: ${imageFile.path}');
+      // 1. Scan automatique avec détection des coins
+      File? processedImage = await _imageProcessingService.processDocumentScan(imageFile);
+
       if (processedImage != null && await processedImage.exists()) {
-        setState(() {
-          _scannedImages.add(imageFile);
-          _processedImages.add(processedImage);
-        });
-        
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(
-            content: Text('Document scanné et traité avec succès !'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        await _showDocumentPreview(context, imageFile, processedImage);
       } else {
-        // Si le traitement échoue, utiliser l'image originale
-        setState(() {
-          _scannedImages.add(imageFile);
-          _processedImages.add(imageFile);
-        });
-        
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(
-            content: Text('Image ajoutée (traitement simplifié)'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        // 2. Si l'automatique échoue, proposer la sélection manuelle des coins
+        await _showManualCornerSelection(context, imageFile);
       }
     } catch (e) {
       debugPrint('Erreur lors du traitement: $e');
-      
-      // En cas d'erreur, ajouter quand même l'image originale
       setState(() {
         _scannedImages.add(imageFile);
         _processedImages.add(imageFile);
       });
-      
       _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(
           content: Text('Image ajoutée (erreur de traitement: ${e.toString()})'),
@@ -538,6 +509,61 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
         _isProcessing = false;
       });
     }
+  }
+
+  Future<void> _showDocumentPreview(BuildContext context, File original, File corrected) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => DocumentPreviewScreen(
+          imageFile: corrected,
+          onValidate: (filteredFile) {
+            Navigator.of(ctx).pop();
+            setState(() {
+              _scannedImages.add(original);
+              _processedImages.add(filteredFile);
+            });
+            _scaffoldMessengerKey.currentState?.showSnackBar(
+              const SnackBar(
+                content: Text('Document scanné et validé !'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Affiche un écran/modal pour la sélection manuelle des coins
+  Future<void> _showManualCornerSelection(BuildContext context, File imageFile) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => ManualCornerSelector(
+          imageFile: imageFile,
+          onValidate: (corners) async {
+            Navigator.of(ctx).pop();
+            setState(() { _isProcessing = true; });
+            // Appliquer la correction de perspective avec les coins manuels
+            final processed = await _imageProcessingService.processDocumentScan(imageFile, manualCorners: corners);
+            if (processed != null && await processed.exists()) {
+              await _showDocumentPreview(context, imageFile, processed);
+            } else {
+              setState(() {
+                _scannedImages.add(imageFile);
+                _processedImages.add(imageFile);
+              });
+              _scaffoldMessengerKey.currentState?.showSnackBar(
+                const SnackBar(
+                  content: Text('Erreur lors de la correction manuelle. Image ajoutée brute.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            setState(() { _isProcessing = false; });
+          },
+        ),
+      ),
+    );
   }
 
   void _removeImage(int index) {
