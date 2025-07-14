@@ -480,10 +480,12 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
     });
 
     try {
+      debugPrint('Début du traitement de l\'image: ${imageFile.path}');
+      
       // Traiter l'image avec le service CamScanner-like
       final processedImage = await _imageProcessingService.processImage(imageFile);
       
-      if (processedImage != null) {
+      if (processedImage != null && await processedImage.exists()) {
         setState(() {
           _scannedImages.add(imageFile);
           _processedImages.add(processedImage);
@@ -496,18 +498,32 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
           ),
         );
       } else {
+        // Si le traitement échoue, utiliser l'image originale
+        setState(() {
+          _scannedImages.add(imageFile);
+          _processedImages.add(imageFile);
+        });
+        
         _scaffoldMessengerKey.currentState?.showSnackBar(
           const SnackBar(
-            content: Text('Erreur lors du traitement de l\'image'),
+            content: Text('Image ajoutée (traitement simplifié)'),
             backgroundColor: Colors.orange,
           ),
         );
       }
     } catch (e) {
+      debugPrint('Erreur lors du traitement: $e');
+      
+      // En cas d'erreur, ajouter quand même l'image originale
+      setState(() {
+        _scannedImages.add(imageFile);
+        _processedImages.add(imageFile);
+      });
+      
       _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(
-          content: Text('Erreur lors du traitement: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          content: Text('Image ajoutée (erreur de traitement: ${e.toString()})'),
+          backgroundColor: Colors.orange,
         ),
       );
     } finally {
