@@ -4,21 +4,53 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
+import 'package:opencv_4/opencv_4.dart';
+import 'package:opencv_4/factory/pathfrom.dart';
+import 'package:opencv_4/factory/core/imgproc.dart';
 
 class ImageProcessingService {
   final TextRecognizer _textRecognizer = TextRecognizer();
 
+  /// Nouvelle méthode utilisant OpenCV pour un effet CamScanner
+  Future<File?> processImageWithOpenCV(File imageFile) async {
+    try {
+      debugPrint('Début du traitement OpenCV: ${imageFile.path}');
+      String imagePath = imageFile.path;
+
+      // 1. Détection des bords (Canny)
+      final cannyBytes = await ImgProc.canny(
+        pathFrom: CVPathFrom.GALLERY_CAMERA,
+        pathString: imagePath,
+        threshold1: 50,
+        threshold2: 150,
+      );
+
+      // 2. (Optionnel) Correction de perspective à ajouter ici plus tard
+      // TODO: Détecter les coins et appliquer ImgProc.warpPerspective
+
+      // 3. Sauvegarde du résultat
+      final tempDir = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputFile = File('${tempDir.path}/scanned_opencv_$timestamp.jpg');
+      await outputFile.writeAsBytes(cannyBytes);
+
+      debugPrint('Image traitée (OpenCV) sauvegardée: ${outputFile.path}');
+      return outputFile;
+    } catch (e) {
+      debugPrint('Erreur OpenCV: $e');
+      return null;
+    }
+  }
+
+  // Ancienne méthode fallback (amélioration simple)
   Future<File?> processImage(File imageFile) async {
     try {
       debugPrint('Début du traitement de l\'image: ${imageFile.path}');
       
-      // Vérifier que le fichier existe
       if (!await imageFile.exists()) {
         debugPrint('Le fichier image n\'existe pas');
         return null;
       }
-
-      // Lire l'image avec gestion d'erreur
       List<int> imageBytes;
       try {
         imageBytes = await imageFile.readAsBytes();
@@ -26,8 +58,6 @@ class ImageProcessingService {
         debugPrint('Erreur lors de la lecture du fichier: $e');
         return null;
       }
-
-      // Décoder l'image
       img.Image? image;
       try {
         image = img.decodeImage(Uint8List.fromList(imageBytes));
@@ -35,41 +65,24 @@ class ImageProcessingService {
         debugPrint('Erreur lors du décodage de l\'image: $e');
         return null;
       }
-
       if (image == null) {
         debugPrint('Impossible de décoder l\'image');
         return null;
       }
-
-      // Étape 1: Amélioration de la qualité (très simplifiée)
       img.Image processedImage;
       try {
         processedImage = _enhanceImageQuality(image);
         debugPrint('Amélioration de qualité appliquée');
       } catch (e) {
         debugPrint('Erreur lors de l\'amélioration d\'image: $e');
-        processedImage = image; // Utiliser l'image originale
+        processedImage = image;
       }
-
-      // Étape 2: OCR (optionnel et simplifié)
-      try {
-        // Désactiver temporairement l'OCR pour éviter les crashes
-        // final ocrText = await _extractText(imageFile);
-        // debugPrint('OCR terminé, ${ocrText.length} caractères extraits');
-        debugPrint('OCR désactivé pour éviter les crashes');
-      } catch (e) {
-        debugPrint('OCR échoué: $e');
-      }
-
-      // Étape 3: Sauvegarder l'image traitée
       try {
         final tempDir = await getTemporaryDirectory();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final outputFile = File('${tempDir.path}/scanned_$timestamp.jpg');
-        
         final jpegBytes = img.encodeJpg(processedImage, quality: 85);
         await outputFile.writeAsBytes(jpegBytes);
-        
         debugPrint('Image traitée sauvegardée: ${outputFile.path}');
         return outputFile;
       } catch (e) {
@@ -84,21 +97,12 @@ class ImageProcessingService {
 
   img.Image _enhanceImageQuality(img.Image image) {
     try {
-      // Amélioration très légère pour éviter les crashes
-      
-      // Amélioration du contraste (légère)
       image = img.adjustColor(image, contrast: 1.1);
-      
-      // Amélioration de la luminosité (légère)
       image = img.adjustColor(image, brightness: 1.05);
-      
-      // Pas de gaussianBlur pour éviter les problèmes de performance
-      // Pas d'emboss pour éviter les problèmes de performance
-      
       return image;
     } catch (e) {
       debugPrint('Erreur lors de l\'amélioration d\'image: $e');
-      return image; // Retourner l'image originale en cas d'erreur
+      return image;
     }
   }
 
@@ -106,14 +110,12 @@ class ImageProcessingService {
     try {
       final inputImage = InputImage.fromFile(imageFile);
       final recognizedText = await _textRecognizer.processImage(inputImage);
-      
       String extractedText = '';
       for (final block in recognizedText.blocks) {
         for (final line in block.lines) {
           extractedText += line.text + '\n';
         }
       }
-      
       return extractedText.trim();
     } catch (e) {
       debugPrint('Erreur lors de l\'extraction de texte: $e');
