@@ -482,8 +482,15 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
     try {
       debugPrint('Début du traitement de l\'image: ${imageFile.path}');
       
-      // Traiter l'image avec le service CamScanner-like
-      final processedImage = await _imageProcessingService.processImage(imageFile);
+      // Traiter l'image avec un timeout de 30 secondes
+      final processedImage = await _imageProcessingService.processImage(imageFile)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              debugPrint('Timeout lors du traitement de l\'image');
+              return null;
+            },
+          );
       
       if (processedImage != null && await processedImage.exists()) {
         setState(() {
