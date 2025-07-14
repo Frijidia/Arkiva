@@ -1,18 +1,27 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
-import 'package:opencv_4/opencv_4.dart';
-import 'package:opencv_4/factory/pathfrom.dart';
-import 'package:opencv_4/factory/core/imgproc.dart';
+// OpenCV imports protégés
+// ignore: uri_does_not_exist
+import 'package:opencv_4/opencv_4.dart' if (dart.library.html) 'noop.dart';
+// ignore: uri_does_not_exist
+import 'package:opencv_4/factory/pathfrom.dart' if (dart.library.html) 'noop.dart';
+// ignore: uri_does_not_exist
+import 'package:opencv_4/factory/core/imgproc.dart' if (dart.library.html) 'noop.dart';
 
 class ImageProcessingService {
   final TextRecognizer _textRecognizer = TextRecognizer();
 
   /// Scan complet : essaie la détection automatique, sinon propose le manuel
   Future<File?> processDocumentScan(File imageFile, {List<Offset>? manualCorners}) async {
+    if (kIsWeb) {
+      // Sur le web, on ne fait rien (scan avancé non supporté)
+      return null;
+    }
     try {
       debugPrint('Début du scan document avancé: ${imageFile.path}');
       String imagePath = imageFile.path;
@@ -58,6 +67,7 @@ class ImageProcessingService {
 
   /// Détection automatique simplifiée des coins (sur image Canny)
   Future<List<Offset>?> _detectDocumentCorners(Uint8List cannyBytes) async {
+    if (kIsWeb) return null;
     // Version simplifiée : détecte les coins extrêmes du masque binaire
     try {
       final image = img.decodeImage(cannyBytes);
@@ -68,8 +78,13 @@ class ImageProcessingService {
       // Cherche les points extrêmes (haut-gauche, haut-droit, bas-gauche, bas-droit)
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-          int pixel = image.getPixel(x, y);
-          if (img.getLuminance(pixel) > 128) {
+          int pixel = image.getPixel(x, y).toInt();
+          int luminance = img.getLuminanceRgb(
+            img.getRed(pixel),
+            img.getGreen(pixel),
+            img.getBlue(pixel),
+          );
+          if (luminance > 128) {
             points.add(Offset(x.toDouble(), y.toDouble()));
           }
         }
@@ -89,6 +104,7 @@ class ImageProcessingService {
 
   /// Correction de perspective avec OpenCV
   Future<File?> _warpPerspective(String imagePath, List<Offset> corners) async {
+    if (kIsWeb) return null;
     try {
       // Convertit les coins en format OpenCV
       List<double> pts = corners.expand((o) => [o.dx, o.dy]).toList();
