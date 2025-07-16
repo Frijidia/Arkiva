@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image/image.dart' as img;
 
 class DocumentPreviewScreen extends StatefulWidget {
   final File imageFile;
@@ -284,60 +283,22 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
     });
 
     try {
-      if (filter == 'original') {
-        setState(() {
-          _currentFile = widget.imageFile;
-          _isProcessing = false;
-        });
-        return;
-      }
-
-      // Lire l'image
-      final bytes = await widget.imageFile.readAsBytes();
-      img.Image? image = img.decodeImage(bytes);
-      
-      if (image == null) {
-        setState(() { 
-          _isProcessing = false; 
-        });
-        return;
-      }
-
-      img.Image filtered;
-      
-      if (filter == 'bw') {
-        filtered = img.grayscale(image);
-        // Augmente le contraste et applique un seuillage simple
-        filtered = img.adjustColor(filtered, contrast: 2.0, brightness: 0.0);
-        for (int y = 0; y < filtered.height; y++) {
-          for (int x = 0; x < filtered.width; x++) {
-            int luma = img.getLuminance(filtered.getPixel(x, y)).toInt();
-            filtered.setPixel(x, y, luma > 128 ? img.ColorUint8.rgb(255, 255, 255) : img.ColorUint8.rgb(0, 0, 0));
-          }
-        }
-      } else if (filter == 'magic') {
-        filtered = img.grayscale(image);
-        filtered = img.adjustColor(filtered, contrast: 2.2, brightness: 0.1);
-        // Applique un léger flou puis un renforcement (convolution)
-        filtered = img.gaussianBlur(filtered, radius: 1);
-        filtered = img.convolution(filtered, filter: [
-          0, -1, 0,
-          -1, 5, -1,
-          0, -1, 0,
-        ]);
-      } else {
-        filtered = image;
-      }
-
-      // Sauvegarder temporairement
-      final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/preview_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await tempFile.writeAsBytes(img.encodeJpg(filtered, quality: 90));
-      
+      // Pour l'instant, retourner simplement l'image originale
+      // Les filtres seront implémentés plus tard quand le package image sera réintégré
       setState(() {
-        _currentFile = tempFile;
+        _currentFile = widget.imageFile;
         _isProcessing = false;
       });
+      
+      // Afficher un message informatif
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Filtre "$filter" non disponible pour le moment'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
     } catch (e) {
       debugPrint('Erreur lors de l\'application du filtre: $e');
       setState(() { 
