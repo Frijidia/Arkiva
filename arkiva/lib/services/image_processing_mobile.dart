@@ -112,30 +112,10 @@ class ImageProcessingService {
   /// Applique la correction de perspective
   img.Image? _applyPerspectiveCorrection(img.Image image, List<Offset> corners) {
     try {
-      // Calculer la transformation de perspective
-      final srcPoints = [
-        corners[0], corners[1], corners[2], corners[3]
-      ];
-      
-      // Déterminer la taille de sortie (format A4)
-      final targetWidth = 595; // A4 width en points
-      final targetHeight = 842; // A4 height en points
-      
-      final dstPoints = [
-        const Offset(0, 0),
-        Offset(targetWidth.toDouble(), 0),
-        Offset(targetWidth.toDouble(), targetHeight.toDouble()),
-        Offset(0, targetHeight.toDouble()),
-      ];
-
-      // Appliquer la transformation
-      return img.transform(
-        image,
-        srcPoints: srcPoints,
-        dstPoints: dstPoints,
-        width: targetWidth,
-        height: targetHeight,
-      );
+      // Pour l'instant, retourner l'image d'origine car img.transform n'existe pas
+      // Dans une implémentation complète, on utiliserait une bibliothèque de transformation d'image
+      debugPrint('Correction de perspective simplifiée - retour de l\'image originale');
+      return image;
     } catch (e) {
       debugPrint('Erreur lors de la correction de perspective: $e');
       return null;
@@ -150,8 +130,8 @@ class ImageProcessingService {
     // Augmenter le contraste
     enhanced = img.adjustColor(enhanced, contrast: 1.5, brightness: 0.1);
     
-    // Appliquer un léger flou pour réduire le bruit
-    enhanced = img.gaussianBlur(enhanced, radius: 0.5);
+    // Appliquer un léger flou pour réduire le bruit (radius en entier)
+    enhanced = img.gaussianBlur(enhanced, radius: 1);
     
     // Renforcer les contours
     enhanced = img.convolution(enhanced, filter: [
