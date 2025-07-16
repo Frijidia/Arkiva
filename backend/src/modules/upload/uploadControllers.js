@@ -36,18 +36,98 @@ function isAllowedExtension(filename) {
 }
 
 //fonction pour convertir en pdf
-
 const convertToPdf = async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase();
-  if (!['.doc', '.docx', '.txt'].includes(fileExt)) return null;
+  
+  // Si c'est déjà un PDF, pas besoin de conversion
+  if (fileExt === '.pdf') {
+    return filePath;
+  }
+  
+  // Convertir les documents Office en PDF
+  if (['.doc', '.docx', '.txt'].includes(fileExt)) {
+    try {
+      const file = fs.readFileSync(filePath);
+      const outputPath = filePath.replace(fileExt, '.pdf');
 
-  const file = fs.readFileSync(filePath);
-  const outputPath = filePath.replace(fileExt, '.pdf');
+      const pdfBuf = await convert(file, '.pdf', undefined);
+      fs.writeFileSync(outputPath, pdfBuf);
 
-  const pdfBuf = await convert(file, '.pdf', undefined);
-  fs.writeFileSync(outputPath, pdfBuf);
+      return outputPath;
+    } catch (error) {
+      console.error('Erreur lors de la conversion en PDF:', error);
+      return null;
+    }
+  }
+  
+  // Pour les images, on peut les convertir en PDF si nécessaire
+  if (['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'].includes(fileExt)) {
+    try {
+      // Créer un PDF simple avec l'image
+      const outputPath = filePath.replace(fileExt, '.pdf');
+      await createPdfFromImage(filePath, outputPath);
+      return outputPath;
+    } catch (error) {
+      console.error('Erreur lors de la conversion d\'image en PDF:', error);
+      return null;
+    }
+  }
+  
+  return null;
+};
 
-  return outputPath;
+// Fonction pour créer un PDF à partir d'une image
+const createPdfFromImage = async (imagePath, outputPath) => {
+  try {
+    // Utiliser une bibliothèque comme pdf-lib pour créer un PDF avec l'image
+    const { PDFDocument, PDFImage } = await import('pdf-lib');
+    const fs = await import('fs');
+    
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // Format A4
+    
+    // Lire l'image
+    const imageBytes = fs.readFileSync(imagePath);
+    let image;
+    
+    const ext = path.extname(imagePath).toLowerCase();
+    if (['.jpg', '.jpeg'].includes(ext)) {
+      image = await pdfDoc.embedJpg(imageBytes);
+    } else if (['.png'].includes(ext)) {
+      image = await pdfDoc.embedPng(imageBytes);
+    } else {
+      throw new Error('Format d\'image non supporté pour la conversion PDF');
+    }
+    
+    // Calculer les dimensions pour centrer l'image
+    const { width, height } = image.scale(1);
+    const pageWidth = page.getWidth();
+    const pageHeight = page.getHeight();
+    
+    const scaleX = pageWidth / width;
+    const scaleY = pageHeight / height;
+    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% de la page
+    
+    const scaledWidth = width * scale;
+    const scaledHeight = height * scale;
+    const x = (pageWidth - scaledWidth) / 2;
+    const y = (pageHeight - scaledHeight) / 2;
+    
+    page.drawImage(image, {
+      x,
+      y,
+      width: scaledWidth,
+      height: scaledHeight,
+    });
+    
+    const pdfBytes = await pdfDoc.save();
+    fs.writeFileSync(outputPath, pdfBytes);
+    
+    return outputPath;
+  } catch (error) {
+    console.error('Erreur lors de la création du PDF:', error);
+    throw error;
+  }
 };
 
 

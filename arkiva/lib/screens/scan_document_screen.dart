@@ -483,13 +483,15 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
 
     try {
       debugPrint('Début du traitement avancé de l\'image: ${imageFile.path}');
+      
       // 1. Scan automatique avec détection des coins
       File? processedImage = await _imageProcessingService.processDocumentScan(imageFile);
 
       if (processedImage != null && await processedImage.exists()) {
-        await _showDocumentPreview(context, imageFile, processedImage);
+        // 2. Proposer la conversion en PDF
+        await _showProcessingOptions(context, imageFile, processedImage);
       } else {
-        // 2. Si l'automatique échoue, proposer la sélection manuelle des coins
+        // 3. Si l'automatique échoue, proposer la sélection manuelle des coins
         await _showManualCornerSelection(context, imageFile);
       }
     } catch (e) {
@@ -502,6 +504,161 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
         SnackBar(
           content: Text('Image ajoutée (erreur de traitement: ${e.toString()})'),
           backgroundColor: Colors.orange,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  /// Affiche les options de traitement (image ou PDF)
+  Future<void> _showProcessingOptions(BuildContext context, File original, File processed) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.document_scanner, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              const Text('Format de sortie'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Choisissez le format de sortie pour votre document scanné :',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildFormatOption(
+                      context,
+                      'Image',
+                      Icons.image,
+                      'Conserver en format image (JPG)',
+                      () => _selectFormat(context, original, processed, false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildFormatOption(
+                      context,
+                      'PDF',
+                      Icons.picture_as_pdf,
+                      'Convertir en PDF',
+                      () => _selectFormat(context, original, processed, true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFormatOption(
+    BuildContext context,
+    String title,
+    IconData icon,
+    String description,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: Theme.of(context).primaryColor),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectFormat(BuildContext context, File original, File processed, bool convertToPdf) async {
+    Navigator.of(context).pop();
+    
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      File finalFile;
+      
+      if (convertToPdf) {
+        // Convertir en PDF
+        finalFile = await _imageProcessingService.convertImageToPdf(processed) ?? processed;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Document converti en PDF !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // Garder en image
+        finalFile = processed;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Document traité en image !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Afficher la prévisualisation
+      await _showDocumentPreview(context, original, finalFile);
+      
+    } catch (e) {
+      debugPrint('Erreur lors de la conversion: $e');
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la conversion: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
     } finally {
