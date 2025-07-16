@@ -225,148 +225,150 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
             
             // Section principale avec les boutons d'action
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Titre et description
-                    Column(
-                      children: [
-                        Icon(
-                          Icons.document_scanner_outlined,
-                          size: 80,
-                          color: Theme.of(context).primaryColor.withOpacity(0.7),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Scanner comme CamScanner',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Transformez votre téléphone en scanner professionnel\navec détection automatique des bords et amélioration d\'image',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 48),
-                    
-                    // Boutons d'action
-                    if (_isProcessing)
+              child: SingleChildScrollView(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Titre et description
                       Column(
                         children: [
-                          AnimatedBuilder(
-                            animation: _pulseAnimation,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _pulseAnimation.value,
-                                child: Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).primaryColor,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                                        blurRadius: 20,
-                                        spreadRadius: 5,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
-                                ),
-                              );
-                            },
+                          Icon(
+                            Icons.document_scanner_outlined,
+                            size: 80,
+                            color: Theme.of(context).primaryColor.withOpacity(0.7),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                           Text(
-                            'Traitement en cours...',
+                            'Scanner comme CamScanner',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Transformez votre téléphone en scanner professionnel\navec détection automatique des bords et amélioration d\'image',
                             style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
+                              fontSize: 16,
                             ),
-                          ),
-                        ],
-                      )
-                    else
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildActionButton(
-                              icon: Icons.camera_alt,
-                              label: 'Scanner',
-                              color: Theme.of(context).primaryColor,
-                              onPressed: _scanDocument,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildActionButton(
-                              icon: Icons.photo_library,
-                              label: 'Galerie',
-                              color: Colors.green,
-                              onPressed: _pickFromGallery,
-                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Conseils d'utilisation
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue.withOpacity(0.3),
-                          width: 1,
+                      
+                      const SizedBox(height: 48),
+                      
+                      // Boutons d'action
+                      if (_isProcessing)
+                        Column(
+                          children: [
+                            AnimatedBuilder(
+                              animation: _pulseAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _pulseAnimation.value,
+                                  child: Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Theme.of(context).primaryColor.withOpacity(0.3),
+                                          blurRadius: 20,
+                                          spreadRadius: 5,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Traitement en cours...',
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildActionButton(
+                                icon: Icons.camera_alt,
+                                label: 'Scanner',
+                                color: Theme.of(context).primaryColor,
+                                onPressed: _scanDocument,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildActionButton(
+                                icon: Icons.photo_library,
+                                label: 'Galerie',
+                                color: Colors.green,
+                                onPressed: _pickFromGallery,
+                              ),
+                            ),
+                          ],
+                        ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Conseils d'utilisation
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.lightbulb_outline, color: Colors.blue[700]),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Conseils pour un meilleur scan',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '• Placez le document sur une surface plane\n• Assurez-vous d\'un bon éclairage\n• Évitez les ombres et reflets\n• Gardez l\'appareil stable',
+                              style: TextStyle(
+                                color: Colors.blue[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.lightbulb_outline, color: Colors.blue[700]),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Conseils pour un meilleur scan',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '• Placez le document sur une surface plane\n• Assurez-vous d\'un bon éclairage\n• Évitez les ombres et reflets\n• Gardez l\'appareil stable',
-                            style: TextStyle(
-                              color: Colors.blue[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
