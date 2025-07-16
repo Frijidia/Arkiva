@@ -1,30 +1,10 @@
-KAWERU GROUP@DESKTOP-FVKBJHC MINGW64 ~/test/Arkiva/arkiva (poipoi)
-$ flutter run
-Launching lib\main.dart on TECNO KM4 in debug mode...
-lib/services/image_processing_mobile.dart:132:18: Error: Method not found: 'transform'.
-      return img.transform(
-                 ^^^^^^^^^
-lib/services/image_processing_mobile.dart:154:51: Error: The argument type 'double' can't be assigned to the parameter type 'int'.
-    enhanced = img.gaussianBlur(enhanced, radius: 0.5);
-                                                  ^
-Target kernel_snapshot_program failed: Exception
-
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-Execution failed for task ':app:compileFlutterBuildDebug'.
-> Process 'command 'C:\flutter\bin\flutter.bat'' finished with non-zero exit value 1
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-
-BUILD FAILED in 27s
-Running Gradle task 'assembleDebug'...                             28,0s
-Error: Gradle task assembleDebug failed with exit code 1
-
-KAWERU GROUP@DESKTOP-FVKBJHC MINGW64 ~/test/Arkiva/arkiva (poipoi)
-$
+E/flutter (15303): [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: ClientException with SocketException: Connection refused (OS Error: Connection refused, errno = 111), address = localhost, port = 43284, uri=http://localhost:3000/api/auth/login
+E/flutter (15303): #0      IOClient.send (package:http/src/io_client.dart:154:7)
+E/flutter (15303): <asynchronous suspension>
+E/flutter (15303): #1      BaseClient._sendUnstreamed (package:http/src/base_client.dart:93:32)
+E/flutter (15303): <asynchronous suspension>
+E/flutter (15303): #2      _withClient (package:http/http.dart:167:12)
+E/flutter (15303): <asynchronous suspension>
+E/flutter (15303): #3      _LoginScreenState._login (package:arkiva/screens/login_screen.dart:39:22)
+E/flutter (15303): <asynchronous suspension>
+E/flutter (15303):
