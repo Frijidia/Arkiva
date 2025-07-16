@@ -19,6 +19,21 @@ class ImageProcessingService {
     return imageFile;
   }
 
+  // Nouvelle méthode pour convertir en PDF (compatibilité web)
+  Future<File?> convertImageToPdf(File imageFile) async {
+    try {
+      debugPrint('Conversion de l\'image en PDF (web): ${imageFile.path}');
+      
+      // Sur le web, on retourne l'image d'origine car la conversion PDF
+      // nécessite des bibliothèques natives qui ne sont pas disponibles
+      debugPrint('Conversion PDF non supportée sur le web, retour de l\'image originale');
+      return imageFile;
+    } catch (e) {
+      debugPrint('Erreur lors de la conversion en PDF (web): $e');
+      return null;
+    }
+  }
+
   // Méthode dispose pour compatibilité
   void dispose() {
     _textRecognizer.close();

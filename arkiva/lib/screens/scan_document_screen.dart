@@ -633,12 +633,23 @@ class _ScanDocumentScreenState extends State<ScanDocumentScreen> with TickerProv
       if (convertToPdf) {
         // Convertir en PDF
         finalFile = await _imageProcessingService.convertImageToPdf(processed) ?? processed;
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(
-            content: Text('Document converti en PDF !'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        
+        // Vérifier si on est sur le web
+        if (kIsWeb) {
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('Conversion PDF non disponible sur le web. Image conservée.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          _scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('Document converti en PDF !'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         // Garder en image
         finalFile = processed;
