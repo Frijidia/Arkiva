@@ -1,8 +1,154 @@
-E/FlutterJNI(21706): Failed to decode image
-E/FlutterJNI(21706): android.graphics.ImageDecoder$DecodeException: Failed to create image decoder with message 'unimplemented'Input contained an error.
-E/FlutterJNI(21706):    at android.graphics.ImageDecoder.nCreate(Native Method)
-E/FlutterJNI(21706):    at android.graphics.ImageDecoder.-$$Nest$smnCreate(Unknown Source:0)
-E/FlutterJNI(21706):    at android.graphics.ImageDecoder$ByteBufferSource.createImageDecoder(ImageDecoder.java:254)
-E/FlutterJNI(21706):    at android.graphics.ImageDecoder.decodeBitmapImpl(ImageDecoder.java:1856)
-E/FlutterJNI(21706):    at android.graphics.ImageDecoder.decodeBitmap(ImageDecoder.java:1848)
-E/FlutterJNI(21706):    at io.flutter.embedding.engine.FlutterJNI.decodeImage(FlutterJNI.java:561)
+D/LogUtil (29632): mLogd_enable
+D/VRI[MainActivity](29632): visibilityChanged oldVisibility=true newVisibility=false
+D/LogUtil (29632): mLogd_enable
+I/Choreographer(29632): Skipped 58 frames!  The application may be doing too much work on its main thread.
+D/mali_gralloc(29632): unregister: id=3280001dffc, handle=0xb400007bb24b2860, base=0x0, importpid=29632, clone_count=0
+E/mali_gralloc(29632): Requested R8 format is not supported with this allocator. R8 format is only supported with the AIDL allocator
+E/mali_gralloc(29632): ERROR: Unrecognized and/or unsupported format R8 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc(29632): ERROR: Unrecognized and/or unsupported format RGBA_10101010 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc(29632): Requested R8 format is not supported with this allocator. R8 format is only supported with the AIDL allocator
+E/mali_gralloc(29632): ERROR: Unrecognized and/or unsupported format R8 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc(29632): ERROR: Unrecognized and/or unsupported format RGBA_10101010 and usage TEXTURE + RENDER + HWC
+D/mali_gralloc(29632): register: id=3280001e01c, handle=0xb400007c0c26de00, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e01c, handle=0xb400007c0c26dee0, importpid=29632
+D/mali_gralloc(29632): unregister: id=3280001e01c, handle=0xb400007c0c26dee0, base=0x0, importpid=29632, clone_count=1
+D/mali_gralloc(29632): register: id=3280001e01d, handle=0xb400007c0c26dee0, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e01d, handle=0xb400007c0c26e340, importpid=29632
+D/mali_gralloc(29632): unregister: id=3280001e01d, handle=0xb400007c0c26e340, base=0x0, importpid=29632, clone_count=1
+D/mali_gralloc(29632): register: id=3280001e01e, handle=0xb400007c0c26e340, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e01e, handle=0xb400007c0c26e420, importpid=29632
+D/mali_gralloc(29632): unregister: id=3280001e01e, handle=0xb400007c0c26e420, base=0x0, importpid=29632, clone_count=1
+D/mali_gralloc(29632): register: id=3280001e01f, handle=0xb400007c0c26e420, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e01f, handle=0xb400007c0c26e5e0, importpid=29632
+D/mali_gralloc(29632): unregister: id=3280001e01f, handle=0xb400007c0c26e5e0, base=0x0, importpid=29632, clone_count=1
+D/mali_gralloc(29632): register: id=3280001e020, handle=0xb400007c0c26e5e0, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e020, handle=0xb400007c0c26e960, importpid=29632
+D/mali_gralloc(29632): unregister: id=3280001e020, handle=0xb400007c0c26e960, base=0x0, importpid=29632, clone_count=1
+D/mali_gralloc(29632): unregister: id=3280001dff7, handle=0xb400007a9dffc620, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001dff8, handle=0xb400007a9dffc9a0, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001dff9, handle=0xb400007a9dffca80, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001dffa, handle=0xb400007a9dffcb60, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001dffb, handle=0xb400007a9dffcc40, base=0x0, importpid=29632, clone_count=0
+D/MediaScannerConnection(29632): Scanned /data/user/0/com.example.arkiva/cache/235d797f-2532-4020-917e-f3ddfbe5df4d3722252280341237160.jpg to null
+D/mali_gralloc(29632): register: id=3280001e021, handle=0xb400007c0c26d9a0, importpid=29632
+D/LogUtil (29632): mLogd_enable
+D/mali_gralloc(29632): register: id=3280001e022, handle=0xb400007bb24adc40, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e023, handle=0xb400007c0c26e960, importpid=29632
+D/mali_gralloc(29632): register: id=3280001e024, handle=0xb400007bb24ae500, importpid=29632
+I/.example.arkiva(29632): NativeAlloc concurrent mark compact GC freed 689KB AllocSpace bytes, 6(248KB) LOS objects, 66% free, 3898KB/11MB, paused 563us,5.206ms total 86.351ms
+W/InteractionJankMonitor(29632): Initializing without READ_DEVICE_CONFIG permission. enabled=false, interval=1, missedFrameThreshold=3, frameTimeThreshold=64, package=com.example.arkiva
+I/flutter (29632): Début du traitement avancé de l'image: /data/user/0/com.example.arkiva/cache/scaled_235d797f-2532-4020-917e-f3ddfbe5df4d3722252280341237160.jpg
+I/flutter (29632): Début du traitement du document: /data/user/0/com.example.arkiva/cache/scaled_235d797f-2532-4020-917e-f3ddfbe5df4d3722252280341237160.jpg
+I/flutter (29632): Traitement simplifié - retour de l'image originale
+D/TextSelection(29632): onUseCache cache=false
+I/flutter (29632): Conversion de l'image en PDF: /data/user/0/com.example.arkiva/cache/scaled_235d797f-2532-4020-917e-f3ddfbe5df4d3722252280341237160.jpg
+I/flutter (29632): Conversion PDF simplifiée - retour de l'image originale
+D/TextSelection(29632): onUseCache cache=false
+D/TextSelection(29632): onUseCache cache=false
+D/TextSelection(29632): onUseCache cache=false
+
+══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═════════════════════════════════════════════════════════
+The following assertion was thrown during layout:
+A RenderFlex overflowed by 50 pixels on the bottom.
+
+The relevant error-causing widget was:
+  Column
+  Column:file:///C:/Users/KAWERU%20GROUP/test/Arkiva/arkiva/lib/screens/scan_document_screen.dart:230:24
+
+To inspect this widget in Flutter DevTools, visit:
+http://127.0.0.1:9101/#/inspector?uri=http%3A%2F%2F127.0.0.1%3A63976%2FQoT7SJ7BwR4%3D%2F&inspectorRef=inspector-0
+
+The overflowing RenderFlex has an orientation of Axis.vertical.
+The edge of the RenderFlex that is overflowing has been marked in the rendering with a yellow and
+black striped pattern. This is usually caused by the contents being too big for the RenderFlex.
+Consider applying a flex factor (e.g. using an Expanded widget) to force the children of the
+RenderFlex to fit within the available space instead of being sized to their natural size.
+This is considered an error condition because it indicates that there is content that cannot be
+seen. If the content is legitimately bigger than the available space, consider clipping it with a
+ClipRect widget before putting it in the flex, or using a scrollable container rather than a Flex,
+like a ListView.
+The specific RenderFlex in question is: RenderFlex#e4808 relayoutBoundary=up3 OVERFLOWING:
+  creator: Column ← Padding ← Container ← Expanded ← Column ← KeyedSubtree-[GlobalKey#9c0f8] ←
+    _BodyBuilder ← MediaQuery ← LayoutId-[<_ScaffoldSlot.body>] ← CustomMultiChildLayout ←
+    _ActionsScope ← Actions ← ⋯
+  parentData: offset=Offset(24.0, 24.0) (can use size)
+  constraints: BoxConstraints(0.0<=w<=363.4, h=568.0)
+  size: Size(363.4, 568.0)
+  direction: vertical
+  mainAxisAlignment: center
+  mainAxisSize: max
+  crossAxisAlignment: center
+  verticalDirection: down
+  spacing: 0.0
+◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+D/TextSelection(29632): onUseCache cache=false
+D/TextSelection(29632): onUseCache cache=false
+D/TextSelection(29632): onUseCache cache=false
+D/TextSelection(29632): onUseCache cache=false
+I/flutter (29632): [API] POST http://localhost:3000/api/upload
+I/flutter (29632): [API] Upload de 1 documents scannés
+I/flutter (29632): [API] Envoi de la requête...
+I/flutter (29632): [API] Status: 500
+I/flutter (29632): [API] Response: {"error":"Erreur lors du téléversement des fichiers"}
+I/flutter (29632): [API] Erreur uploadScannedDocuments: Exception: Erreur lors du téléversement des fichiers
+D/VRI[MainActivity](29632): visibilityChanged oldVisibility=true newVisibility=false
+D/mali_gralloc(29632): unregister: id=3280001e022, handle=0xb400007bb24adc40, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001e023, handle=0xb400007c0c26e960, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001e021, handle=0xb400007c0c26d9a0, base=0x0, importpid=29632, clone_count=0
+D/mali_gralloc(29632): unregister: id=3280001e024, handle=0xb400007bb24ae500, base=0x0, importpid=29632, clone_count=0
+D/LogUtil (29632): mLogd_enable
+
+
+
+
+
+rs
+[nodemon] starting `node src/app.js`
+🚀 Server is running at: http://localhost:3000
+[CleanupCron] Démarrage du cron de nettoyage automatique...
+[CleanupCron] Planification: 0 2 * * * (tous les jours à 2h)
+[CleanupCron] Cron de nettoyage démarré avec succès
+Connexion à la base de données PostgreSQL établie
+Table dosier created successfully
+Structure de la table journal_activite mise à jour avec succès
+Migration is_deleted column completed
+Table restores créée/mise à jour avec succès
+Table encryption_keys créée/mise à jour avec succès
+Table sauvegardes mise à jour avec succès
+Table versions créée/mise à jour avec succès
+🔍 Vérification de la structure des tables...
+📋 Structure table dossiers: [
+  { column_name: 'dossier_id', data_type: 'integer' },
+  { column_name: 'cassier_id', data_type: 'integer' },
+  { column_name: 'user_id', data_type: 'integer' },
+  { column_name: 'nom', data_type: 'character varying' },
+  { column_name: 'is_deleted', data_type: 'boolean' },
+  { column_name: 'description', data_type: 'text' },
+  {
+    column_name: 'created_at',
+    data_type: 'timestamp without time zone'
+  },
+  { column_name: 'version_id', data_type: 'integer' }
+]
+📋 Structure table casiers: [
+  { column_name: 'cassier_id', data_type: 'integer' },
+  { column_name: 'armoire_id', data_type: 'integer' },
+  { column_name: 'nom', data_type: 'character varying' },
+  { column_name: 'sous_titre', data_type: 'character varying' },
+  { column_name: 'user_id', data_type: 'integer' },
+  { column_name: 'is_deleted', data_type: 'boolean' },
+  {
+    column_name: 'created_at',
+    data_type: 'timestamp without time zone'
+  },
+  { column_name: 'version_id', data_type: 'integer' }
+]
+uploads\1752679571202-scanned_document_1752679569184_0.jpg
+Erreur détaillée lors du téléversement des fichiers : Error: Input buffer contains unsupported image format
+    at Sharp.toBuffer (C:\Users\KAWERU GROUP\test\Arkiva\backend\node_modules\sharp\lib\output.js:163:17)
+    at ocrPageBuffer (file:///C:/Users/KAWERU%20GROUP/test/Arkiva/backend/src/modules/ocr/ocrControllers.js:15:56)
+    at extractTextFromScannedPdfBuffer (file:///C:/Users/KAWERU%20GROUP/test/Arkiva/backend/src/modules/ocr/ocrControllers.js:36:28)
+    at async extractSmartText (file:///C:/Users/KAWERU%20GROUP/test/Arkiva/backend/src/modules/ocr/ocrControllers.js:58:14)
+    at async uploadFiles (file:///C:/Users/KAWERU%20GROUP/test/Arkiva/backend/src/modules/upload/uploadControllers.js:204:27)
