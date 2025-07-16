@@ -82,7 +82,14 @@ class UploadService {
       // Ajouter les fichiers
       for (int i = 0; i < files.length; i++) {
         final file = files[i];
-        final fileName = 'scanned_document_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        
+        // S'assurer que le nom de fichier a l'extension .jpg
+        String fileName = file.path.split('/').last;
+        if (!fileName.toLowerCase().endsWith('.jpg') && !fileName.toLowerCase().endsWith('.jpeg')) {
+          fileName = 'scanned_document_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        }
+        
+        print('[API] Ajout du fichier: $fileName (${await file.length()} bytes)');
         
         final stream = http.ByteStream(file.openRead());
         final length = await file.length();

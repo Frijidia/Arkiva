@@ -57,16 +57,21 @@ class ImageProcessingService {
       // Lire les bytes de l'image
       final bytes = await imageFile.readAsBytes();
       
-      // Créer un fichier temporaire JPEG
+      // Créer un fichier temporaire JPEG avec une extension .jpg explicite
       final tempDir = await getTemporaryDirectory();
       final jpegFile = File('${tempDir.path}/converted_${DateTime.now().millisecondsSinceEpoch}.jpg');
       
-      // Pour l'instant, copier simplement les bytes
-      // En production, on utiliserait une vraie conversion d'image
+      // Écrire les bytes directement
       await jpegFile.writeAsBytes(bytes);
       
-      debugPrint('Image convertie en JPEG: ${jpegFile.path}');
-      return jpegFile;
+      // Vérifier que le fichier existe et a une taille > 0
+      if (await jpegFile.exists() && await jpegFile.length() > 0) {
+        debugPrint('Image convertie en JPEG: ${jpegFile.path} (${await jpegFile.length()} bytes)');
+        return jpegFile;
+      } else {
+        debugPrint('Erreur: fichier JPEG créé mais vide ou inexistant');
+        return null;
+      }
     } catch (e) {
       debugPrint('Erreur lors de la conversion en JPEG: $e');
       return null;
