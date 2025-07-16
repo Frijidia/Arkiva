@@ -32,12 +32,43 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
 
   Future<void> _loadImage() async {
     try {
-      await widget.imageFile.exists();
+      // Vérifier si le fichier existe
+      if (!await widget.imageFile.exists()) {
+        debugPrint('Fichier image introuvable: ${widget.imageFile.path}');
+        setState(() {
+          _isImageLoaded = false;
+        });
+        return;
+      }
+
+      // Vérifier la taille du fichier
+      final fileSize = await widget.imageFile.length();
+      if (fileSize == 0) {
+        debugPrint('Fichier image vide: ${widget.imageFile.path}');
+        setState(() {
+          _isImageLoaded = false;
+        });
+        return;
+      }
+
+      // Essayer de lire les premiers bytes pour vérifier le format
+      final bytes = await widget.imageFile.openRead().first;
+      if (bytes.isEmpty) {
+        debugPrint('Impossible de lire le fichier image: ${widget.imageFile.path}');
+        setState(() {
+          _isImageLoaded = false;
+        });
+        return;
+      }
+
       setState(() {
         _isImageLoaded = true;
       });
     } catch (e) {
       debugPrint('Erreur lors du chargement de l\'image: $e');
+      setState(() {
+        _isImageLoaded = false;
+      });
     }
   }
 
@@ -93,25 +124,55 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                             width: MediaQuery.of(context).size.width * 0.9,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
+                              debugPrint('Erreur de chargement d\'image: $error');
                               return Container(
                                 width: MediaQuery.of(context).size.width * 0.9,
                                 height: 300,
                                 decoration: BoxDecoration(
                                   color: Colors.grey[200],
                                   borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey[400]!),
                                 ),
-                                child: const Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Erreur de chargement de l\'image',
-                                        style: TextStyle(color: Colors.grey),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline, 
+                                      size: 48, 
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Erreur de chargement de l\'image',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Format non supporté ou fichier corrompu',
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 14,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        // Recharger l'image
+                                        _loadImage();
+                                      },
+                                      icon: const Icon(Icons.refresh),
+                                      label: const Text('Réessayer'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).primaryColor,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

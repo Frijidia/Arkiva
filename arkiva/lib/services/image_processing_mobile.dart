@@ -15,13 +15,46 @@ class ImageProcessingService {
     try {
       debugPrint('Début du traitement du document: ${imageFile.path}');
       
-      // Lire l'image
-      final bytes = await imageFile.readAsBytes();
-      img.Image? image = img.decodeImage(bytes);
+      // Vérifier si le fichier existe
+      if (!await imageFile.exists()) {
+        debugPrint('Fichier introuvable: ${imageFile.path}');
+        return null;
+      }
+
+      // Vérifier la taille du fichier
+      final fileSize = await imageFile.length();
+      if (fileSize == 0) {
+        debugPrint('Fichier vide: ${imageFile.path}');
+        return null;
+      }
+
+      // Lire l'image avec gestion d'erreur
+      Uint8List bytes;
+      try {
+        bytes = await imageFile.readAsBytes();
+      } catch (e) {
+        debugPrint('Erreur lors de la lecture du fichier: $e');
+        return null;
+      }
+
+      if (bytes.isEmpty) {
+        debugPrint('Fichier vide après lecture: ${imageFile.path}');
+        return null;
+      }
+
+      // Décoder l'image avec gestion d'erreur
+      img.Image? image;
+      try {
+        image = img.decodeImage(bytes);
+      } catch (e) {
+        debugPrint('Erreur lors du décodage de l\'image: $e');
+        // Retourner l'image originale si le décodage échoue
+        return imageFile;
+      }
       
       if (image == null) {
         debugPrint('Impossible de décoder l\'image');
-        return null;
+        return imageFile; // Retourner l'original
       }
 
       // Détection automatique des coins (simplifiée)
@@ -43,14 +76,19 @@ class ImageProcessingService {
       final processedPath = '${tempDir.path}/processed_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final processedFile = File(processedPath);
       
-      await processedFile.writeAsBytes(img.encodeJpg(correctedImage, quality: 95));
-      
-      debugPrint('Image traitée sauvegardée: $processedPath');
-      return processedFile;
+      try {
+        final jpegBytes = img.encodeJpg(correctedImage, quality: 95);
+        await processedFile.writeAsBytes(jpegBytes);
+        debugPrint('Image traitée sauvegardée: $processedPath');
+        return processedFile;
+      } catch (e) {
+        debugPrint('Erreur lors de la sauvegarde: $e');
+        return imageFile; // Retourner l'original si la sauvegarde échoue
+      }
       
     } catch (e) {
       debugPrint('Erreur lors du traitement du document: $e');
-      return null;
+      return imageFile; // Retourner l'original en cas d'erreur
     }
   }
 
@@ -59,9 +97,41 @@ class ImageProcessingService {
     try {
       debugPrint('Conversion de l\'image en PDF: ${imageFile.path}');
       
-      // Lire l'image
-      final bytes = await imageFile.readAsBytes();
-      img.Image? image = img.decodeImage(bytes);
+      // Vérifier si le fichier existe
+      if (!await imageFile.exists()) {
+        debugPrint('Fichier introuvable pour la conversion PDF: ${imageFile.path}');
+        return null;
+      }
+
+      // Vérifier la taille du fichier
+      final fileSize = await imageFile.length();
+      if (fileSize == 0) {
+        debugPrint('Fichier vide pour la conversion PDF: ${imageFile.path}');
+        return null;
+      }
+
+      // Lire l'image avec gestion d'erreur
+      Uint8List bytes;
+      try {
+        bytes = await imageFile.readAsBytes();
+      } catch (e) {
+        debugPrint('Erreur lors de la lecture du fichier pour PDF: $e');
+        return null;
+      }
+
+      if (bytes.isEmpty) {
+        debugPrint('Fichier vide après lecture pour PDF: ${imageFile.path}');
+        return null;
+      }
+
+      // Décoder l'image avec gestion d'erreur
+      img.Image? image;
+      try {
+        image = img.decodeImage(bytes);
+      } catch (e) {
+        debugPrint('Erreur lors du décodage de l\'image pour PDF: $e');
+        return null;
+      }
       
       if (image == null) {
         debugPrint('Impossible de décoder l\'image pour la conversion PDF');
@@ -81,10 +151,14 @@ class ImageProcessingService {
       final pdfPath = '${tempDir.path}/document_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final pdfFile = File(pdfPath);
       
-      await pdfFile.writeAsBytes(pdfBytes);
-      
-      debugPrint('PDF créé: $pdfPath');
-      return pdfFile;
+      try {
+        await pdfFile.writeAsBytes(pdfBytes);
+        debugPrint('PDF créé: $pdfPath');
+        return pdfFile;
+      } catch (e) {
+        debugPrint('Erreur lors de la sauvegarde du PDF: $e');
+        return null;
+      }
       
     } catch (e) {
       debugPrint('Erreur lors de la conversion en PDF: $e');
