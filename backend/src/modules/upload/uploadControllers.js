@@ -201,7 +201,15 @@ export const uploadFiles = async (req, res) => {
 
       const finalBuffer = fs.readFileSync(finalPath);
 
-      const contenu_ocr = await extractSmartText(finalBuffer, finalName);
+      // Gérer les erreurs d'OCR de manière plus robuste
+      let contenu_ocr = "";
+      try {
+        contenu_ocr = await extractSmartText(finalBuffer, finalName);
+        console.log(`OCR réussi pour ${finalName}`);
+      } catch (ocrError) {
+        console.error(`Erreur OCR pour ${finalName}:`, ocrError);
+        contenu_ocr = ""; // Utiliser une chaîne vide en cas d'erreur OCR
+      }
 
       const encryptedBuffer = await encryptionService.encryptFile(finalBuffer, finalName, entreprise_id);
       const jsonString = encryptedBuffer.toString('utf8');
@@ -225,6 +233,10 @@ export const uploadFiles = async (req, res) => {
         fs.unlinkSync(finalPath); // supprime les fichiers non convertis (images, pdf, etc.)
       }
 
+    }
+
+    if (uploaded.length === 0) {
+      return res.status(400).json({ error: "Aucun fichier valide à uploader" });
     }
 
     const checkEspace = await checkArmoireStorageCapacity(dossier_id, fichiersTailleTotale);

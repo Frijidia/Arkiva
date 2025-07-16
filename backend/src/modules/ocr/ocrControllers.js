@@ -42,8 +42,26 @@ async function extractTextFromScannedPdfBuffer(pdfBuffer) {
 
 // OCR image en mémoire via buffer
 async function extractTextFromImageBuffer(imageBuffer) {
-  const { data: { text } } = await Tesseract.recognize(imageBuffer, 'fra'); // ou 'eng'
-  return text.trim();
+  try {
+    // Essayer de traiter l'image avec Sharp d'abord
+    const processedBuffer = await sharp(imageBuffer)
+      .jpeg() // Convertir en JPEG pour assurer la compatibilité
+      .toBuffer();
+    
+    const { data: { text } } = await Tesseract.recognize(processedBuffer, 'fra'); // ou 'eng'
+    return text.trim();
+  } catch (sharpError) {
+    console.error('Erreur Sharp lors du traitement de l\'image:', sharpError);
+    
+    // Si Sharp échoue, essayer directement avec Tesseract
+    try {
+      const { data: { text } } = await Tesseract.recognize(imageBuffer, 'fra');
+      return text.trim();
+    } catch (tesseractError) {
+      console.error('Erreur Tesseract lors du traitement de l\'image:', tesseractError);
+      return ''; // Retourner une chaîne vide en cas d'échec
+    }
+  }
 }
 
 // Fonction principale qui choisit la bonne méthode en fonction de l'extension
