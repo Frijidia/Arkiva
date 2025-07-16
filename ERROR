@@ -1,10 +1,8 @@
-E/flutter (15303): [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: ClientException with SocketException: Connection refused (OS Error: Connection refused, errno = 111), address = localhost, port = 43284, uri=http://localhost:3000/api/auth/login
-E/flutter (15303): #0      IOClient.send (package:http/src/io_client.dart:154:7)
-E/flutter (15303): <asynchronous suspension>
-E/flutter (15303): #1      BaseClient._sendUnstreamed (package:http/src/base_client.dart:93:32)
-E/flutter (15303): <asynchronous suspension>
-E/flutter (15303): #2      _withClient (package:http/http.dart:167:12)
-E/flutter (15303): <asynchronous suspension>
-E/flutter (15303): #3      _LoginScreenState._login (package:arkiva/screens/login_screen.dart:39:22)
-E/flutter (15303): <asynchronous suspension>
-E/flutter (15303):
+E/FlutterJNI(21706): Failed to decode image
+E/FlutterJNI(21706): android.graphics.ImageDecoder$DecodeException: Failed to create image decoder with message 'unimplemented'Input contained an error.
+E/FlutterJNI(21706):    at android.graphics.ImageDecoder.nCreate(Native Method)
+E/FlutterJNI(21706):    at android.graphics.ImageDecoder.-$$Nest$smnCreate(Unknown Source:0)
+E/FlutterJNI(21706):    at android.graphics.ImageDecoder$ByteBufferSource.createImageDecoder(ImageDecoder.java:254)
+E/FlutterJNI(21706):    at android.graphics.ImageDecoder.decodeBitmapImpl(ImageDecoder.java:1856)
+E/FlutterJNI(21706):    at android.graphics.ImageDecoder.decodeBitmap(ImageDecoder.java:1848)
+E/FlutterJNI(21706):    at io.flutter.embedding.engine.FlutterJNI.decodeImage(FlutterJNI.java:561)
