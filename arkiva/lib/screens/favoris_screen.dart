@@ -457,10 +457,20 @@ class _FavorisScreenState extends State<FavorisScreen> {
             setStateSB(() { isLoading = true; error = null; });
             try {
               tags = await _tagService.getAllTags(token, entrepriseId);
-              // Tags suggérés (OCR)
-              suggestedTags = await _tagService.getSuggestedTags(token, entrepriseId, document.id);
+              // Tags suggérés (OCR) - gérer l'erreur silencieusement
+              try {
+                suggestedTags = await _tagService.getSuggestedTags(token, entrepriseId, document.id);
+              } catch (e) {
+                print('Erreur suggestions de tags (ignorée): $e');
+                suggestedTags = [];
+              }
               // Tags populaires
-              popularTags = await _tagService.getPopularTags(token, entrepriseId);
+              try {
+                popularTags = await _tagService.getPopularTags(token, entrepriseId);
+              } catch (e) {
+                print('Erreur tags populaires (ignorée): $e');
+                popularTags = [];
+              }
             } catch (e) {
               error = 'Erreur lors du chargement des tags';
             }
@@ -556,7 +566,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
       ),
     );
     if (tagName != null && tagName.isNotEmpty) {
-      await _tagService.addTagToFile(token, entrepriseId, int.parse(document.id.toString()), tagName);
+      await _tagService.addTagToFile(token, entrepriseId, document.id, tagName);
       await _loadFavoris();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

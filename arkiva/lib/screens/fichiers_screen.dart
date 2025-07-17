@@ -705,8 +705,20 @@ class _FichiersScreenState extends State<FichiersScreen> {
             setStateSB(() { isLoading = true; error = null; });
             try {
               tags = await _tagService.getAllTags(token, entrepriseId);
-              suggestedTags = await _tagService.getSuggestedTags(token, entrepriseId, document.id);
-              popularTags = await _tagService.getPopularTags(token, entrepriseId);
+              // Tags suggérés (OCR) - gérer l'erreur silencieusement
+              try {
+                suggestedTags = await _tagService.getSuggestedTags(token, entrepriseId, document.id);
+              } catch (e) {
+                print('Erreur suggestions de tags (ignorée): $e');
+                suggestedTags = [];
+              }
+              // Tags populaires
+              try {
+                popularTags = await _tagService.getPopularTags(token, entrepriseId);
+              } catch (e) {
+                print('Erreur tags populaires (ignorée): $e');
+                popularTags = [];
+              }
             } catch (e) {
               error = 'Erreur lors du chargement des tags';
             }
@@ -824,7 +836,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       ),
     );
     if (tagName != null && tagName.isNotEmpty) {
-      await _tagService.addTagToFile(token, entrepriseId, int.parse(document.id.toString()), tagName);
+      await _tagService.addTagToFile(token, entrepriseId, document.id, tagName);
       await _loadDocuments();
       if (!mounted) return;
       _scaffoldMessengerKey.currentState?.showSnackBar(
@@ -1509,7 +1521,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
                                                   ),
                                                 );
                                                 if (removed == true) {
-                                                  await _tagService.removeTagFromFile(token, entrepriseId, int.parse(document.id), tagObj['tag_id']);
+                                                  await _tagService.removeTagFromFile(token, entrepriseId, document.id, tagObj['tag_id']);
                                                   await _loadDocuments();
                                                   if (!mounted) return;
                                                   _scaffoldMessengerKey.currentState?.showSnackBar(

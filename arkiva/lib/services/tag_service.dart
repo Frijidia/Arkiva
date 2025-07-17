@@ -7,14 +7,18 @@ class TagService {
   final String baseUrl = ApiConfig.baseUrl;
 
   Future<List<dynamic>> getAllTags(String token, int entrepriseId) async {
+    print('[API] GET $baseUrl/api/tag?entreprise_id=$entrepriseId');
+    print('[API] Headers: {Authorization: Bearer $token}');
     final response = await http.get(
       Uri.parse('$baseUrl/api/tag?entreprise_id=$entrepriseId'),
       headers: {'Authorization': 'Bearer $token'},
     );
+    print('[API] Response status: ${response.statusCode}');
+    print('[API] Response body: ${response.body}');
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Erreur lors de la récupération des tags');
+      throw Exception('Erreur lors de la récupération des tags: ${response.statusCode} - ${response.body}');
     }
   }
 
@@ -74,15 +78,17 @@ class TagService {
       Uri.parse('$baseUrl/api/tag/tagsPopular?entreprise_id=$entrepriseId'),
       headers: {'Authorization': 'Bearer $token'},
     );
+    print('[API] Response status: ${response.statusCode}');
+    print('[API] Response body: ${response.body}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return List<String>.from(data['tags'] ?? []);
     } else {
-      throw Exception('Erreur lors de la récupération des tags populaires');
+      throw Exception('Erreur lors de la récupération des tags populaires: ${response.statusCode} - ${response.body}');
     }
   }
 
-  Future<void> addTagToFile(String token, int entrepriseId, int fichierId, String nomTag) async {
+  Future<void> addTagToFile(String token, int entrepriseId, String fichierId, String nomTag) async {
     print('[API] POST $baseUrl/api/tag/addTagToFile');
     print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
     print('[API] Body: {fichier_id: $fichierId, nom_tag: $nomTag, entreprise_id: $entrepriseId}');
@@ -90,7 +96,7 @@ class TagService {
       Uri.parse('$baseUrl/api/tag/addTagToFile'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       body: json.encode({
-        'fichier_id': fichierId,
+        'fichier_id': int.parse(fichierId),
         'nom_tag': nomTag,
         'entreprise_id': entrepriseId
       }),
@@ -100,12 +106,12 @@ class TagService {
     }
   }
 
-  Future<void> removeTagFromFile(String token, int entrepriseId, int fichierId, int tagId) async {
+  Future<void> removeTagFromFile(String token, int entrepriseId, String fichierId, int tagId) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/api/tag/removeTagFromFile'),
       headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
       body: json.encode({
-        'fichier_id': fichierId,
+        'fichier_id': int.parse(fichierId),
         'tag_id': tagId,
         'entreprise_id': entrepriseId
       }),
@@ -117,6 +123,9 @@ class TagService {
 
   Future<List<dynamic>> getSuggestedTags(String token, int entrepriseId, String documentId) async {
     try {
+      print('[API] POST $baseUrl/api/tag/Tagsuggested');
+      print('[API] Headers: {Authorization: Bearer $token, Content-Type: application/json}');
+      print('[API] Body: {fichier_id: $documentId}');
       final response = await http.post(
         Uri.parse('$baseUrl/api/tag/Tagsuggested'),
         headers: {
@@ -127,13 +136,15 @@ class TagService {
           'fichier_id': documentId,
         }),
       );
+      print('[API] Response status: ${response.statusCode}');
+      print('[API] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final List<dynamic> tags = data['tags'] ?? [];
         return tags.map((tag) => {'name': tag}).toList();
       } else {
-        throw Exception('Erreur lors de la récupération des suggestions de tags');
+        throw Exception('Erreur lors de la récupération des suggestions de tags: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       throw Exception('Erreur lors de la récupération des suggestions de tags: $e');

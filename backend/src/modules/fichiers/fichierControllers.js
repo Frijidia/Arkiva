@@ -20,10 +20,28 @@ export const getFichiersByDossierId = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      'SELECT * FROM fichiers WHERE dossier_id = $1 AND is_deleted = false ORDER BY fichier_id DESC',
-      [dossier_id]
-    );
+    // Récupérer les fichiers avec leurs tags
+    const result = await pool.query(`
+      SELECT 
+        f.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'tag_id', t.tag_id,
+              'name', t.name,
+              'color', t.color,
+              'description', t.description
+            )
+          ) FILTER (WHERE t.tag_id IS NOT NULL),
+          '[]'::json
+        ) as tags
+      FROM fichiers f
+      LEFT JOIN fichier_tags ft ON f.fichier_id = ft.fichier_id
+      LEFT JOIN tags t ON ft.tag_id = t.tag_id
+      WHERE f.dossier_id = $1 AND f.is_deleted = false
+      GROUP BY f.fichier_id
+      ORDER BY f.fichier_id DESC
+    `, [dossier_id]);
 
     res.status(200).json({ fichiers: result.rows });
   } catch (err) {
