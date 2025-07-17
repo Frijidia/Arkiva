@@ -78,12 +78,11 @@ export const chooseSubscription = async (req, res) => {
     dateExpiration.setDate(dateExpiration.getDate() + abonnement.duree);
 
     // 4. Créer une entrée de paiement en attente
-    const payment_id = uuidv4();
     const paiementResult = await pool.query(
-      `INSERT INTO payments (payment_id, entreprise_id, subscription_id, montant, armoires_souscrites, statut, date_expiration)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO payments (entreprise_id, subscription_id, montant, armoires_souscrites, statut, date_expiration)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [payment_id, entrepriseId, subscription_id, montantTotal, armoires_souscrites, 'en_attente', dateExpiration]
+      [entrepriseId, subscription_id, montantTotal, armoires_souscrites, 'en_attente', dateExpiration]
     );
 
     // 5. Logger l'action
