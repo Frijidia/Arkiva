@@ -83,11 +83,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6B46C1),
+                          color: const Color(0xFF1E88E5),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF6B46C1).withOpacity(0.3),
+                              color: const Color(0xFF1E88E5).withOpacity(0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -132,7 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Expanded(
                     flex: 1,
                     child: Container(
-                      color: const Color(0xFF6B46C1),
+                      color: const Color(0xFF1E88E5),
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -153,7 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: const Icon(
                                 Icons.folder_open,
                                 size: 60,
-                                color: Color(0xFF6B46C1),
+                                color: Color(0xFF1E88E5),
                               ),
                             ),
                             const SizedBox(height: 32),
@@ -309,7 +309,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
             ),
             filled: true,
             fillColor: const Color(0xFFF7FAFC),
@@ -338,7 +338,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
             ),
             filled: true,
             fillColor: const Color(0xFFF7FAFC),
@@ -368,7 +368,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
             ),
             filled: true,
             fillColor: const Color(0xFFF7FAFC),
@@ -401,7 +401,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handleRegister,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6B46C1),
+              backgroundColor: const Color(0xFF1E88E5),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -436,7 +436,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: const Text(
               'Déjà un compte ? Se connecter',
               style: TextStyle(
-                color: Color(0xFF6B46C1),
+                color: Color(0xFF1E88E5),
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),

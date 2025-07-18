@@ -1,1 +1,1 @@
-cd backend && node -e "import('./src/config/database.js').then(db => db.default.query('SELECT * FROM users LIMIT 5').then(result => console.log(JSON.stringify(result.rows, null, 2))).catch(console.error))"rr
+cd backend && node -e "import('./src/config/database.js').then(db => db.default.query('SELECT * FROM users LIMIT 5').then(result => console.log(JSON.stringify(result.rows, null, 2))).catch(console.error))"rrr
