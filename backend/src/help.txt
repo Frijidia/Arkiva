@@ -1,0 +1,257 @@
+🎯 Ton périmètre de responsabilité
+
+Tu t’occupes de tout ce qui est :
+
+    Sécurité (chiffrement, suppression sécurisée)
+
+    Sauvegarde & restauration
+
+    ✅ Journalisation des actions (logs)
+
+    ✅ Authentification (SSO, 2FA)
+
+    ✅ Gestion des rôles & permissions
+
+    Gestion des abonnements & paiements
+
+    Statistiques et tableau de bord
+
+    Conformité réglementaire (durée de conservation, verrouillage)
+
+—
+
+🧭 Ton plan de travail : étape par étape
+
+🔵 ÉTAPE 1 – Authentification & Gestion des utilisateurs
+
+   ✅ POST /auth/register
+
+   ✅ POST /auth/login
+
+   ✅ POST /auth/logout
+
+   ✅ POST /auth/2fa/enable (email ou OTP mobile)
+
+   ✅ GET /me
+
+   ✅ GET /users (admin)
+
+   ✅ PUT /users/:id (changer rôle)
+
+   ✅ Middleware de permission (admin / contributeur / lecteur)
+
+❌ Bonus : intégration SSO Google/Microsoft si le projet l’exige.
+
+🧩 Techno conseillée : JWT pour sessions + bcrypt pour hashing des mots de passe.
+
+🟣 ÉTAPE 2 – Journalisation des actions
+
+   ✅ Crée un service d’audit : dès qu’un fichier est ajouté / modifié / supprimé / restauré → un log est enregistré avec :
+
+        utilisateur
+
+        action
+
+        cible (type + id)
+
+        date
+
+    ✅ Table : journal_activite
+
+Exemple d’entrée :
+
+[2025-06-01 15:22] – user_id=3 a supprimé le fichier ID=67 “ContratRH.pdf”
+
+🔴 ÉTAPE 3 – Chiffrement des documents
+
+   ✅ Lors de l’enregistrement d’un fichier (via ton collègue), tu crées un service de chiffrement :
+
+    ✅    Input : fichier brut
+
+    ✅    Output : fichier chiffré AES-256 (avec IV et clé sécurisée)
+
+    ✅   Stockage dans un répertoire protégé
+
+    Tu peux stocker la clé dans :
+
+    ✅    une table “clés_chiffrement” (clé encryptée par une clé maître)
+
+    ✅    un service KMS si dispo (AWS KMS, Azure Key Vault)
+
+⚫ ÉTAPE 4 – Suppression automatique des fichiers locaux
+
+Tu dois concevoir un endpoint ou une logique côté desktop (à discuter avec le front-end ou app desktop) pour forcer la suppression des fichiers locaux après envoi réussi à l’API.
+
+    ❌ Inclure un flag delete_after_upload dans la requête si besoin
+
+    ❌ Ajouter un trigger de suppression sécurisée dans l’app desktop
+
+🟡 ÉTAPE 5 – Sauvegarde & restauration
+    ✅ Table sauvegardes avec tous les champs nécessaires
+    ✅ Endpoints API :
+    ✅ POST /sauvegardes
+    ✅ GET /sauvegardes
+    ✅ POST /sauvegardes/:id/restaurer
+    ✅ Logique de sauvegarde :
+    ✅ Sauvegarde de fichiers
+    ✅ Sauvegarde de dossiers
+    ✅ Sauvegarde système
+    ✅ Gestion des archives ZIP
+    ✅ Logs de sauvegarde
+    ✅ Gestion des versions lors de la restauration
+    ✅ Création de nouvelles versions pour les fichiers existants
+    ✅ Restauration des dossiers, casiers et armoires
+    ✅ Logs de restauration
+    Table sauvegardes : avec date, déclencheur, contenu (json résumé), chemin
+
+    API :
+
+        POST /sauvegardes → déclencher une sauvegarde
+
+        GET /sauvegardes → liste
+
+        ✅ POST /sauvegardes/:id/restaurer → restauration (admin uniquement)
+
+    ✅ Ne pas écraser les fichiers restaurés → créer nouvelle version
+
+    ✅ Ajouter logs de restauration
+
+🟢 ÉTAPE 6 – Gestion des versions
+
+    ✅ Lorsqu’un fichier est restauré ou modifié :
+
+    ✅    Archiver l’ancienne version
+
+    ✅    Créer une nouvelle version dans table versions_fichiers
+
+    ✅API :
+
+    ✅    GET /fichiers/:id/versions
+
+    ✅    POST /fichiers/:id/version
+
+🟠 ÉTAPE 7 – Abonnement & paiement
+
+    ✅ Table abonnements
+
+    ✅ Table paiements
+
+    ✅ Gestion :
+
+        ✅ POST /abonnement/choisir
+
+        ✅ POST /abonnement/payer (intégration avec FeexPay)
+
+        ✅ GET /abonnement
+
+        ✅ GET /factures
+
+    Génération de PDF de facture (lib : pdfkit, puppeteer, wkhtmltopdf…)
+
+⚪ ÉTAPE 8 – Tableaux de bord / statistiques
+
+   ✅ GET /dashboard/global → nombre d’armoires, utilisateurs, documents, espace utilisé
+
+   ✅ GET /dashboard/utilisateur/:id → activité de l’utilisateur
+
+Tu peux te baser sur les logs pour agréger les statistiques.
+
+—
+
+📂 Exemple d’organisation de tes dossiers backend
+
+src/
+├── auth/
+│ └── auth.controller.js
+├── users/
+│ └── user.controller.js
+├── audit/
+│ └── audit.service.js
+├── security/
+│ ├── encryption.service.js
+│ └── permissions.middleware.js
+├── backup/
+│ └── backup.controller.js
+├── versions/
+│ └── version.controller.js
+├── billing/
+│ └── payment.controller.js
+├── dashboard/
+│ └── stats.controller.js
+
+—
+
+
+Pour les fichiers (déjà implémenté) :
+
+    const versionMetadata = {
+        nom: fileDetails.nom,
+        type_mime: fileDetails.type_mime,
+        taille: fileDetails.taille,
+        version_number: (fileDetails.version_number || 0) + 1,
+        created_by: req.user.user_id,
+        created_at: new Date()
+    };
+
+Pour les dossiers :
+
+    const versionMetadata = {
+        nom: dossierDetails.nom,
+        type: "dossier",
+        nombre_elements: dossierDetails.nombre_elements,
+        version_number: (dossierDetails.version_number || 0) + 1,
+        created_by: req.user.user_id,
+        created_at: new Date()
+    };
+
+
+Pour le système :
+
+
+    const versionMetadata = {
+        nom: "Sauvegarde système",
+        type: "systeme",
+        nombre_dossiers: systemDetails.nombre_dossiers,
+        nombre_fichiers: systemDetails.nombre_fichiers,
+        version_number: (systemDetails.version_number || 0) + 1,
+        created_by: req.user.user_id,
+        created_at: new Date()
+    };
+    
+
+
+       npm install -g ngrok
+          ngrok http 3000
+
+
+
+
+```
+
+┌─────────────────────────────────────────────────────────┐
+│                    FRONTEND                             │
+│           (What customers see)                          │
+│        The dining room and menu                         │
+└─────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────┐
+│                   API GATEWAY                           │
+│              (The waiter)                               │
+│        Takes orders and serves food                     │
+└─────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────┬─────────────────┬─────────────────────┐
+│    SECURITY     │  BUSINESS LOGIC │  EXTERNAL SERVICES  │
+│   (The safe)    │  (The kitchen)  │   (Suppliers)       │
+│                 │                 │                     │
+│ • User login    │ • File handling │ • Cloud storage     │
+│ • Encryption    │ • Video process │ • Payment systems   │
+│ • Access rights │ • Email sending │ • Email services    │
+└─────────────────┴─────────────────┴─────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────┐
+│                   DATABASE                              │
+│              (The inventory)                            │
+│        Where all information is stored                  │
+└─────────────────────────────────────────────────────────┘
+```

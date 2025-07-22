@@ -1,0 +1,434 @@
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on TECNO KM4 is available at: http://127.0.0.1:50479/GsQje36IxQA=/
+The Flutter DevTools debugger and profiler on TECNO KM4 is available at: http://127.0.0.1:9101?uri=http://127.0.0.1:50479/GsQje36IxQA=/
+I/.example.arkiva( 7765): hook_module_init libgui_unisoc_utils.so over, map size:3, library handle:0x3192ac912680f3b3
+I/UnisocBufferQueueHelper( 7765): Unisoc-Graphics: UnisocBufferQueueHelper create, this:0xb4000079f6f79a40, size:88
+I/.example.arkiva( 7765): createUnisocBufferQueueHelperFactory success, get instance 0xb4000079f6f79a40
+I/.example.arkiva( 7765): Unisoc-Graphics: UnisocFrameRecord create, this:0xb4000079ee142180, size:296, enable:0
+I/.example.arkiva( 7765): createUnisocFrameRecordFactory success, get instance 0xb4000079ee142180
+I/.example.arkiva( 7765): Compiler allocated 5183KB to compile void android.view.ViewRootImpl.performTraversals()
+W/libc    ( 7765): Access denied finding property "persist.vendor.gpu.fbc"
+I/mali_gralloc( 7765): Unisoc: get compress property: persist.vendor.gpu.fbc (1)
+E/mali_gralloc( 7765): Requested R8 format is not supported with this allocator. R8 format is only supported with the AIDL allocator
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format R8 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format RGBA_10101010 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc( 7765): Requested R8 format is not supported with this allocator. R8 format is only supported with the AIDL allocator
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format R8 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format RGBA_10101010 and usage TEXTURE + RENDER + HWC
+D/mali_gralloc( 7765): register: id=3280001edf1, handle=0xb4000079f71b30a0, importpid=7765
+W/libc    ( 7765): Access denied finding property "persist.vendor.gpu.ionmemtrack"
+I/mali_gralloc( 7765): initIonKernelMemtrack open devices:/dev/systemheap success, fd:226
+D/mali_gralloc( 7765): register: id=3280001edf1, handle=0xb4000079f71b3420, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001edf1, handle=0xb4000079f71b3420, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001edf2, handle=0xb4000079f71b3420, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001edf2, handle=0xb4000079f71b3500, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001edf2, handle=0xb4000079f71b3500, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001edf3, handle=0xb4000079f71b3500, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001edf3, handle=0xb4000079f71b35e0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001edf3, handle=0xb4000079f71b35e0, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001edf4, handle=0xb4000079f71b35e0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001edf4, handle=0xb4000079f71b36c0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001edf4, handle=0xb4000079f71b36c0, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001edf5, handle=0xb4000079f71b36c0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001edf5, handle=0xb4000079f71b37a0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001edf5, handle=0xb4000079f71b37a0, base=0x0, importpid=7765, clone_count=1
+W/Choreographer( 7765): Already have a pending vsync event.  There should only be one at a time.
+I/.example.arkiva( 7765): Compiler allocated 5359KB to compile void android.view.ViewRootImpl.performTraversals()
+D/mali_gralloc( 7765): register: id=3280001edf6, handle=0xb4000079f71b3960, importpid=7765
+D/LogUtil ( 7765): The value of DEBUG is: false
+D/LogUtil ( 7765): mLogd_enable
+D/ProfileInstaller( 7765): Installing profile for com.example.arkiva
+I/flutter ( 7765): 🔄 Initialisation de l'état d'authentification...
+I/flutter ( 7765): 📊 État d'authentification:
+I/flutter ( 7765):    - Authentifié: false
+I/flutter ( 7765):    - User ID: null
+I/flutter ( 7765):    - Username: null
+I/flutter ( 7765):    - Entreprise ID: null
+I/flutter ( 7765):    - Role: null
+W/WindowOnBackDispatcher( 7765): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 7765): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/os.LiceInfo( 7765): instance successfully. com.transsion.message.bank.v1.MessageBankLice@1113aeb from com.transsion.message.bank.IMessageBankLice
+D/TextSelection( 7765): call hasMessage cause invalidateCache
+D/os.SingleLice( 7765): instance successfully. com.transsion.dragdrop.v1.DragDropLice@469ac7 from com.transsion.dragdrop.DragDropLiceFactory
+D/os.SingleLiceFactory( 7765): instance successfully. com.transsion.dragdrop.v1.DragDropLice@469ac7 from android.view.IViewLice
+D/os.LiceInfo( 7765): instance successfully. com.transsion.view.ViewLice@e22b8f4 from android.view.IViewLice
+D/TextSelection( 7765): onUseCache cache=false
+W/WindowOnBackDispatcher( 7765): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 7765): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:29fdeed6: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/TranClassInfo( 7765): instance successfully. com.transsion.hubcore.internal.latency.TranLatencyTrackerImpl@ff20251 from com.transsion.hubcore.internal.latency.ITranLa
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F....ID 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~jsMQLdHEH0pM0LqhKdn2pQ==/com.google.android.marvin.talkback-zr_vXmv9TXxnBOqH9
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~jsMQLdHEH0pM0LqhKdn2pQ==/com.google.android.marvin.talkback-zr_vXmv9TXxnBOqH9
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /tr_preload/operator/app/Notepad/Notepad.apk' with 1 weak references
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /tr_preload/operator/app/HiTranslate/HiTranslate.apk' with 1 weak references
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/AiWriting/AiWriting.apk' with 1 weak references
+D/mali_gralloc( 7765): register: id=3280001edf7, handle=0xb400007bb2733420, importpid=7765
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+W/InteractionJankMonitor( 7765): Initializing without READ_DEVICE_CONFIG permission. enabled=false, interval=1, missedFrameThreshold=3, frameTimeThreshold=64, package=c
+D/TranClassInfo( 7765): instance successfully. com.transsion.hubcore.internal.jank.TranFrameTrackerImpl@ee18a8e from com.transsion.hubcore.internal.jank.ITranFrameTrack
+D/mali_gralloc( 7765): register: id=3280001edfc, handle=0xb400007bb2734140, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001edfd, handle=0xb400007bb2732460, importpid=7765
+I/ImeTracker( 7765): com.example.arkiva:29fdeed6: onShown
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:5eb3fc77: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/TextSelection( 7765): onUseCache cache=false
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:5eb3fc77: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/ImeTracker( 7765): com.example.arkiva:f819d6ed: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:f819d6ed: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:9e37b13c: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:ac4bdde7: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:9e37b13c: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:ac4bdde7: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:c6407412: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/TextSelection( 7765): onUseCache cache=false
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:c6407412: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:64401b61: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:e2538473: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:64401b61: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:e2538473: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:cafee935: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:26497d1a: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:cafee935: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:26497d1a: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:515a2829: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:515a2829: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:9cbf52b: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:5ffa5b0d: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:9cbf52b: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:5ffa5b0d: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:ebec337c: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+D/InsetsController( 7765): hide(ime(), fromIme=true)
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+I/ImeTracker( 7765): com.example.arkiva:51d22e33: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+I/ImeTracker( 7765): com.example.arkiva:ebec337c: onHidden
+D/TextSelection( 7765): onUseCache cache=false
+W/WindowOnBackDispatcher( 7765): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 7765): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:c484e460: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:c484e460: onShown
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:e0051ed9: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:e0051ed9: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:2a2d6293: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InsetsController( 7765): hide(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:87d23ccf: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+I/ImeTracker( 7765): com.example.arkiva:2a2d6293: onHidden
+D/TextSelection( 7765): onUseCache cache=false
+D/TextSelection( 7765): onUseCache cache=false
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:6a9ed451: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:6a9ed451: onShown
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:7080f509: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/TextSelection( 7765): onUseCache cache=false
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:7080f509: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/ImeTracker( 7765): com.example.arkiva:246618bd: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:246618bd: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:ba78313b: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:b707724f: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:ba78313b: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:b707724f: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:8bff4264: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:8bff4264: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:5993b83c: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /tr_preload/operator/app/HiTranslate/HiTranslate.apk' with 1 weak references
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~jsMQLdHEH0pM0LqhKdn2pQ==/com.google.android.marvin.talkback-zr_vXmv9TXxnBOqH9
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~jsMQLdHEH0pM0LqhKdn2pQ==/com.google.android.marvin.talkback-zr_vXmv9TXxnBOqH9
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /tr_preload/operator/app/Notepad/Notepad.apk' with 1 weak references
+W/.example.arkiva( 7765): ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/AiWriting/AiWriting.apk' with 1 weak references
+I/ImeTracker( 7765): com.example.arkiva:a89d2648: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:5993b83c: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/ImeTracker( 7765): com.example.arkiva:929af1a: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:185d8c8d: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:a070d0fe: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:a89d2648: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:929af1a: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/ImeTracker( 7765): com.example.arkiva:3dcda67c: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:eadd3a25: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:d91079de: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:185d8c8d: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:a070d0fe: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:3dcda67c: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:eadd3a25: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:d91079de: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:484bcdf6: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+I/ImeTracker( 7765): com.example.arkiva:59e84b4c: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:484bcdf6: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:59e84b4c: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:7aea481a: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:7aea481a: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:66f7a5ae: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:66f7a5ae: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:12532a7e: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InsetsController( 7765): hide(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:dad9fa53: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+I/ImeTracker( 7765): com.example.arkiva:12532a7e: onHidden
+D/TextSelection( 7765): onUseCache cache=false
+W/WindowOnBackDispatcher( 7765): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 7765): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:9ac2d9bb: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:9ac2d9bb: onShown
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:c29fd123: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHO3741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:c29fd123: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:a00bfb47: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:a00bfb47: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:766102e1: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+I/ImeTracker( 7765): com.example.arkiva:afed6fc7: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:766102e1: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:afed6fc7: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:30708bb: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:30708bb: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:3078db1b: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:3078db1b: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:355375ec: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/TextSelection( 7765): onUseCache cache=false
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:355375ec: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/ImeTracker( 7765): com.example.arkiva:2e006cc5: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:2e006cc5: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/VRI[MainActivity]( 7765): visibilityChanged oldVisibility=true newVisibility=false
+W/RemoteInputConnectionImpl( 7765): requestCursorUpdates on inactive InputConnection
+D/mali_gralloc( 7765): unregister: id=3280001edf1, handle=0xb4000079f71b30a0, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edf2, handle=0xb4000079f71b3420, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edf5, handle=0xb4000079f71b36c0, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edf4, handle=0xb4000079f71b35e0, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edf3, handle=0xb4000079f71b3500, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edf6, handle=0xb4000079f71b3960, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edf7, handle=0xb400007bb2733420, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edfd, handle=0xb400007bb2732460, base=0x0, importpid=7765, clone_count=0
+D/mali_gralloc( 7765): unregister: id=3280001edfc, handle=0xb400007bb2734140, base=0x0, importpid=7765, clone_count=0
+D/LogUtil ( 7765): mLogd_enable
+E/ImeBackDispatcher( 7765): Ime callback not found. Ignoring unregisterReceivedCallback. callbackId: 32450591
+E/mali_gralloc( 7765): Requested R8 format is not supported with this allocator. R8 format is only supported with the AIDL allocator
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format R8 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format RGBA_10101010 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc( 7765): Requested R8 format is not supported with this allocator. R8 format is only supported with the AIDL allocator
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format R8 and usage TEXTURE + RENDER + HWC
+E/mali_gralloc( 7765): ERROR: Unrecognized and/or unsupported format RGBA_10101010 and usage TEXTURE + RENDER + HWC
+D/mali_gralloc( 7765): register: id=3280001ee1f, handle=0xb400007c0c11fd20, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee1f, handle=0xb400007c0c11ffc0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001ee1f, handle=0xb400007c0c11ffc0, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001ee20, handle=0xb400007c0c11ffc0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee20, handle=0xb400007c0c1200a0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001ee20, handle=0xb400007c0c1200a0, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001ee21, handle=0xb400007c0c1200a0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee21, handle=0xb400007c0c120180, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001ee21, handle=0xb400007c0c120180, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001ee22, handle=0xb400007c0c1205e0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee22, handle=0xb400007c0c1206c0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001ee22, handle=0xb400007c0c1206c0, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001ee23, handle=0xb400007c0c1206c0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee23, handle=0xb400007c0c1207a0, importpid=7765
+D/mali_gralloc( 7765): unregister: id=3280001ee23, handle=0xb400007c0c1207a0, base=0x0, importpid=7765, clone_count=1
+D/mali_gralloc( 7765): register: id=3280001ee24, handle=0xb400007c0c11fa80, importpid=7765
+W/DisplayEventDispatcher( 7765): Vsync time out! vsyncScheduleDelay=556ms
+W/Choreographer( 7765): Already have a pending vsync event.  There should only be one at a time.
+D/LogUtil ( 7765): mLogd_enable
+I/Choreographer( 7765): Skipped 66 frames!  The application may be doing too much work on its main thread.
+D/InsetsController( 7765): hide(ime(), fromIme=true)
+D/mali_gralloc( 7765): register: id=3280001ee25, handle=0xb400007c0c11f8c0, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee26, handle=0xb4000079f7112540, importpid=7765
+D/mali_gralloc( 7765): register: id=3280001ee27, handle=0xb400007bb2737400, importpid=7765
+I/ImeTracker( 7765): com.example.arkiva:60eb81f9: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+I/ImeTracker( 7765): com.example.arkiva:51e87b14: onHidden
+D/TextSelection( 7765): onUseCache cache=false
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:46082570: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F....ID 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/TextSelection( 7765): onUseCache cache=false
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:7996480c: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:7996480c: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/ImeTracker( 7765): com.example.arkiva:46082570: onShown
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:378cdeee: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InsetsController( 7765): hide(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:9e2b257e: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+I/ImeTracker( 7765): com.example.arkiva:378cdeee: onHidden
+D/TextSelection( 7765): onUseCache cache=false
+W/WindowOnBackDispatcher( 7765): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 7765): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:4280a4d5: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:4280a4d5: onShown
+D/TextSelection( 7765): onUseCache cache=false
+I/ImeTracker( 7765): com.example.arkiva:36a6feda: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+D/InputMethodManager( 7765): showSoftInput() view=io.flutter.embedding.android.FlutterView{aecec42 VFE...... .F...... 0,0-720,1600 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring off
+D/InputConnectionAdaptor( 7765): The input method toggled cursor monitoring on
+D/InsetsController( 7765): show(ime(), fromIme=true)
+I/ImeTracker( 7765): com.example.arkiva:36a6feda: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+D/TextSelection( 7765): onUseCache cache=false
+I/flutter ( 7765): Réponse backend : {"message":"Email ou mot de passe incorrect"}

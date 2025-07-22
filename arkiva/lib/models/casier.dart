@@ -1,43 +1,62 @@
 import 'package:arkiva/models/document.dart';
+import 'package:arkiva/models/dossier.dart';
 
 class Casier {
-  final String id;
+  final int casierId;
+  final int armoireId;
   final String nom;
-  final String armoireId;
-  final String? description;
+  final String description;
   final DateTime dateCreation;
-  final List<Document> documents;
+  final DateTime dateModification;
+  final bool isDeleted;
+  final int userId;
+  final int versionId;
 
   Casier({
-    required this.id,
-    required this.nom,
+    required this.casierId,
     required this.armoireId,
-    this.description,
+    required this.nom,
+    required this.description,
     required this.dateCreation,
-    List<Document>? documents,
-  }) : documents = documents ?? [];
+    required this.dateModification,
+    required this.isDeleted,
+    required this.userId,
+    required this.versionId,
+  });
+
+  factory Casier.fromJson(Map<String, dynamic> json) {
+    final int casierId = json['cassier_id'] as int? ?? 0;
+    final int armoireId = json['armoire_id'] as int? ?? 0;
+    final int userId = json['user_id'] as int? ?? 0;
+    final int versionId = json['version_id'] as int? ?? 0;
+
+    final DateTime createdAt = DateTime.parse(json['created_at']);
+    final DateTime dateModification = DateTime.parse(json['date_modification'] ?? json['created_at']);
+
+    return Casier(
+      casierId: casierId,
+      armoireId: armoireId,
+      nom: json['nom'] as String? ?? '',
+      description: json['sous_titre'] as String? ?? '',
+      dateCreation: createdAt,
+      dateModification: dateModification,
+      isDeleted: json['is_deleted'] as bool? ?? false,
+      userId: userId,
+      versionId: versionId,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'casier_id': casierId,
+      'armoire_id': armoireId,
       'nom': nom,
-      'armoireId': armoireId,
       'description': description,
-      'dateCreation': dateCreation.toIso8601String(),
-      'documents': documents.map((d) => d.toJson()).toList(),
+      'date_creation': dateCreation.toIso8601String(),
+      'date_modification': dateModification.toIso8601String(),
+      'is_deleted': isDeleted,
+      'user_id': userId,
+      'version_id': versionId,
     };
-  }
-
-  factory Casier.fromJson(Map<String, dynamic> json) {
-    return Casier(
-      id: json['id'],
-      nom: json['nom'],
-      armoireId: json['armoireId'],
-      description: json['description'],
-      dateCreation: DateTime.parse(json['dateCreation']),
-      documents: (json['documents'] as List?)
-          ?.map((d) => Document.fromJson(d))
-          .toList() ?? [],
-    );
   }
 } 

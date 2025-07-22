@@ -1,12 +1,13 @@
 {
-  "name": "backend",
+  "name": "arkiva-backend",
   "version": "1.0.0",
-  "description": "Ce dossier contient tous les services backend nécessaires pour la plateforme de streaming.",
+  "description": "Ce dossier contient tous les services backend nécessaires pour la plateforme de Arkiva.",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node src/tests/backupVersionTest.js",
+    "postinstall": "patch-package"
   },
   "keywords": [],
   "author": "",
@@ -16,14 +17,18 @@
     "@aws-sdk/s3-request-presigner": "^3.820.0",
     "@feexpay/react-sdk": "^1.5.4",
     "@paypal/checkout-server-sdk": "^1.0.3",
+    "archiver": "^7.0.1",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
+    "canvas": "^3.1.0",
+    "compromise": "^14.14.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
+    "extract-zip": "^2.0.1",
     "fluent-ffmpeg": "^2.1.3",
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
@@ -31,13 +36,25 @@
     "libreoffice-convert": "^1.6.1",
     "multer": "^1.4.5-lts.2",
     "multer-s3": "^3.0.1",
+    "node-cron": "^4.2.0",
     "nodemailer": "^7.0.3",
     "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^3.2.0",
+    "pdfjs-dist": "^5.3.31",
     "pg": "^8.15.5",
+    "sequelize": "^6.37.7",
+    "sharp": "^0.34.2",
+    "tesseract.js": "^6.0.1",
+    "unzipper": "^0.10.14",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0"
   },
   "type": "module"
 }

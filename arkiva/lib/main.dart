@@ -3,15 +3,26 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:arkiva/screens/home_screen.dart';
 import 'package:arkiva/screens/splash_screen.dart';
+import 'package:arkiva/screens/register_screen.dart';
+import 'package:arkiva/screens/create_entreprise_screen.dart';
 import 'package:arkiva/services/theme_service.dart';
+import 'package:arkiva/services/auth_state_service.dart';
 import 'package:arkiva/screens/scan_screen.dart';
 import 'package:arkiva/screens/upload_screen.dart';
 import 'package:arkiva/services/animation_service.dart';
+import 'package:arkiva/screens/admin_dashboard_screen.dart';
+import 'package:arkiva/screens/backups_screen.dart';
+import 'package:arkiva/screens/versions_screen.dart';
+import 'package:arkiva/screens/restorations_screen.dart';
+import 'screens/payment_screen.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeService()),
+        ChangeNotifierProvider(create: (_) => AuthStateService()),
+      ],
       child: const ArkivaApp(),
     ),
   );
@@ -23,13 +34,31 @@ class ArkivaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeService = context.watch<ThemeService>();
+    final authStateService = context.watch<AuthStateService>();
 
     return MaterialApp(
       title: 'ARKIVA',
       theme: themeService.lightTheme,
       darkTheme: themeService.darkTheme,
       themeMode: themeService.themeMode,
-      home: const SplashScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/create-entreprise': (context) => const CreateEntrepriseScreen(),
+        '/scan': (context) => const ScanScreen(),
+        '/upload': (context) => const UploadScreen(),
+        '/admin-dashboard': (context) => const AdminDashboardScreen(),
+        '/backups': (context) => const BackupsScreen(),
+        '/versions': (context) => const VersionsScreen(),
+        '/restorations': (context) => const RestorationsScreen(),
+        '/payment': (context) => PaymentScreen(
+          paymentId: '1', // ID de test
+          authToken: 'your_test_token_here', // Token de test
+        ),
+        '/payment-success': (context) => PaymentSuccessScreen(),
+      },
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
@@ -42,55 +71,56 @@ class ArkivaApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  void _navigateToScreen(BuildContext context, Widget screen) {
-    Navigator.of(context).push(
-      AnimationService.slideTransition(screen),
-    );
-  }
-
+// Écran de test pour le paiement
+class PaymentTestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ARKIVA'),
-        centerTitle: true,
+        title: Text('Test Paiement FeexPay'),
+        backgroundColor: Color(0xFF112C56),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimationService.listItemAnimation(
-              index: 0,
-              child: const Text(
-                'Bienvenue sur ARKIVA',
+            Icon(
+              Icons.payment,
+              size: 100,
+              color: Color(0xFF112C56),
+            ),
+            SizedBox(height: 24),
+            Text(
+              'Test Intégration FeexPay',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Cliquez sur le bouton ci-dessous pour tester le paiement',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/payment');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF112C56),
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+              child: Text(
+                'Tester le Paiement',
                 style: TextStyle(
-                  fontSize: 24,
+                  color: Colors.white,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            AnimationService.listItemAnimation(
-              index: 1,
-              child: AnimationService.scaleOnTap(
-                onTap: () => _navigateToScreen(context, const ScanScreen()),
-                child: ElevatedButton(
-                  onPressed: null, // Le onTap est géré par scaleOnTap
-                  child: const Text('Scanner un document'),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            AnimationService.listItemAnimation(
-              index: 2,
-              child: AnimationService.scaleOnTap(
-                onTap: () => _navigateToScreen(context, const UploadScreen()),
-                child: ElevatedButton(
-                  onPressed: null, // Le onTap est géré par scaleOnTap
-                  child: const Text('Téléverser un fichier'),
                 ),
               ),
             ),

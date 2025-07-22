@@ -1,51 +1,49 @@
 import 'package:arkiva/models/casier.dart';
 
 class Armoire {
-  final String id;
+  final int armoireId;
+  final int userId;
+  final String sousTitre;
   final String nom;
-  final String description;
-  final DateTime dateCreation;
-  final List<Casier> casiers;
-  final int nombreCasiers;
+  final bool isDeleted;
+  final DateTime createdAt;
+  final int entrepriseId;
+  final int versionId;
 
   Armoire({
-    required this.id,
+    required this.armoireId,
+    required this.userId,
+    required this.sousTitre,
     required this.nom,
-    this.description = '',
-    required this.dateCreation,
-    List<Casier>? casiers,
-    this.nombreCasiers = 10,
-  }) : casiers = casiers ?? List.generate(
-          nombreCasiers,
-          (index) => Casier(
-            id: 'C${index + 1}',
-            nom: 'Casier ${index + 1}',
-            armoireId: id,
-            dateCreation: DateTime.now(),
-          ),
-        );
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nom': nom,
-      'description': description,
-      'dateCreation': dateCreation.toIso8601String(),
-      'casiers': casiers.map((c) => c.toJson()).toList(),
-      'nombreCasiers': nombreCasiers,
-    };
-  }
+    required this.isDeleted,
+    required this.createdAt,
+    required this.entrepriseId,
+    required this.versionId,
+  });
 
   factory Armoire.fromJson(Map<String, dynamic> json) {
     return Armoire(
-      id: json['id'],
-      nom: json['nom'],
-      description: json['description'],
-      dateCreation: DateTime.parse(json['dateCreation']),
-      casiers: (json['casiers'] as List)
-          .map((c) => Casier.fromJson(c))
-          .toList(),
-      nombreCasiers: json['nombreCasiers'],
+      armoireId: json['armoire_id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      sousTitre: json['sous_titre'] as String? ?? '',
+      nom: json['nom'] as String? ?? '',
+      isDeleted: json['is_deleted'] as bool? ?? false,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      entrepriseId: json['entreprise_id'] as int? ?? 0,
+      versionId: json['version_id'] as int? ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'armoire_id': armoireId,
+      'user_id': userId,
+      'sous_titre': sousTitre,
+      'nom': nom,
+      'is_deleted': isDeleted,
+      'created_at': createdAt.toIso8601String(),
+      'entreprise_id': entrepriseId,
+      'version_id': versionId,
+    };
   }
 } 

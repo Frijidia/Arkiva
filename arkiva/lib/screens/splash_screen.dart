@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:arkiva/screens/home_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:arkiva/screens/welcome_screen.dart';
 import 'package:arkiva/services/animation_service.dart';
+import 'package:arkiva/services/auth_state_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -47,13 +49,27 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       ),
     );
 
-    _controller.forward().then((_) {
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.of(context).pushReplacement(
-          AnimationService.fadeTransition(const HomeScreen()),
-        );
-      });
-    });
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await _controller.forward();
+    await Future.delayed(const Duration(seconds: 1));
+    
+    if (!mounted) return;
+    
+    final authStateService = context.read<AuthStateService>();
+    await authStateService.initialize();
+
+    if (!mounted) return;
+
+    if (authStateService.isAuthenticated) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      Navigator.of(context).pushReplacement(
+        AnimationService.fadeTransition(const WelcomeScreen()),
+      );
+    }
   }
 
   @override
