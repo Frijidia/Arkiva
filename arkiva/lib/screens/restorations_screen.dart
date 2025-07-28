@@ -377,7 +377,7 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
         context: context,
         builder: (context) => SimpleDialog(
           title: Row(
-            children: [
+          children: [
               Icon(Icons.history, color: Colors.orange[600]),
               SizedBox(width: 8),
               Text('Choisir le type'),
@@ -581,53 +581,53 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
     return _buildModernCard(
       color: Colors.cyan[50],
       padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               Icon(Icons.analytics, color: Colors.cyan[600]),
               SizedBox(width: 8),
               Text(
                 'Statistiques',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
                   color: Colors.cyan[700],
-                ),
               ),
+            ),
             ],
           ),
           SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  'Total',
-                  stats['total']?.toString() ?? '0',
-                  Icons.restore,
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    'Total',
+                    stats['total']?.toString() ?? '0',
+                    Icons.restore,
                   Colors.cyan[600]!,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Sauvegardes',
-                  stats['fromBackup']?.toString() ?? '0',
-                  Icons.backup,
+                Expanded(
+                  child: _buildStatItem(
+                    'Sauvegardes',
+                    stats['fromBackup']?.toString() ?? '0',
+                    Icons.backup,
                   Colors.green[600]!,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Versions',
-                  stats['fromVersion']?.toString() ?? '0',
-                  Icons.history,
+                Expanded(
+                  child: _buildStatItem(
+                    'Versions',
+                    stats['fromVersion']?.toString() ?? '0',
+                    Icons.history,
                   Colors.orange[600]!,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
       ),
     );
   }
@@ -667,31 +667,31 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _filterOptions.map((filter) {
-            final isSelected = _selectedFilter == filter;
-            return Padding(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _filterOptions.map((filter) {
+          final isSelected = _selectedFilter == filter;
+          return Padding(
               padding: EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(filter),
-                selected: isSelected,
+            child: FilterChip(
+              label: Text(filter),
+              selected: isSelected,
                 selectedColor: Colors.cyan[100],
                 checkmarkColor: Colors.cyan[700],
-                onSelected: (selected) {
-                  setState(() {
-                    _selectedFilter = filter;
-                  });
-                },
+              onSelected: (selected) {
+                setState(() {
+                  _selectedFilter = filter;
+                });
+              },
                 backgroundColor: Colors.grey[100],
                 side: BorderSide(color: Colors.grey[300]!),
                 labelStyle: TextStyle(
                   color: isSelected ? Colors.cyan[700] : Colors.grey[700],
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
-              ),
-            );
-          }).toList(),
+            ),
+          );
+        }).toList(),
         ),
       ),
     );
@@ -702,32 +702,32 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
       return Center(
         child: _buildModernCard(
           color: Colors.grey[50],
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.restore_outlined,
-                size: 64,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.restore_outlined,
+              size: 64,
                 color: Colors.grey[400],
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Aucune restauration trouvée',
-                style: TextStyle(
-                  fontSize: 18,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Aucune restauration trouvée',
+              style: TextStyle(
+                fontSize: 18,
                   color: Colors.grey[700],
                   fontWeight: FontWeight.bold,
-                ),
               ),
-              SizedBox(height: 8),
-              Text(
-                'Les restaurations apparaîtront ici',
-                style: TextStyle(
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Les restaurations apparaîtront ici',
+              style: TextStyle(
                   color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
               ),
-            ],
+                textAlign: TextAlign.center,
+            ),
+          ],
           ),
         ),
       );
@@ -750,40 +750,40 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
     return Center(
       child: _buildModernCard(
         color: Colors.red[50],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(
-              Icons.error_outline,
-              size: 64,
+            Icons.error_outline,
+            size: 64,
               color: Colors.red[400],
-            ),
+          ),
             SizedBox(height: 16),
-            Text(
-              'Erreur lors du chargement',
+          Text(
+            'Erreur lors du chargement',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.red[700],
-              ),
+          ),
             ),
             SizedBox(height: 8),
-            Text(
-              _error ?? 'Une erreur inconnue s\'est produite',
-              textAlign: TextAlign.center,
+          Text(
+            _error ?? 'Une erreur inconnue s\'est produite',
+            textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
-            ),
+          ),
             SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: _loadRestores,
+            onPressed: _loadRestores,
               icon: Icon(Icons.refresh, size: 16),
               label: Text('Réessayer'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[600],
                 foregroundColor: Colors.white,
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
@@ -870,7 +870,7 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
       ),
     );
   }
-}
+} 
 
 class SelectBackupDialog extends StatefulWidget {
   final List<Backup> backups;
@@ -952,7 +952,7 @@ class _SelectBackupDialogState extends State<SelectBackupDialog> {
       ],
     );
   }
-}
+} 
 
 class SelectVersionDialog extends StatefulWidget {
   final List<Version> versions;

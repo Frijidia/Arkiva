@@ -573,38 +573,38 @@ class _ArmoiresScreenState extends State<ArmoiresScreen> {
                     Expanded(
                       child: _armoires.isEmpty
                           ? _buildEmptyState()
-                          : GridView.builder(
+                  : GridView.builder(
                               padding: EdgeInsets.all(20),
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 4 : 
                                                MediaQuery.of(context).size.width > 800 ? 3 : 2,
                                 childAspectRatio: 1.0,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: _armoires.length,
-                              itemBuilder: (context, index) {
-                                final armoire = _armoires[index];
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: _armoires.length,
+                      itemBuilder: (context, index) {
+                        final armoire = _armoires[index];
                                 return Stack(
-                                  children: [
+                            children: [
                                     _buildArmoireCard(armoire),
                                     if (_abonnementActif)
-                                      Positioned(
+                              Positioned(
                                         top: 8,
                                         right: 8,
-                                        child: IconButton(
+                                child: IconButton(
                                           icon: Icon(Icons.delete, color: Colors.red[600]),
-                                          tooltip: 'Supprimer l\'armoire',
-                                          onPressed: () => _deleteArmoire(armoire),
-                                        ),
-                                      ),
-                                  ],
+                                  tooltip: 'Supprimer l\'armoire',
+                                  onPressed: () => _deleteArmoire(armoire),
+                                ),
+                              ),
+                            ],
                                 );
                               },
-                            ),
+                                  ),
+                                ),
+                              ],
                     ),
-                  ],
-                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abonnementActif ? _createArmoire : null,
         icon: Icon(Icons.add, color: Colors.white),

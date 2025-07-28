@@ -3,6 +3,7 @@ import 'package:arkiva/models/dossier.dart';
 import 'package:arkiva/models/document.dart';
 import 'package:arkiva/services/document_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/services/responsive_service.dart';
 import 'package:arkiva/screens/document_viewer_screen.dart';
 import 'package:arkiva/widgets/deplacement_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -68,6 +69,145 @@ class _FichiersScreenState extends State<FichiersScreen> {
     super.initState();
     _loadDocuments();
     _loadTags();
+  }
+
+  Widget _buildModernCard({
+    required Widget child,
+    Color? color,
+    EdgeInsets? padding,
+  }) {
+    return Card(
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              color?.withOpacity(0.1) ?? Colors.blue.withOpacity(0.1),
+              color?.withOpacity(0.05) ?? Colors.blue.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: padding ?? const EdgeInsets.all(20),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    String? hint,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildModernButton({
+    required VoidCallback onPressed,
+    required Widget child,
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor ?? Colors.blue[600],
+        foregroundColor: foregroundColor ?? Colors.white,
+        elevation: 4,
+        shadowColor: Colors.black26,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildModernSearchBar() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Recherche OCR, nom, ...',
+          prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+          suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: Icon(Icons.clear, color: Colors.grey[600]),
+                onPressed: () {
+                  setState(() {
+                    _searchController.clear();
+                    _searchLocal('');
+                  });
+                },
+              )
+            : IconButton(
+                icon: Icon(Icons.filter_alt, color: Colors.grey[600]),
+                onPressed: _openFiltersRechercheService,
+                tooltip: 'Filtres avancés',
+              ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        onChanged: (value) {
+          if (value.isEmpty) {
+            setState(() {
+              _searchQuery = '';
+              _documents = _allDocuments;
+            });
+          } else {
+            _searchLocal(value);
+          }
+        },
+        onSubmitted: (value) => _performSearchRechercheService(),
+      ),
+    );
   }
 
   Future<void> _loadTags() async {
@@ -141,27 +281,38 @@ class _FichiersScreenState extends State<FichiersScreen> {
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setStateSB) {
         return AlertDialog(
-          title: const Text('Ajouter un document'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.upload_file, color: Colors.blue[600]),
+              const SizedBox(width: 8),
+              const Text('Ajouter un document'),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Suppression du champ Nom du document
-              TextField(
+              _buildModernTextField(
                 controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description (facultatif)',
-                  hintText: 'Entrez la description',
-                ),
+                label: 'Description (facultatif)',
+                hint: 'Entrez la description',
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
+              _buildModernButton(
                 onPressed: () async {
                   await _pickFile();
                   setStateSB(() {});
                 },
-                icon: const Icon(Icons.upload_file),
-                label: Text(_selectedFile != null ? _selectedFile!.name : 'Sélectionner un fichier'),
+                backgroundColor: Colors.green[600],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.upload_file),
+                    const SizedBox(width: 8),
+                    Text(_selectedFile != null ? _selectedFile!.name : 'Sélectionner un fichier'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -170,11 +321,11 @@ class _FichiersScreenState extends State<FichiersScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Annuler'),
             ),
-            ElevatedButton(
+            _buildModernButton(
               onPressed: () {
                 if (_selectedFile != null) {
                   Navigator.pop(context, {
-                    'nom': _selectedFile!.name, // Utilise le vrai nom du fichier
+                    'nom': _selectedFile!.name,
                     'description': descriptionController.text.trim(),
                   });
                 } else {
@@ -225,7 +376,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
       } catch (e) {
         if (!mounted) return;
         _scaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(content: Text('Erreur: \\${e.toString()}')),
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
       }
     }
@@ -245,24 +396,27 @@ class _FichiersScreenState extends State<FichiersScreen> {
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Modifier le document'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.edit, color: Colors.blue[600]),
+            const SizedBox(width: 8),
+            const Text('Modifier le document'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            _buildModernTextField(
               controller: nomController,
-              decoration: const InputDecoration(
-                labelText: 'Nom du document',
-                hintText: 'Entrez le nouveau nom',
-              ),
+              label: 'Nom du document',
+              hint: 'Entrez le nouveau nom',
             ),
             const SizedBox(height: 16),
-            TextField(
+            _buildModernTextField(
               controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (facultatif)',
-                hintText: 'Entrez la nouvelle description',
-              ),
+              label: 'Description (facultatif)',
+              hint: 'Entrez la nouvelle description',
               maxLines: 3,
             ),
           ],
@@ -272,7 +426,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          _buildModernButton(
             onPressed: () {
               final nom = nomController.text.trim();
               if (nom.isNotEmpty) {
@@ -300,20 +454,14 @@ class _FichiersScreenState extends State<FichiersScreen> {
             result['nom']!,
             result['description'] ?? '',
           );
-          
-          setState(() {
-            final index = _documents.indexWhere((d) => d.id == document.id);
-            if (index != -1) {
-              _documents[index] = updatedDocument;
-            }
-          });
-          
+          await _loadDocuments();
           if (!mounted) return;
           _scaffoldMessengerKey.currentState?.showSnackBar(
             const SnackBar(content: Text('Document mis à jour avec succès')),
           );
         }
       } catch (e) {
+        if (!mounted) return;
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
@@ -322,26 +470,26 @@ class _FichiersScreenState extends State<FichiersScreen> {
   }
 
   Future<void> _supprimerDocument(Document document) async {
-    if (document.id == null) {
-      _scaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(content: Text('Erreur: ID du document manquant pour la suppression.')),
-      );
-      return;
-    }
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer le document'),
-        content: Text('Êtes-vous sûr de vouloir supprimer "${document.nom}" ?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.delete, color: Colors.red[600]),
+            const SizedBox(width: 8),
+            const Text('Confirmer la suppression'),
+          ],
+        ),
+        content: Text('Voulez-vous vraiment supprimer le document "${document.nom}" ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
-          TextButton(
+          _buildModernButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            backgroundColor: Colors.red[600],
             child: const Text('Supprimer'),
           ),
         ],
@@ -353,7 +501,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
         final authStateService = context.read<AuthStateService>();
         final token = authStateService.token;
 
-        if (token != null) {
+        if (token != null && document.id != null) {
           await _documentService.deleteDocument(token, document.id);
           await _loadDocuments();
           if (!mounted) return;
@@ -362,6 +510,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
           );
         }
       } catch (e) {
+        if (!mounted) return;
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Erreur: ${e.toString()}')),
         );
@@ -452,16 +601,21 @@ class _FichiersScreenState extends State<FichiersScreen> {
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Créer une version'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.history, color: Colors.purple[600]),
+            const SizedBox(width: 8),
+            const Text('Créer une version'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Description (facultatif)',
-                hintText: 'Ex: Correction de la section 2.1',
-                prefixIcon: Icon(Icons.description),
-              ),
+            _buildModernTextField(
+              controller: TextEditingController(), // Description will be added programmatically
+              label: 'Description (facultatif)',
+              hint: 'Ex: Correction de la section 2.1',
               maxLines: 3,
             ),
           ],
@@ -471,7 +625,7 @@ class _FichiersScreenState extends State<FichiersScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          _buildModernButton(
             onPressed: () {
               Navigator.pop(context, {
                 'description': 'Version créée depuis l\'écran fichiers',
@@ -727,7 +881,14 @@ class _FichiersScreenState extends State<FichiersScreen> {
           if (isLoading) loadTags();
           final filteredTags = tags.where((tag) => tag['name'].toLowerCase().contains(search.toLowerCase())).toList();
           return AlertDialog(
-            title: const Text('Assigner un tag'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(Icons.label, color: Colors.blue[600]),
+                const SizedBox(width: 8),
+                const Text('Assigner un tag'),
+              ],
+            ),
             content: SizedBox(
               width: 400,
               child: isLoading
@@ -737,11 +898,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
                       : Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            TextField(
-                              decoration: const InputDecoration(
-                                labelText: 'Rechercher un tag',
-                              ),
-                              onChanged: (value) => setStateSB(() => search = value),
+                            _buildModernTextField(
+                              controller: TextEditingController(), // Search field
+                              label: 'Rechercher un tag',
                             ),
                             const SizedBox(height: 12),
                             if (suggestedTags.isNotEmpty) ...[
@@ -826,8 +985,9 @@ class _FichiersScreenState extends State<FichiersScreen> {
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
-              ElevatedButton(
-                onPressed: selectedTag == null ? null : () => Navigator.pop(context, selectedTag),
+              _buildModernButton(
+                onPressed: selectedTag == null ? () {} : () => Navigator.pop(context, selectedTag),
+                backgroundColor: selectedTag == null ? Colors.grey[400] : Colors.blue[600],
                 child: const Text('Assigner'),
               ),
             ],
@@ -1150,13 +1310,12 @@ class _FichiersScreenState extends State<FichiersScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Réinitialiser'),
                     ),
-                    ElevatedButton.icon(
+                    _buildModernButton(
                       onPressed: () {
                         Navigator.pop(context);
                         _performSearchRechercheService();
                       },
-                      icon: const Icon(Icons.search),
-                      label: const Text('Rechercher'),
+                      child: const Text('Rechercher'),
                     ),
                   ],
                 ),
@@ -1322,8 +1481,21 @@ class _FichiersScreenState extends State<FichiersScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[900]!, Colors.blue[700]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        ),
       );
     }
 
@@ -1331,10 +1503,38 @@ class _FichiersScreenState extends State<FichiersScreen> {
       key: _scaffoldMessengerKey,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.dossier.nom),
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue[900]!, Colors.blue[700]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.description, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                widget.dossier.nom,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+          centerTitle: true,
           actions: [
             IconButton(
-              icon: const Icon(Icons.merge),
+              icon: const Icon(Icons.merge, color: Colors.white),
               onPressed: () async {
                 final fusionEffectuee = await Navigator.push(
                 context, 
@@ -1349,17 +1549,17 @@ class _FichiersScreenState extends State<FichiersScreen> {
               tooltip: 'Fusionner des fichiers',
             ),
             IconButton(
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add, color: Colors.white),
               onPressed: _ajouterDocument,
             ),
             IconButton(
-              icon: const Icon(Icons.label),
+              icon: const Icon(Icons.label, color: Colors.white),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TagsScreen())),
               tooltip: 'Tags',
             ),
             if (!kIsWeb)
               IconButton(
-                icon: const Icon(Icons.camera_alt),
+                icon: const Icon(Icons.camera_alt, color: Colors.white),
                 onPressed: () async {
                   final scanEffectue = await Navigator.push(
                     context,
@@ -1375,319 +1575,394 @@ class _FichiersScreenState extends State<FichiersScreen> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Recherche OCR, nom, ...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _searchController.clear();
-                                  _searchLocal('');
-                                });
-                              },
-                            )
-                          : null,
-                      ),
-                      onChanged: (value) {
-                        // Si on tape dans la barre, faire une recherche locale
-                        if (value.isEmpty) {
-                          // Si la barre est vide, recharger tous les documents
-                          setState(() {
-                            _searchQuery = '';
-                            _documents = _allDocuments;
-                          });
-                        } else {
-                          // Sinon, faire une recherche locale
-                          _searchLocal(value);
-                        }
-                      },
-                      onSubmitted: (value) => _performSearchRechercheService(),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.filter_alt),
-                    onPressed: _openFiltersRechercheService,
-                    tooltip: 'Filtres avancés',
-                  ),
-                ],
-              ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.grey[50]!, Colors.grey[100]!],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _loadDocuments,
-                child: _filteredDocuments.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.description,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Aucun document dans ce dossier',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Ajoutez votre premier document',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: _ajouterDocument,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Ajouter un document'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredDocuments.length,
-                        itemBuilder: (context, index) {
-                          final document = _filteredDocuments[index];
-                          // Debug: afficher les informations du document
-                          print('DEBUG: Affichage document ${index + 1}/${_filteredDocuments.length}: ${document.nom}');
-                          
-                          return Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.description),
-                              title: Text(document.nomOriginal ?? document.nom),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (document.description != null && document.description!.isNotEmpty)
-                                    Text(document.description!),
-                                  // Suppression de l'affichage OCR
-                                  // if (document.contenuOcr != null && document.contenuOcr!.isNotEmpty)
-                                  //   Container(
-                                  //     margin: const EdgeInsets.only(top: 4.0),
-                                  //     padding: const EdgeInsets.all(8.0),
-                                  //     decoration: BoxDecoration(
-                                  //       color: Colors.blue.withOpacity(0.1),
-                                  //       borderRadius: BorderRadius.circular(4.0),
-                                  //     ),
-                                  //     child: Text(
-                                  //       'OCR: ${document.contenuOcr!.length > 100 ? '${document.contenuOcr!.substring(0, 100)}...' : document.contenuOcr!}',
-                                  //       style: const TextStyle(
-                                  //         fontSize: 12,
-                                  //         fontStyle: FontStyle.italic,
-                                  //         color: Colors.blue,
-                                  //       ),
-                                  //     ),
-                                  //   ),
-                                  if (document.tags.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Wrap(
-                                        spacing: 6,
-                                        children: document.tags.map((tag) => Chip(
-                                          label: Text(tag['name'] ?? ''),
-                                          backgroundColor: _parseColor(tag['color']),
-                                          onDeleted: () async {
-                                            final authState = context.read<AuthStateService>();
-                                            final token = authState.token;
-                                            final entrepriseId = authState.entrepriseId;
-                                            if (token != null && entrepriseId != null && tag['name'] != null) {
-                                              final allTags = await _tagService.getAllTags(token, entrepriseId);
-                                              final tagObj = allTags.firstWhere((t) => t['name'] == tag['name'], orElse: () => null);
-                                              if (tagObj != null) {
-                                                final bool? removed = await showDialog<bool>(
-                                                  context: context,
-                                                  builder: (context) => AlertDialog(
-                                                    title: const Text('Retirer le tag'),
-                                                    content: Text('Voulez-vous vraiment retirer le tag "${tag['name']}" de ce document ?'),
-                                                    actions: [
-                                                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
-                                                      ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Retirer')),
-                                                    ],
-                                                  ),
-                                                );
-                                                if (removed == true) {
-                                                  await _tagService.removeTagFromFile(token, entrepriseId, document.id, tagObj['tag_id']);
-                                                  await _loadDocuments();
-                                                  if (!mounted) return;
-                                                  _scaffoldMessengerKey.currentState?.showSnackBar(
-                                                    SnackBar(content: Text('Tag "${tag['name']}" retiré du document.')),
-                                                  );
-                                                }
-                                              }
-                                            }
-                                          },
-                                        )).toList(),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  FavoriButton(
-                                    document: document,
-                                    size: 20,
-                                    onToggle: () {
-                                      // Optionnel : rafraîchir la liste si nécessaire
-                                    },
+          ),
+          child: Column(
+            children: [
+              _buildModernSearchBar(),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _loadDocuments,
+                  child: _filteredDocuments.isEmpty
+                      ? Center(
+                          child: _buildModernCard(
+                            color: Colors.blue,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.description,
+                                  size: ResponsiveService.getIconSize(context) * 2,
+                                  color: Colors.blue[700],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Aucun document dans ce dossier',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveService.getFontSize(context, baseSize: 20),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[800],
                                   ),
-                                  PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  switch (value) {
-                                    case 'telecharger':
-                                      _telechargerDocument(document);
-                                      break;
-                                    case 'modifier':
-                                      _modifierDocument(document);
-                                      break;
-                                    case 'deplacer':
-                                      _deplacerFichier(document);
-                                      break;
-                                    case 'supprimer':
-                                      _supprimerDocument(document);
-                                      break;
-                                    case 'assigner_tag':
-                                      _assignTagToFile(document);
-                                      break;
-                                        case 'favoris':
-                                          _toggleFavori(document);
-                                          break;
-                                        case 'ouvrir_nouvel_onglet':
-                                          _ouvrirDansNouvelOnglet(document);
-                                          break;
-                                        case 'sauvegarder':
-                                          _sauvegarderFichier(document);
-                                          break;
-                                        case 'creer_version':
-                                          _creerVersionFichier(document);
-                                          break;
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                        value: 'telecharger',
-                                    child: Row(
-                                      children: [
-                                            Icon(Icons.download),
-                                        SizedBox(width: 8),
-                                            Text('Télécharger'),
-                                      ],
-                                    ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Ajoutez votre premier document',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: ResponsiveService.getFontSize(context, baseSize: 16),
                                   ),
-                                  const PopupMenuItem(
-                                        value: 'modifier',
-                                    child: Row(
-                                      children: [
-                                            Icon(Icons.edit),
-                                        SizedBox(width: 8),
-                                            Text('Renommer'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                        value: 'deplacer',
-                                    child: Row(
-                                      children: [
-                                            Icon(Icons.move_to_inbox),
-                                        SizedBox(width: 8),
-                                            Text('Déplacer'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                        value: 'ouvrir_nouvel_onglet',
-                                    child: Row(
-                                      children: [
-                                            Icon(Icons.open_in_new),
-                                        SizedBox(width: 8),
-                                            Text('Ouvrir dans un nouvel onglet'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                        value: 'favoris',
-                                    child: Row(
-                                      children: [
-                                            Icon(Icons.favorite_border),
-                                        SizedBox(width: 8),
-                                            Text('Ajouter/Retirer des favoris'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'assigner_tag',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.label, color: Colors.blue),
-                                        SizedBox(width: 8),
-                                        Text('Assigner un tag'),
-                                      ],
-                                    ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'supprimer',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.delete, color: Colors.red),
-                                            SizedBox(width: 8),
-                                            Text('Supprimer', style: TextStyle(color: Colors.red)),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'sauvegarder',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.backup, color: Colors.orange),
-                                            SizedBox(width: 8),
-                                            Text('Sauvegarder'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'creer_version',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.history, color: Colors.purple),
-                                            SizedBox(width: 8),
-                                            Text('Créer une version'),
-                                          ],
-                                        ),
-                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                _buildModernButton(
+                                  onPressed: _ajouterDocument,
+                                  backgroundColor: Colors.blue[600],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.add),
+                                      const SizedBox(width: 8),
+                                      const Text('Ajouter un document'),
                                     ],
                                   ),
-                                ],
-                              ),
-                              onTap: () {
-                                _ouvrirOuTelechargerDocument(document);
-                              },
+                                ),
+                              ],
                             ),
-                          );
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: ResponsiveService.getScreenPadding(context),
+                          gridDelegate: ResponsiveService.getResponsiveGridDelegate(context),
+                          itemCount: _filteredDocuments.length,
+                          itemBuilder: (context, index) {
+                            final document = _filteredDocuments[index];
+                            return _buildDocumentCard(document, index);
+                          },
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _ajouterDocument,
+          backgroundColor: Colors.blue[600],
+          foregroundColor: Colors.white,
+          elevation: 8,
+          icon: const Icon(Icons.add),
+          label: const Text('Nouveau document'),
+          tooltip: 'Ajouter un nouveau document',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentCard(Document document, int documentIndex) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber,
+      Colors.cyan,
+      Colors.lime,
+    ];
+    final color = colors[documentIndex % colors.length];
+    
+    return Card(
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _ouvrirOuTelechargerDocument(document),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                color[50]!,
+                color[100]!,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(ResponsiveService.getCardPadding(context)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: color[600]!.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.description,
+                            size: ResponsiveService.getIconSize(context),
+                            color: color[700],
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color[600],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'DOCUMENT',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: ResponsiveService.getFontSize(context, baseSize: 10),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: Text(
+                        document.nomOriginal ?? document.nom,
+                        style: TextStyle(
+                          fontSize: ResponsiveService.getFontSize(context, baseSize: 16),
+                          fontWeight: FontWeight.bold,
+                          color: color[800],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (document.description != null && document.description!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: Text(
+                          document.description!,
+                          style: TextStyle(
+                            color: color[600],
+                            fontSize: ResponsiveService.getFontSize(context, baseSize: 12),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                    if (document.tags.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: document.tags.take(3).map((tag) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _parseColor(tag['color']),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              tag['name'] ?? '',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: ResponsiveService.getFontSize(context, baseSize: 10),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 4,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: color[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FavoriButton(
+                        document: document,
+                        size: ResponsiveService.getIconSize(context),
+                        onToggle: () {
+                          // Optionnel : rafraîchir la liste si nécessaire
                         },
                       ),
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert,
+                          size: ResponsiveService.getIconSize(context),
+                          color: color[600],
+                        ),
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'telecharger':
+                              _telechargerDocument(document);
+                              break;
+                            case 'modifier':
+                              _modifierDocument(document);
+                              break;
+                            case 'deplacer':
+                              _deplacerFichier(document);
+                              break;
+                            case 'supprimer':
+                              _supprimerDocument(document);
+                              break;
+                            case 'assigner_tag':
+                              _assignTagToFile(document);
+                              break;
+                            case 'favoris':
+                              _toggleFavori(document);
+                              break;
+                            case 'ouvrir_nouvel_onglet':
+                              _ouvrirDansNouvelOnglet(document);
+                              break;
+                            case 'sauvegarder':
+                              _sauvegarderFichier(document);
+                              break;
+                            case 'creer_version':
+                              _creerVersionFichier(document);
+                              break;
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'telecharger',
+                            child: Row(
+                              children: [
+                                Icon(Icons.download, size: ResponsiveService.getIconSize(context), color: color[600]),
+                                const SizedBox(width: 8),
+                                const Text('Télécharger'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'modifier',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: ResponsiveService.getIconSize(context), color: color[600]),
+                                const SizedBox(width: 8),
+                                const Text('Renommer'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'deplacer',
+                            child: Row(
+                              children: [
+                                Icon(Icons.move_to_inbox, size: ResponsiveService.getIconSize(context), color: color[600]),
+                                const SizedBox(width: 8),
+                                const Text('Déplacer'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'ouvrir_nouvel_onglet',
+                            child: Row(
+                              children: [
+                                Icon(Icons.open_in_new, size: ResponsiveService.getIconSize(context), color: color[600]),
+                                const SizedBox(width: 8),
+                                const Text('Ouvrir dans un nouvel onglet'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'favoris',
+                            child: Row(
+                              children: [
+                                Icon(Icons.favorite_border, size: ResponsiveService.getIconSize(context), color: color[600]),
+                                const SizedBox(width: 8),
+                                const Text('Ajouter/Retirer des favoris'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'assigner_tag',
+                            child: Row(
+                              children: [
+                                Icon(Icons.label, size: ResponsiveService.getIconSize(context), color: Colors.blue),
+                                const SizedBox(width: 8),
+                                const Text('Assigner un tag'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'supprimer',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, size: ResponsiveService.getIconSize(context), color: Colors.red[600]),
+                                const SizedBox(width: 8),
+                                const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'sauvegarder',
+                            child: Row(
+                              children: [
+                                Icon(Icons.backup, size: ResponsiveService.getIconSize(context), color: Colors.orange),
+                                const SizedBox(width: 8),
+                                const Text('Sauvegarder'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'creer_version',
+                            child: Row(
+                              children: [
+                                Icon(Icons.history, size: ResponsiveService.getIconSize(context), color: Colors.purple),
+                                const SizedBox(width: 8),
+                                const Text('Créer une version'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _ajouterDocument,
-          child: const Icon(Icons.add),
-          tooltip: 'Ajouter un document',
+            ],
+          ),
         ),
       ),
     );

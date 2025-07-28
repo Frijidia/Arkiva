@@ -119,18 +119,9 @@ class DocumentService {
   }
 
   Future<int> fetchDocumentsCount(String token) async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/api/documents/count'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-    if (response.statusCode == 200) {
-      return json.decode(response.body)['count'];
-    } else {
-      throw Exception('Erreur lors du chargement du nombre de documents');
-    }
+    // Cette route n'existe pas dans le backend, on retourne 0 pour l'instant
+    // TODO: Implémenter une vraie route de comptage dans le backend
+    return 0;
   }
 
   // Déplacer un fichier vers un autre dossier

@@ -19,6 +19,7 @@ import 'package:arkiva/services/search_service.dart';
 import 'package:arkiva/services/tag_service.dart';
 import 'package:arkiva/screens/fichier_view_screen.dart';
 import 'package:http/http.dart' as http;
+import 'package:arkiva/services/http_interceptor.dart';
 import 'dart:convert';
 import 'package:arkiva/config/api_config.dart';
 
@@ -177,10 +178,16 @@ class _HomeScreenState extends State<HomeScreen> {
       final token = authState.token;
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/armoires/entreprise/$entrepriseId'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
+        final url = '${ApiConfig.baseUrl}/api/armoire/$entrepriseId';
+        print('🔍 [DEBUG] Chargement armoires - URL: $url');
+        print('🔍 [DEBUG] Token: ${token.substring(0, 10)}...');
+        print('🔍 [DEBUG] EntrepriseId: $entrepriseId');
+        
+        final response = await HttpInterceptor.get(url, headers: {'Authorization': 'Bearer $token'});
+        
+        print('🔍 [DEBUG] Status: ${response.statusCode}');
+        print('🔍 [DEBUG] Response body: ${response.body.substring(0, 100)}...');
+        
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           setState(() {
@@ -189,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      print('Erreur lors du chargement des armoires: $e');
+      print('❌ Erreur lors du chargement des armoires: $e');
     }
   }
 
@@ -199,10 +206,16 @@ class _HomeScreenState extends State<HomeScreen> {
       final token = authState.token;
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/casiers/entreprise/$entrepriseId'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
+        final url = '${ApiConfig.baseUrl}/api/casier/getcasiers';
+        print('🔍 [DEBUG] Chargement casiers - URL: $url');
+        print('🔍 [DEBUG] Token: ${token.substring(0, 10)}...');
+        print('🔍 [DEBUG] EntrepriseId: $entrepriseId');
+        
+        final response = await HttpInterceptor.get(url, headers: {'Authorization': 'Bearer $token'});
+        
+        print('🔍 [DEBUG] Status: ${response.statusCode}');
+        print('🔍 [DEBUG] Response body: ${response.body.substring(0, 100)}...');
+        
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           setState(() {
@@ -211,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      print('Erreur lors du chargement des casiers: $e');
+      print('❌ Erreur lors du chargement des casiers: $e');
     }
   }
 

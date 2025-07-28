@@ -456,20 +456,20 @@ class _FavorisScreenState extends State<FavorisScreen> {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
         child: StatefulBuilder(
-          builder: (context, setStateSB) => Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+        builder: (context, setStateSB) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
               left: 20,
               right: 20,
               top: 20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                 // Handle bar
                 Container(
                   width: 40,
@@ -485,49 +485,49 @@ class _FavorisScreenState extends State<FavorisScreen> {
                     Icon(Icons.filter_list, color: Colors.blue[600]),
                     SizedBox(width: 8),
                     Text(
-                      'Filtres',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                'Filtres',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                         color: Colors.grey[800],
                       ),
                     ),
                   ],
-                ),
+              ),
                 SizedBox(height: 20),
                 _buildModernCard(
                   color: Colors.blue[50],
                   child: DropdownButtonFormField<String>(
-                    value: _selectedType,
+                value: _selectedType,
                     decoration: InputDecoration(
-                      labelText: 'Type de document',
+                  labelText: 'Type de document',
                       prefixIcon: Icon(Icons.description, color: Colors.blue[600]),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    items: _documentTypes.map((type) => DropdownMenuItem(
-                      value: type,
-                      child: Text(type),
-                    )).toList(),
-                    onChanged: (value) {
-                      setState(() => _selectedType = value);
-                      setStateSB(() {});
-                    },
-                  ),
+                ),
+                items: _documentTypes.map((type) => DropdownMenuItem(
+                  value: type,
+                  child: Text(type),
+                )).toList(),
+                onChanged: (value) {
+                  setState(() => _selectedType = value);
+                  setStateSB(() {});
+                },
+              ),
                 ),
                 SizedBox(height: 16),
                 _buildModernCard(
                   color: Colors.green[50],
-                  child: Padding(
+                child: Padding(
                     padding: EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                         Row(
-                          children: [
+                        children: [
                             Icon(Icons.date_range, color: Colors.green[600]),
-                            SizedBox(width: 8),
+                          SizedBox(width: 8),
                             Text(
                               'Période d\'ajout',
                               style: TextStyle(
@@ -535,43 +535,43 @@ class _FavorisScreenState extends State<FavorisScreen> {
                                 color: Colors.grey[800],
                               ),
                             ),
-                          ],
-                        ),
+                        ],
+                      ),
                         SizedBox(height: 12),
-                        Text(
-                          _selectedDateRange == null 
-                            ? 'Non sélectionnée' 
-                            : 'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
-                          style: TextStyle(
+                      Text(
+                        _selectedDateRange == null 
+                          ? 'Non sélectionnée' 
+                          : 'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
+                        style: TextStyle(
                             color: _selectedDateRange == null ? Colors.grey : Colors.green[700],
-                          ),
                         ),
+                      ),
                         SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDateRangePicker(
-                              context: context,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime.now(),
-                              helpText: 'Sélectionner une période',
-                              cancelText: 'Annuler',
-                              confirmText: 'OK',
-                              saveText: 'Enregistrer',
-                              errorFormatText: 'Format invalide',
-                              errorInvalidText: 'Date invalide',
-                              errorInvalidRangeText: 'Plage de dates invalide',
-                              fieldStartHintText: 'Début',
-                              fieldEndHintText: 'Fin',
-                              fieldStartLabelText: 'Date de début',
-                              fieldEndLabelText: 'Date de fin',
-                            );
-                            if (picked != null) {
-                              setState(() => _selectedDateRange = picked);
-                              setStateSB(() {});
-                            }
-                          },
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                            helpText: 'Sélectionner une période',
+                            cancelText: 'Annuler',
+                            confirmText: 'OK',
+                            saveText: 'Enregistrer',
+                            errorFormatText: 'Format invalide',
+                            errorInvalidText: 'Date invalide',
+                            errorInvalidRangeText: 'Plage de dates invalide',
+                            fieldStartHintText: 'Début',
+                            fieldEndHintText: 'Fin',
+                            fieldStartLabelText: 'Date de début',
+                            fieldEndLabelText: 'Date de fin',
+                          );
+                          if (picked != null) {
+                            setState(() => _selectedDateRange = picked);
+                            setStateSB(() {});
+                          }
+                        },
                           icon: Icon(Icons.calendar_today, size: 16),
-                          label: Text(_selectedDateRange == null ? 'Sélectionner une période' : 'Modifier la période'),
+                        label: Text(_selectedDateRange == null ? 'Sélectionner une période' : 'Modifier la période'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green[600],
                             foregroundColor: Colors.white,
@@ -579,23 +579,23 @@ class _FavorisScreenState extends State<FavorisScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
                 SizedBox(height: 20),
-                Row(
-                  children: [
+              Row(
+                children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _selectedType = null;
-                            _selectedDateRange = null;
-                          });
-                          setStateSB(() {});
-                        },
+                    onPressed: () {
+                      setState(() {
+                        _selectedType = null;
+                        _selectedDateRange = null;
+                      });
+                      setStateSB(() {});
+                    },
                         icon: Icon(Icons.refresh, size: 16),
                         label: Text('Réinitialiser'),
                         style: OutlinedButton.styleFrom(
@@ -609,9 +609,9 @@ class _FavorisScreenState extends State<FavorisScreen> {
                     SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                         icon: Icon(Icons.check, size: 16),
                         label: Text('Appliquer'),
                         style: ElevatedButton.styleFrom(
@@ -622,11 +622,11 @@ class _FavorisScreenState extends State<FavorisScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
                 SizedBox(height: 20),
-              ],
+            ],
             ),
           ),
         ),
@@ -740,8 +740,8 @@ class _FavorisScreenState extends State<FavorisScreen> {
                 prefixIcon: Icon(Icons.description, color: Colors.blue[600]),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                ),
               ),
+            ),
             ),
             SizedBox(height: 16),
             TextField(
@@ -1111,7 +1111,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
           Padding(
             padding: EdgeInsets.all(20),
             child: _buildModernSearchBar(),
-          ),
+                ),
           _buildFilterChips(),
           SizedBox(height: 8),
           Expanded(
@@ -1119,34 +1119,34 @@ class _FavorisScreenState extends State<FavorisScreen> {
                 ? Center(
                     child: _buildModernCard(
                       color: Colors.grey[50],
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _searchQuery.isNotEmpty ? Icons.search_off : Icons.star_border,
-                            size: 64,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _searchQuery.isNotEmpty ? Icons.search_off : Icons.star_border,
+                          size: 64,
                             color: Colors.grey[400],
-                          ),
+                        ),
                           SizedBox(height: 16),
-                          Text(
-                            _searchQuery.isNotEmpty
-                                ? 'Aucun résultat trouvé'
-                                : 'Aucun document favori',
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'Aucun résultat trouvé'
+                              : 'Aucun document favori',
                             style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                               color: Colors.grey[600],
-                            ),
                           ),
+                        ),
                           SizedBox(height: 8),
-                          Text(
-                            _searchQuery.isNotEmpty
-                                ? 'Essayez avec d\'autres termes de recherche'
-                                : 'Ajoutez des documents à vos favoris',
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'Essayez avec d\'autres termes de recherche'
+                              : 'Ajoutez des documents à vos favoris',
                             style: TextStyle(color: Colors.grey[500]),
                             textAlign: TextAlign.center,
-                          ),
-                        ],
+                        ),
+                      ],
                       ),
                     ),
                   )

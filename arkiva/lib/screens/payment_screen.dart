@@ -131,13 +131,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ChoicePage(
-              token: feexpay['token'],
-              id: feexpay['id'],
-              amount: feexpay['amount'],
-              redirecturl: feexpay['redirecturl'],
-              trans_key: feexpay['trans_key'],
-              callback_info: callbackInfoMap,
+            builder: (context) => Scaffold(
+              body: SafeArea(
+                child: Container(
+                  height: MediaQuery.of(context).size.height,
+                  child: ChoicePage(
+                    token: feexpay['token'],
+                    id: feexpay['id'],
+                    amount: feexpay['amount'],
+                    redirecturl: feexpay['redirecturl'],
+                    trans_key: feexpay['trans_key'],
+                    callback_info: callbackInfoMap,
+                  ),
+                ),
+              ),
             ),
           ),
         );

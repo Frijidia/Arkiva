@@ -266,11 +266,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           const SnackBar(content: Text('Utilisateur créé avec succès')),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur: ${e.toString()}')),
-      );
-    } finally {
+        );
+      } finally {
       setState(() => _isLoadingCreate = false);
     }
   }
@@ -447,9 +447,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
+      child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
+        children: [
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -457,26 +457,26 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Icon(
-                    Icons.admin_panel_settings,
-                    size: 64,
+            Icons.admin_panel_settings,
+            size: 64,
                     color: Colors.grey[600],
                   ),
-                ),
+          ),
                 SizedBox(height: 24),
-                Text(
-                  'Accès restreint',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+          Text(
+            'Accès restreint',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
                     color: Colors.grey[800],
-                  ),
-                ),
+            ),
+          ),
                 SizedBox(height: 12),
-                Text(
-                  'Seuls les administrateurs peuvent accéder aux paramètres d\'administration.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
+          Text(
+            'Seuls les administrateurs peuvent accéder aux paramètres d\'administration.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -496,8 +496,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Container(
                 padding: EdgeInsets.all(40),
-                child: Column(
-                  children: [
+              child: Column(
+                children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
                     Text('Création de l\'utilisateur...'),
@@ -507,7 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
           )
         : _buildSettingsCard(
-            'Créer un nouvel utilisateur',
+                            'Créer un nouvel utilisateur',
             Icons.person_add,
             Colors.green[600]!,
             [
@@ -516,48 +516,48 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 child: Column(
                   children: [
                     _buildModernTextField(
-                      controller: _emailController,
+                            controller: _emailController,
                       label: 'Email',
                       icon: Icons.email,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer l\'email';
-                        }
-                        return null;
-                      },
-                    ),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer l\'email';
+                              }
+                              return null;
+                            },
+                          ),
                     _buildModernTextField(
-                      controller: _passwordController,
+                            controller: _passwordController,
                       label: 'Mot de passe',
                       icon: Icons.lock,
                       isPassword: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer le mot de passe';
-                        }
-                        if (value.length < 6) {
-                          return 'Le mot de passe doit contenir au moins 6 caractères';
-                        }
-                        return null;
-                      },
-                    ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer le mot de passe';
+                              }
+                              if (value.length < 6) {
+                                return 'Le mot de passe doit contenir au moins 6 caractères';
+                              }
+                              return null;
+                            },
+                          ),
                     _buildModernTextField(
-                      controller: _usernameController,
+                            controller: _usernameController,
                       label: 'Nom d\'utilisateur',
                       icon: Icons.person,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer le nom d\'utilisateur';
-                        }
-                        return null;
-                      },
-                    ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer le nom d\'utilisateur';
+                              }
+                              return null;
+                            },
+                          ),
                     Container(
                       margin: EdgeInsets.only(bottom: 16),
                       child: DropdownButtonFormField<String>(
                         decoration: InputDecoration(
-                          labelText: 'Rôle',
+                              labelText: 'Rôle',
                           prefixIcon: Icon(Icons.admin_panel_settings, color: Colors.blue[600]),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -573,26 +573,26 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
-                        ),
-                        value: _selectedRole,
-                        items: _roles.map((String role) {
-                          return DropdownMenuItem<String>(
-                            value: role,
-                            child: Text(role.capitalize()),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedRole = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez sélectionner un rôle';
-                          }
-                          return null;
-                        },
-                      ),
+                            ),
+                            value: _selectedRole,
+                            items: _roles.map((String role) {
+                              return DropdownMenuItem<String>(
+                                value: role,
+                                child: Text(role.capitalize()),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedRole = newValue;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez sélectionner un rôle';
+                              }
+                              return null;
+                            },
+                          ),
                     ),
                     _buildModernButton(
                       text: 'Créer l\'utilisateur',
@@ -600,21 +600,21 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       color: Colors.green[600]!,
                       isLoading: _isLoadingCreate,
                       icon: Icons.person_add,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
             ],
           );
   }
 
   Widget _build2FASection() {
     return _buildSettingsCard(
-      'Sécurité : Double authentification (2FA)',
+              'Sécurité : Double authentification (2FA)',
       Icons.security,
       Colors.orange[600]!,
       [
-        if (!_is2FAEnabled) ...[
+            if (!_is2FAEnabled) ...[
           _buildModernButton(
             text: 'Activer la 2FA par email',
             onPressed: _enable2FA,
@@ -624,10 +624,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           SizedBox(height: 16),
           _buildModernTextField(
-            controller: _code2FAController,
+                controller: _code2FAController,
             label: 'Code reçu par email',
             icon: Icons.code,
-          ),
+                ),
           SizedBox(height: 8),
           _buildModernButton(
             text: 'Vérifier le code',
@@ -643,7 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               color: Colors.green[50],
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.green[200]!),
-            ),
+              ),
             child: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.green[600], size: 20),
@@ -655,8 +655,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ],
             ),
           ),
-        ],
-        if (_2faMessage != null) ...[
+            ],
+            if (_2faMessage != null) ...[
           SizedBox(height: 12),
           Container(
             padding: EdgeInsets.all(12),
@@ -675,9 +675,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     style: TextStyle(color: Colors.blue[700]),
                   ),
                 ),
-              ],
-            ),
-          ),
+          ],
+        ),
+      ),
         ],
       ],
     );

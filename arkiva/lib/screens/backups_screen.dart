@@ -473,7 +473,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             int? tempSelectedId;
             return StatefulBuilder(
               builder: (context, setState) {
-                return AlertDialog(
+            return AlertDialog(
                   title: Row(
                     children: [
                       Icon(Icons.inventory_2, color: Colors.green[600]),
@@ -481,37 +481,37 @@ class _BackupsScreenState extends State<BackupsScreen> {
                       Text('Choisir un casier de destination'),
                     ],
                   ),
-                  content: DropdownButton<int>(
-                    isExpanded: true,
-                    value: tempSelectedId,
-                    hint: Text('Sélectionner un casier'),
-                    items: casiers.map<DropdownMenuItem<int>>((casier) {
-                      return DropdownMenuItem<int>(
-                        value: casier['cassier_id'],
-                        child: Text(casier['nom']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      tempSelectedId = value;
-                      (context as Element).markNeedsBuild();
-                    },
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, null),
-                      child: Text('Annuler'),
-                    ),
-                    ElevatedButton(
-                      onPressed: tempSelectedId == null
-                          ? null
-                          : () => Navigator.pop(context, tempSelectedId),
+              content: DropdownButton<int>(
+                isExpanded: true,
+                value: tempSelectedId,
+                hint: Text('Sélectionner un casier'),
+                items: casiers.map<DropdownMenuItem<int>>((casier) {
+                  return DropdownMenuItem<int>(
+                    value: casier['cassier_id'],
+                    child: Text(casier['nom']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  tempSelectedId = value;
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: tempSelectedId == null
+                      ? null
+                      : () => Navigator.pop(context, tempSelectedId),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green[600],
                         foregroundColor: Colors.white,
                       ),
-                      child: Text('Restaurer'),
-                    ),
-                  ],
+                  child: Text('Restaurer'),
+                ),
+              ],
                 );
               },
             );
@@ -529,7 +529,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             int? tempId;
             return StatefulBuilder(
               builder: (context, setState) {
-                return AlertDialog(
+            return AlertDialog(
                   title: Row(
                     children: [
                       Icon(Icons.inventory_2, color: Colors.green[600]),
@@ -537,37 +537,37 @@ class _BackupsScreenState extends State<BackupsScreen> {
                       Text('Choisir un casier'),
                     ],
                   ),
-                  content: DropdownButton<int>(
-                    isExpanded: true,
-                    value: tempId,
-                    hint: Text('Sélectionner un casier'),
-                    items: casiers.map<DropdownMenuItem<int>>((casier) {
-                      return DropdownMenuItem<int>(
-                        value: casier['cassier_id'],
-                        child: Text(casier['nom']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      tempId = value;
-                      (context as Element).markNeedsBuild();
-                    },
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, null),
-                      child: Text('Annuler'),
-                    ),
-                    ElevatedButton(
-                      onPressed: tempId == null
-                          ? null
-                          : () => Navigator.pop(context, tempId),
+              content: DropdownButton<int>(
+                isExpanded: true,
+                value: tempId,
+                hint: Text('Sélectionner un casier'),
+                items: casiers.map<DropdownMenuItem<int>>((casier) {
+                  return DropdownMenuItem<int>(
+                    value: casier['cassier_id'],
+                    child: Text(casier['nom']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  tempId = value;
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: tempId == null
+                      ? null
+                      : () => Navigator.pop(context, tempId),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green[600],
                         foregroundColor: Colors.white,
                       ),
-                      child: Text('Suivant'),
-                    ),
-                  ],
+                  child: Text('Suivant'),
+                ),
+              ],
                 );
               },
             );
@@ -581,7 +581,7 @@ class _BackupsScreenState extends State<BackupsScreen> {
             int? tempId;
             return StatefulBuilder(
               builder: (context, setState) {
-                return AlertDialog(
+            return AlertDialog(
                   title: Row(
                     children: [
                       Icon(Icons.folder, color: Colors.orange[600]),
@@ -589,37 +589,37 @@ class _BackupsScreenState extends State<BackupsScreen> {
                       Text('Choisir un dossier de destination'),
                     ],
                   ),
-                  content: DropdownButton<int>(
-                    isExpanded: true,
-                    value: tempId,
-                    hint: Text('Sélectionner un dossier'),
-                    items: dossiers.map<DropdownMenuItem<int>>((dossier) {
-                      return DropdownMenuItem<int>(
-                        value: dossier['dossier_id'],
-                        child: Text(dossier['nom']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      tempId = value;
-                      (context as Element).markNeedsBuild();
-                    },
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, null),
-                      child: Text('Annuler'),
-                    ),
-                    ElevatedButton(
-                      onPressed: tempId == null
-                          ? null
-                          : () => Navigator.pop(context, tempId),
+              content: DropdownButton<int>(
+                isExpanded: true,
+                value: tempId,
+                hint: Text('Sélectionner un dossier'),
+                items: dossiers.map<DropdownMenuItem<int>>((dossier) {
+                  return DropdownMenuItem<int>(
+                    value: dossier['dossier_id'],
+                    child: Text(dossier['nom']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  tempId = value;
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: tempId == null
+                      ? null
+                      : () => Navigator.pop(context, tempId),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange[600],
                         foregroundColor: Colors.white,
                       ),
-                      child: Text('Restaurer'),
-                    ),
-                  ],
+                  child: Text('Restaurer'),
+                ),
+              ],
                 );
               },
             );
@@ -732,36 +732,36 @@ class _BackupsScreenState extends State<BackupsScreen> {
     return Center(
       child: _buildModernCard(
         color: Colors.red[50],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
             SizedBox(height: 16),
-            Text(
-              'Erreur lors du chargement',
+          Text(
+            'Erreur lors du chargement',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.red[700],
-              ),
+          ),
             ),
             SizedBox(height: 8),
-            Text(
-              _error!,
+          Text(
+            _error!,
               style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
+            textAlign: TextAlign.center,
+          ),
             SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: _loadBackups,
+            onPressed: _loadBackups,
               icon: Icon(Icons.refresh, size: 16),
               label: Text('Réessayer'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[600],
                 foregroundColor: Colors.white,
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
@@ -771,36 +771,36 @@ class _BackupsScreenState extends State<BackupsScreen> {
     return Center(
       child: _buildModernCard(
         color: Colors.indigo[50],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(Icons.backup, size: 64, color: Colors.indigo[400]),
             SizedBox(height: 16),
             Text(
-              'Aucune sauvegarde',
+            'Aucune sauvegarde',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo[700],
-              ),
+          ),
             ),
             SizedBox(height: 8),
             Text(
-              'Créez votre première sauvegarde',
+            'Créez votre première sauvegarde',
               style: TextStyle(color: Colors.grey[600]),
               textAlign: TextAlign.center,
-            ),
+          ),
             SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _createBackup,
+          ElevatedButton.icon(
+            onPressed: _createBackup,
               icon: Icon(Icons.add, size: 16),
               label: Text('Créer une sauvegarde'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo[600],
                 foregroundColor: Colors.white,
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );

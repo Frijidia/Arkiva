@@ -45,7 +45,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       if (token == null || entrepriseId == null) {
         throw Exception('Token ou ID entreprise manquant');
       }
-      final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+      final url = '${ApiConfig.baseUrl}/api/fichier/${widget.document.id}/$entrepriseId';
       final response = await http.get(
         Uri.parse(url),
         headers: {'Authorization': 'Bearer $token'},
@@ -172,7 +172,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       return;
     }
     
-    final url = '${ApiConfig.baseUrl}/fichier/${widget.document.id}/$entrepriseId';
+          final url = '${ApiConfig.baseUrl}/api/fichier/${widget.document.id}/$entrepriseId';
     
     if (kIsWeb) {
       // Pour le web, on utilise url_launcher pour télécharger

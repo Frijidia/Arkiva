@@ -26,7 +26,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     entrepriseId = authState.entrepriseId!;
     token = authState.token!;
     _statsService = StatsService();
-  }
+      }
 
   @override
   void dispose() {
@@ -414,7 +414,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: [
+          children: [
                           Icon(Icons.admin_panel_settings, color: Colors.red[600]),
                           SizedBox(width: 8),
                           Text(
@@ -473,7 +473,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                           role: 'contributeur',
                           roleColor: Colors.blue[600]!,
                         ),
-                      )),
+            )),
                     ],
                   ),
                 ),
@@ -510,8 +510,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                           role: 'lecteur',
                           roleColor: Colors.green[600]!,
                         ),
-                      )),
-                    ],
+            )),
+          ],
                   ),
                 ),
               ],
@@ -545,7 +545,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           padding: EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          children: [
               Text(
                 'Statistiques par armoire',
                 style: TextStyle(
@@ -623,9 +623,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       ),
                     ],
                   ),
-                ),
-              )),
-            ],
+              ),
+            )),
+          ],
           ),
         );
       },
@@ -655,7 +655,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           padding: EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+                          children: [
               Text(
                 'Activité récente',
                 style: TextStyle(
@@ -699,10 +699,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   ),
                 );
               }),
-            ],
+          ],
           ),
         );
-      },
+                              },
     );
   }
 
@@ -756,7 +756,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+          children: [
                             Text(
                               t['type_fichier'],
                               style: TextStyle(
@@ -792,8 +792,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                     ],
                   ),
                 ),
-              )),
-            ],
+            )),
+                              ],
           ),
         );
       },
@@ -850,7 +850,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+          children: [
                             Text(
                               '${c['mois_formate'] ?? c['mois']}',
                               style: TextStyle(
@@ -886,8 +886,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                     ],
                   ),
                 ),
-              )),
-            ],
+            )),
+          ],
           ),
         );
       },
@@ -978,10 +978,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       ],
                     ),
                   ],
-                ),
-              );
-            },
-          ),
+                                    ),
+                                  );
+                                },
+                              ),
           
           SizedBox(height: 20),
           
@@ -1179,7 +1179,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: [
+                children: [
                         Icon(Icons.list_alt, color: Colors.purple[600]),
                         SizedBox(width: 8),
                         Text(
@@ -1193,9 +1193,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       ],
                     ),
                     SizedBox(height: 16),
-                    ...logs.map((log) {
-                      final details = log['details'] ?? {};
-                      final hasHumanMessage = details['message'] != null;
+                  ...logs.map((log) {
+                    final details = log['details'] ?? {};
+                    final hasHumanMessage = details['message'] != null;
                       
                       return Padding(
                         padding: EdgeInsets.only(bottom: 12),
@@ -1224,10 +1224,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                                 SizedBox(height: 8),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    if (log['action'] == 'delete' && log['type_cible'] == 'file')
+                          children: [
+                            if (log['action'] == 'delete' && log['type_cible'] == 'file')
                                       ElevatedButton.icon(
-                                        onPressed: () {
+                                onPressed: () {
                                           // TODO: restaurer le fichier
                                         },
                                         icon: Icon(Icons.restore, size: 16),
@@ -1239,11 +1239,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                         ),
-                                      ),
+                              ),
                                     if (log['action'] == 'update' && log['type_cible'] == 'file') ...[
                                       SizedBox(width: 8),
                                       ElevatedButton.icon(
-                                        onPressed: () {
+                                onPressed: () {
                                           // TODO: afficher les versions
                                         },
                                         icon: Icon(Icons.history, size: 16),
@@ -1260,20 +1260,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                                   ],
                                 ),
                               ],
-                            ],
-                          ),
+                          ],
                         ),
-                      );
-                    }),
+                      ),
+                    );
+                  }),
                     
                     // Pagination
                     SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+                      IconButton(
                           icon: Icon(Icons.arrow_back),
-                          onPressed: _logsPage > 0 ? () => setState(() => _logsPage--) : null,
+                        onPressed: _logsPage > 0 ? () => setState(() => _logsPage--) : null,
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.grey[200],
                           ),
@@ -1284,7 +1284,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                           decoration: BoxDecoration(
                             color: Colors.purple[100],
                             borderRadius: BorderRadius.circular(20),
-                          ),
+                      ),
                           child: Text(
                             'Page ${_logsPage + 1}',
                             style: TextStyle(
@@ -1294,16 +1294,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                           ),
                         ),
                         SizedBox(width: 16),
-                        IconButton(
+                      IconButton(
                           icon: Icon(Icons.arrow_forward),
-                          onPressed: () => setState(() => _logsPage++),
+                        onPressed: () => setState(() => _logsPage++),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.grey[200],
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+            ),
+                    ],
+                  ),
+                ],
                 ),
               );
             },

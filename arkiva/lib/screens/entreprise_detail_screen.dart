@@ -166,13 +166,20 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
   }
 
   Future<Map<String, dynamic>> _getCurrentSubscription(String token) async {
+    final url = '${ApiConfig.baseUrl}/api/payments/current-subscription';
+    print('🔍 [DEBUG] Current subscription - URL: $url');
+    print('🔍 [DEBUG] Token: ${token.substring(0, 10)}...');
+    
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/api/payments/current-subscription'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
+
+    print('🔍 [DEBUG] Status: ${response.statusCode}');
+    print('🔍 [DEBUG] Response body: ${response.body.substring(0, 100)}...');
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -211,33 +218,56 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
     }
 
     try {
+      print('🔍 [DEBUG] Envoi de la requête choose-subscription...');
+      print('🔍 [DEBUG] URL: ${ApiConfig.baseUrl}/api/payments/choose-subscription');
+      print('🔍 [DEBUG] Body: ${jsonEncode({
+        'subscription_id': subscriptionId,
+        'armoires_souscrites': armoiresSouscrites,
+      })}');
+      
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/payments/process-subscription'),
+        Uri.parse('${ApiConfig.baseUrl}/api/payments/choose-subscription'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'subscription_id': subscriptionId,
-          'entreprise_id': entrepriseId,
+          'armoires_souscrites': armoiresSouscrites,
         }),
       );
+      
+      print('🔍 [DEBUG] Réponse reçue - Status: ${response.statusCode}');
+      print('🔍 [DEBUG] Body: ${response.body}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        final paymentId = responseData['paiement']['payment_id'];
+        
         final processResponse = await http.post(
-          Uri.parse('${ApiConfig.baseUrl}/api/payments/feexpay'),
+          Uri.parse('${ApiConfig.baseUrl}/api/payments/process-payment'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
-            'subscription_id': subscriptionId,
-            'entreprise_id': entrepriseId,
+            'payment_id': paymentId,
+            'moyen_paiement': 'mobile_money',
+            'numero_telephone': '',
           }),
         );
 
         if (processResponse.statusCode == 200) {
-          final feexpay = jsonDecode(processResponse.body);
+          final responseData = jsonDecode(processResponse.body);
+          final feexpay = responseData['feexpay_data'];
+          
+          if (feexpay == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erreur: Données FeexPay manquantes')),
+            );
+            return;
+          }
+          
           final callbackInfo = {
             'subscription_id': subscriptionId,
             'entreprise_id': entrepriseId,
@@ -247,33 +277,134 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ChoicePage(
-                token: feexpay['token'],
-                id: feexpay['id'].toString(),
-                amount: feexpay['amount'].toString(),
-                redirecturl: feexpay['redirecturl'],
-                trans_key: feexpay['trans_key'].toString(),
-                callback_info: callbackInfo, // Passe un Map
+              builder: (context) => Scaffold(
+                body: SafeArea(
+                  child: Container(
+                    height: MediaQuery.of(context).size.height,
+                    child: ChoicePage(
+                      token: feexpay['token'] ?? '',
+                      id: feexpay['id']?.toString() ?? '',
+                      amount: feexpay['amount']?.toString() ?? '',
+                      redirecturl: feexpay['redirecturl'] ?? '',
+                      trans_key: feexpay['trans_key']?.toString() ?? '',
+                      callback_info: callbackInfo, // Passe un Map
+                    ),
+                  ),
+                ),
               ),
             ),
           );
         } else {
-          final errorData = jsonDecode(processResponse.body);
+          String errorMessage = 'Erreur inconnue';
+          try {
+            final errorData = jsonDecode(processResponse.body);
+            errorMessage = errorData['error'] ?? errorData['message'] ?? 'Erreur lors du traitement du paiement';
+          } catch (e) {
+            errorMessage = 'Erreur lors du traitement du paiement: ${processResponse.statusCode}';
+          }
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${errorData['error']}')),
+            SnackBar(content: Text(errorMessage)),
           );
         }
       } else {
-        final errorData = jsonDecode(response.body);
+        String errorMessage = 'Erreur inconnue';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = errorData['error'] ?? errorData['message'] ?? 'Erreur lors du choix de l\'abonnement';
+        } catch (e) {
+          errorMessage = 'Erreur lors du choix de l\'abonnement: ${response.statusCode}';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${errorData['error']}')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
+      print('Exception lors de la souscription: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e')),
+        SnackBar(content: Text('Erreur de connexion: $e')),
       );
     }
+  }
+
+  void _showArmoiresDialog(int subscriptionId) {
+    int selectedArmoires = 2;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.inventory_2, color: Colors.blue[600]),
+              SizedBox(width: 8),
+              Text('Nombre d\'armoires'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Combien d\'armoires souhaitez-vous souscrire ?'),
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      if (selectedArmoires > 2) {
+                        setState(() {
+                          selectedArmoires--;
+                        });
+                      }
+                    },
+                    icon: Icon(Icons.remove_circle_outline),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$selectedArmoires',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedArmoires++;
+                      });
+                    },
+                    icon: Icon(Icons.add_circle_outline),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _chooseSubscription(subscriptionId, selectedArmoires);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Confirmer'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showSubscriptionDialog(List<dynamic> subscriptions) {
@@ -326,10 +457,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
                   trailing: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _chooseSubscription(
-                        subscription['subscription_id'],
-                        subscription['armoires_incluses'],
-                      );
+                      _showArmoiresDialog(subscription['subscription_id']);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[600],
@@ -403,10 +531,10 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
       subscription['isActive'] ? Colors.green[600]! : Colors.red[600]!,
       [
         Row(
-          children: [
-            Icon(
-              subscription['isActive'] ? Icons.check_circle : Icons.cancel,
-              color: subscription['isActive'] ? Colors.green : Colors.red,
+              children: [
+                Icon(
+                  subscription['isActive'] ? Icons.check_circle : Icons.cancel,
+                  color: subscription['isActive'] ? Colors.green : Colors.red,
               size: 20,
             ),
             SizedBox(width: 8),
@@ -421,11 +549,11 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
           ],
         ),
         SizedBox(height: 16),
-        if (subscription['expirationDate'] != null) ...[
+            if (subscription['expirationDate'] != null) ...[
           _buildInfoRow(Icons.calendar_today, 'Expire le', DateTime.parse(subscription['expirationDate']).toLocal().toString().split(' ')[0]),
           SizedBox(height: 8),
-        ],
-        if (subscription['daysUntilExpiration'] != null) ...[
+            ],
+            if (subscription['daysUntilExpiration'] != null) ...[
           _buildInfoRow(
             Icons.timer,
             'Jours restants',
@@ -436,7 +564,7 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
         _buildInfoRow(Icons.inventory_2, 'Armoires souscrites', '${subscription['armoiresSouscrites']}'),
         SizedBox(height: 16),
         Text(
-          'Utilisation actuelle:',
+              'Utilisation actuelle:',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         SizedBox(height: 8),
@@ -444,32 +572,32 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
         _buildInfoRow(Icons.folder, 'Dossiers', '${usage['totalDossiers']}'),
         _buildInfoRow(Icons.description, 'Fichiers', '${usage['totalFichiers']}'),
         SizedBox(height: 16),
-        if (!subscription['isActive'])
-          SizedBox(
-            width: double.infinity,
-            child: FutureBuilder<List<dynamic>>(
-              future: _availableSubscriptionsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return ElevatedButton(
-                    onPressed: () => _showSubscriptionDialog(snapshot.data!),
-                    style: ElevatedButton.styleFrom(
+            if (!subscription['isActive'])
+              SizedBox(
+                width: double.infinity,
+                child: FutureBuilder<List<dynamic>>(
+                  future: _availableSubscriptionsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return ElevatedButton(
+                        onPressed: () => _showSubscriptionDialog(snapshot.data!),
+                        style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
+                          foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
+                        ),
                     child: Text('Souscrire à un abonnement'),
-                  );
-                } else if (snapshot.hasError) {
-                  return Text('Erreur: ${snapshot.error}');
-                } else {
+                      );
+                    } else if (snapshot.hasError) {
+                      return Text('Erreur: ${snapshot.error}');
+                    } else {
                   return Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
-          ),
-      ],
+                    }
+                  },
+                ),
+              ),
+          ],
     );
   }
 
@@ -524,17 +652,17 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
           children: [
             // Informations de l'entreprise
             FutureBuilder<Map<String, dynamic>>(
-              future: _entrepriseInfoFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+        future: _entrepriseInfoFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: Card(
                       elevation: 4,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       child: Container(
                         padding: EdgeInsets.all(40),
-                        child: Column(
-                          children: [
+              child: Column(
+                children: [
                             CircularProgressIndicator(),
                             SizedBox(height: 16),
                             Text('Chargement des informations...'),
@@ -609,9 +737,9 @@ class _EntrepriseDetailScreenState extends State<EntrepriseDetailScreen> {
                     [
                       Text('Aucune information d\'abonnement disponible.'),
                     ],
-                  );
-                }
-              },
+            );
+          }
+        },
             ),
             
             SizedBox(height: 30),

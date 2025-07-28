@@ -454,8 +454,8 @@ class _VersionsScreenState extends State<VersionsScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: Text(
-                  content.toString(),
+              child: Text(
+                content.toString(),
                   style: TextStyle(
                     fontFamily: 'monospace',
                     fontSize: 12,
@@ -584,7 +584,7 @@ class _VersionsScreenState extends State<VersionsScreen> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
+            '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontSize: 12,
@@ -749,21 +749,21 @@ class _VersionsScreenState extends State<VersionsScreen> {
     return _buildModernCard(
       color: Colors.teal[50],
       padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               Icon(Icons.filter_list, color: Colors.teal[600]),
               SizedBox(width: 8),
               Text(
-                'Sélectionner la cible',
+              'Sélectionner la cible',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.teal[700],
                 ),
-              ),
+            ),
             ],
           ),
           SizedBox(height: 16),
@@ -771,31 +771,31 @@ class _VersionsScreenState extends State<VersionsScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedType,
+              value: _selectedType,
                   decoration: InputDecoration(
-                    labelText: 'Type',
+                labelText: 'Type',
                     prefixIcon: Icon(Icons.category, color: Colors.teal[600]),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  items: _availableTypes.map((type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(_getTypeDisplayName(type)),
-                  )).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedType = value!;
-                      _selectedCibleId = null;
-                      _versions = [];
-                    });
-                  },
-                ),
+              ),
+              items: _availableTypes.map((type) => DropdownMenuItem(
+                value: type,
+                child: Text(_getTypeDisplayName(type)),
+              )).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedType = value!;
+                  _selectedCibleId = null;
+                  _versions = [];
+                });
+              },
+            ),
               ),
               SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _showTargetSelectionDialog(),
+              child: ElevatedButton.icon(
+                onPressed: () => _showTargetSelectionDialog(),
                   icon: Icon(Icons.search, size: 16),
                   label: Text('Sélectionner une cible'),
                   style: ElevatedButton.styleFrom(
@@ -805,10 +805,10 @@ class _VersionsScreenState extends State<VersionsScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
         ],
       ),
     );
@@ -847,36 +847,36 @@ class _VersionsScreenState extends State<VersionsScreen> {
     return Center(
       child: _buildModernCard(
         color: Colors.red[50],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
             SizedBox(height: 16),
-            Text(
-              'Erreur lors du chargement',
+          Text(
+            'Erreur lors du chargement',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.red[700],
-              ),
+          ),
             ),
             SizedBox(height: 8),
-            Text(
-              _error!,
+          Text(
+            _error!,
               style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
+            textAlign: TextAlign.center,
+          ),
             SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: _loadVersions,
+            onPressed: _loadVersions,
               icon: Icon(Icons.refresh, size: 16),
               label: Text('Réessayer'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[600],
                 foregroundColor: Colors.white,
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
@@ -886,36 +886,36 @@ class _VersionsScreenState extends State<VersionsScreen> {
     return Center(
       child: _buildModernCard(
         color: Colors.teal[50],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(Icons.history, size: 64, color: Colors.teal[400]),
             SizedBox(height: 16),
             Text(
-              'Aucune version',
+            'Aucune version',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.teal[700],
-              ),
+          ),
             ),
             SizedBox(height: 8),
             Text(
-              'Créez votre première version',
+            'Créez votre première version',
               style: TextStyle(color: Colors.grey[600]),
               textAlign: TextAlign.center,
-            ),
+          ),
             SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _createVersion,
+          ElevatedButton.icon(
+            onPressed: _createVersion,
               icon: Icon(Icons.add, size: 16),
               label: Text('Créer une version'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal[600],
                 foregroundColor: Colors.white,
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
