@@ -78,6 +78,83 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Widget helper pour les cartes de statistiques
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: color),
+            SizedBox(height: 8),
+            Text(value, 
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(title, 
+              style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget helper pour les cartes d'action
+  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: color),
+              SizedBox(height: 12),
+              Text(title, 
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget helper pour les cartes d'accès rapide
+  Widget _buildQuickAccessCard(String title, IconData icon, Color color, String subtitle, VoidCallback onTap) {
+    return Card(
+      elevation: 3,
+      margin: EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(16),
+        leading: Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+
   Future<void> _loadTags() async {
     try {
       final authState = context.read<AuthStateService>();
@@ -101,71 +178,18 @@ class _HomeScreenState extends State<HomeScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/armoire/$entrepriseId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
+          Uri.parse('${ApiConfig.baseUrl}/armoires/entreprise/$entrepriseId'),
+          headers: {'Authorization': 'Bearer $token'},
         );
         if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
+          final data = json.decode(response.body);
           setState(() {
             _allArmoires = data;
           });
         }
       }
     } catch (e) {
-      print('Erreur chargement armoires: $e');
-    }
-  }
-
-  Future<void> _loadCasiers(String armoireId) async {
-    try {
-      final authState = context.read<AuthStateService>();
-      final token = authState.token;
-      final entrepriseId = authState.entrepriseId;
-      if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/casier/$armoireId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _allCasiers = data;
-          });
-        }
-      }
-    } catch (e) {
-      print('Erreur chargement casiers: $e');
-    }
-  }
-
-  Future<void> _loadDossiers(String casierId) async {
-    try {
-      final authState = context.read<AuthStateService>();
-      final token = authState.token;
-      final entrepriseId = authState.entrepriseId;
-      if (token != null && entrepriseId != null) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/dosier/$casierId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          setState(() {
-            _allDossiers = data;
-          });
-        }
-      }
-    } catch (e) {
-      print('Erreur chargement dossiers: $e');
+      print('Erreur lors du chargement des armoires: $e');
     }
   }
 
@@ -176,26 +200,33 @@ class _HomeScreenState extends State<HomeScreen> {
       final entrepriseId = authState.entrepriseId;
       if (token != null && entrepriseId != null) {
         final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/api/casier/getcasiers'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
+          Uri.parse('${ApiConfig.baseUrl}/casiers/entreprise/$entrepriseId'),
+          headers: {'Authorization': 'Bearer $token'},
         );
         if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
+          final data = json.decode(response.body);
           setState(() {
             _allCasiers = data;
           });
         }
       }
     } catch (e) {
-      print('Erreur chargement tous les casiers: $e');
+      print('Erreur lors du chargement des casiers: $e');
     }
   }
 
   Future<void> _performQuickSearch() async {
-    setState(() { _isSearching = true; });
+    if (_quickSearchController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez saisir un terme de recherche')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
     final authState = context.read<AuthStateService>();
     final token = authState.token;
     final entrepriseId = authState.entrepriseId;
@@ -295,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: Text(nomAffiche),
             subtitle: Text(cheminAffiche),
             onTap: () {
-    Navigator.of(context).push(
+              Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => FichierViewScreen(doc: doc),
                 ),
@@ -398,230 +429,215 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   // Section Rechercher par
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.blueGrey[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Rechercher par :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _filterArmoires,
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  _filterArmoires = v!;
-                                  _updateTousSB();
-                                });
-                              },
-                            ),
-                            const Text('Armoires'),
-                            Checkbox(
-                              value: _filterCasiers,
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  _filterCasiers = v!;
-                                  _updateTousSB();
-                                });
-                              },
-                            ),
-                            const Text('Casiers'),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _filterDossiers,
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  _filterDossiers = v!;
-                                  _updateTousSB();
-                                });
-                              },
-                            ),
-                            const Text('Dossiers'),
-                            Checkbox(
-                              value: _filterFichiers,
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  _filterFichiers = v!;
-                                  _updateTousSB();
-                                });
-                              },
-                            ),
-                            const Text('Fichiers'),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _filterArmoires && _filterCasiers && _filterDossiers && _filterFichiers,
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  _filterArmoires = v!;
-                                  _filterCasiers = v;
-                                  _filterDossiers = v;
-                                  _filterFichiers = v;
-                                });
-                              },
-                            ),
-                            const Text('Tous', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Rechercher par :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          FilterChip(
+                            label: Text('Armoires'),
+                            selected: _filterArmoires,
+                            onSelected: (selected) {
+                              setStateSB(() {
+                                _filterArmoires = selected;
+                              });
+                            },
+                            selectedColor: Colors.blue[100],
+                            checkmarkColor: Colors.blue[700],
+                          ),
+                          FilterChip(
+                            label: Text('Casiers'),
+                            selected: _filterCasiers,
+                            onSelected: (selected) {
+                              setStateSB(() {
+                                _filterCasiers = selected;
+                              });
+                            },
+                            selectedColor: Colors.blue[100],
+                            checkmarkColor: Colors.blue[700],
+                          ),
+                          FilterChip(
+                            label: Text('Dossiers'),
+                            selected: _filterDossiers,
+                            onSelected: (selected) {
+                              setStateSB(() {
+                                _filterDossiers = selected;
+                              });
+                            },
+                            selectedColor: Colors.blue[100],
+                            checkmarkColor: Colors.blue[700],
+                          ),
+                          FilterChip(
+                            label: Text('Fichiers'),
+                            selected: _filterFichiers,
+                            onSelected: (selected) {
+                              setStateSB(() {
+                                _filterFichiers = selected;
+                              });
+                            },
+                            selectedColor: Colors.blue[100],
+                            checkmarkColor: Colors.blue[700],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _quickSearchController,
-                    decoration: InputDecoration(
-                      labelText: 'Nom du fichier ou mot-clé',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
+                  // Section Sélection multiple
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_filterArmoires) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Armoires', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[900])),
-                                Row(
-                                  children: [
-                                    Checkbox(
-                                      value: _selectedArmoiresMulti.length == _allArmoires.length && _allArmoires.isNotEmpty,
-                                      onChanged: (v) {
-                                        setStateSB(() {
-                                          if (v == true) {
-                                            _selectedArmoiresMulti = _allArmoires.map<String>((a) => a['nom']).toList();
-                                          } else {
-                                            _selectedArmoiresMulti.clear();
-                                          }
-                                        });
-                                      },
-                                      activeColor: Colors.blue[700],
-                                    ),
-                                    Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            ..._allArmoires.map<Widget>((armoire) => CheckboxListTile(
-                              value: _selectedArmoiresMulti.contains(armoire['nom']),
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  if (v == true) {
-                                    _selectedArmoiresMulti.add(armoire['nom']);
-                                  } else {
-                                    _selectedArmoiresMulti.remove(armoire['nom']);
-                                  }
-                                });
-                              },
-                              title: Text(armoire['nom']),
-                              controlAffinity: ListTileControlAffinity.leading,
-                              activeColor: Colors.blue[700],
-                              dense: true,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            )),
-                            const SizedBox(height: 14),
-                          ],
-                          if (_filterCasiers) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Casiers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[900])),
-                                Row(
-                                  children: [
-                                    Checkbox(
-                                      value: _selectedCasiersMulti.length == _allCasiers.length && _allCasiers.isNotEmpty,
-                                      onChanged: (v) {
-                                        setStateSB(() {
-                                          if (v == true) {
-                                            _selectedCasiersMulti = _allCasiers.map<String>((c) => c['cassier_id'].toString()).toList();
-                                          } else {
-                                            _selectedCasiersMulti.clear();
-                                          }
-                                        });
-                                      },
-                                      activeColor: Colors.blue[700],
-                                    ),
-                                    Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            ..._allCasiers.map<Widget>((casier) => CheckboxListTile(
-                              value: _selectedCasiersMulti.contains(casier['cassier_id'].toString()),
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  if (v == true) {
-                                    _selectedCasiersMulti.add(casier['cassier_id'].toString());
-                                  } else {
-                                    _selectedCasiersMulti.remove(casier['cassier_id'].toString());
-                                  }
-                                });
-                              },
-                              title: Text(casier['nom']),
-                              controlAffinity: ListTileControlAffinity.leading,
-                              activeColor: Colors.blue[700],
-                              dense: true,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            )),
-                            const SizedBox(height: 14),
-                          ],
-                          if (_filterDossiers) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Dossiers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[900])),
-                                Row(
-                                  children: [
-                                    Checkbox(
-                                      value: _selectedDossiersMulti.length == _allDossiers.length && _allDossiers.isNotEmpty,
-                                      onChanged: (v) {
-                                        setStateSB(() {
-                                          if (v == true) {
-                                            _selectedDossiersMulti = _allDossiers.map<String>((d) => d['dossier_id'].toString()).toList();
-                                          } else {
-                                            _selectedDossiersMulti.clear();
-                                          }
-                                        });
-                                      },
-                                      activeColor: Colors.blue[700],
-                                    ),
-                                    Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            ..._allDossiers.map<Widget>((dossier) => CheckboxListTile(
-                              value: _selectedDossiersMulti.contains(dossier['dossier_id'].toString()),
-                              onChanged: (v) {
-                                setStateSB(() {
-                                  if (v == true) {
-                                    _selectedDossiersMulti.add(dossier['dossier_id'].toString());
-                                  } else {
-                                    _selectedDossiersMulti.remove(dossier['dossier_id'].toString());
-                                  }
-                                });
-                              },
-                              title: Text(dossier['nom']),
-                              controlAffinity: ListTileControlAffinity.leading,
-                              activeColor: Colors.blue[700],
-                              dense: true,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            )),
-                            const SizedBox(height: 14),
-                          ],
+                          Text('Sélection multiple :', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          const SizedBox(height: 12),
+                          // Armoires
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.inventory_2, size: 20, color: Colors.blue[700]),
+                                  const SizedBox(width: 8),
+                                  Text('Armoires', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                  const Spacer(),
+                                  CheckboxListTile(
+                                    value: _selectedArmoiresMulti.length == _allArmoires.length && _allArmoires.isNotEmpty,
+                                    onChanged: (v) {
+                                      setStateSB(() {
+                                        if (v == true) {
+                                          _selectedArmoiresMulti = _allArmoires.map((a) => a['nom'].toString()).toList();
+                                        } else {
+                                          _selectedArmoiresMulti.clear();
+                                        }
+                                      });
+                                    },
+                                    title: Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
+                                    controlAffinity: ListTileControlAffinity.leading,
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                              ..._allArmoires.map<Widget>((armoire) => CheckboxListTile(
+                                value: _selectedArmoiresMulti.contains(armoire['nom']),
+                                onChanged: (v) {
+                                  setStateSB(() {
+                                    if (v == true) {
+                                      _selectedArmoiresMulti.add(armoire['nom']);
+                                    } else {
+                                      _selectedArmoiresMulti.remove(armoire['nom']);
+                                    }
+                                  });
+                                },
+                                title: Text(armoire['nom']),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                activeColor: Colors.blue[700],
+                                dense: true,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              )),
+                              const SizedBox(height: 14),
+                            ],
+                          ),
+                          // Casiers
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.folder, size: 20, color: Colors.blue[700]),
+                                  const SizedBox(width: 8),
+                                  Text('Casiers', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                  const Spacer(),
+                                  CheckboxListTile(
+                                    value: _selectedCasiersMulti.length == _allCasiers.length && _allCasiers.isNotEmpty,
+                                    onChanged: (v) {
+                                      setStateSB(() {
+                                        if (v == true) {
+                                          _selectedCasiersMulti = _allCasiers.map((c) => c['nom'].toString()).toList();
+                                        } else {
+                                          _selectedCasiersMulti.clear();
+                                        }
+                                      });
+                                    },
+                                    title: Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
+                                    controlAffinity: ListTileControlAffinity.leading,
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                              ..._allCasiers.map<Widget>((casier) => CheckboxListTile(
+                                value: _selectedCasiersMulti.contains(casier['nom']),
+                                onChanged: (v) {
+                                  setStateSB(() {
+                                    if (v == true) {
+                                      _selectedCasiersMulti.add(casier['nom']);
+                                    } else {
+                                      _selectedCasiersMulti.remove(casier['nom']);
+                                    }
+                                  });
+                                },
+                                title: Text(casier['nom']),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                activeColor: Colors.blue[700],
+                                dense: true,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              )),
+                              const SizedBox(height: 14),
+                            ],
+                          ),
+                          // Dossiers
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.folder_open, size: 20, color: Colors.blue[700]),
+                                  const SizedBox(width: 8),
+                                  Text('Dossiers', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                  const Spacer(),
+                                  CheckboxListTile(
+                                    value: _selectedDossiersMulti.length == _allDossiers.length && _allDossiers.isNotEmpty,
+                                    onChanged: (v) {
+                                      setStateSB(() {
+                                        if (v == true) {
+                                          _selectedDossiersMulti = _allDossiers.map((d) => d['dossier_id'].toString()).toList();
+                                        } else {
+                                          _selectedDossiersMulti.clear();
+                                        }
+                                      });
+                                    },
+                                    title: Text('Tous', style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500)),
+                                    controlAffinity: ListTileControlAffinity.leading,
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                              ..._allDossiers.map<Widget>((dossier) => CheckboxListTile(
+                                value: _selectedDossiersMulti.contains(dossier['dossier_id'].toString()),
+                                onChanged: (v) {
+                                  setStateSB(() {
+                                    if (v == true) {
+                                      _selectedDossiersMulti.add(dossier['dossier_id'].toString());
+                                    } else {
+                                      _selectedDossiersMulti.remove(dossier['dossier_id'].toString());
+                                    }
+                                  });
+                                },
+                                title: Text(dossier['nom']),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                activeColor: Colors.blue[700],
+                                dense: true,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              )),
+                              const SizedBox(height: 14),
+                            ],
+                          ),
                           // Fichiers : rien à afficher, c'est juste le champ texte
                         ],
                       ),
@@ -707,29 +723,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[900]!, Colors.blue[700]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         title: Row(
           children: [
-            Text('ARKIVA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-            SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                'Bonjour $username',
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Icon(Icons.archive, color: Colors.white, size: 28),
+            SizedBox(width: 12),
+            Text('ARKIVA', style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: 24,
+              color: Colors.white
+            )),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () {
               _navigateToScreen(context, const SettingsScreen());
             },
             tooltip: 'Paramètres',
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               await context.read<AuthStateService>().clearAuthState();
               Navigator.of(context).pushAndRemoveUntil(
@@ -745,37 +769,77 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+            // Section d'accueil modernisée
+            Container(
+              padding: EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '👋 Bonjour $username !',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
+                  // Card de salutation avec avatar
+                  Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    child: Container(
+                      padding: EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue[50]!, Colors.blue[100]!],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Colors.blue[600],
+                            child: Icon(Icons.person, color: Colors.white, size: 30),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Bonjour $username !', 
+                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                                Text('Prêt à organiser vos documents ?',
+                                  style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  SizedBox(height: 12),
-                  FutureBuilder<int>(
-                    future: token != null ? DocumentService().fetchDocumentsCount(token) : Future.value(0),
-                    builder: (context, snapshot) {
-                      final docCount = snapshot.data ?? 0;
-                      return Text(
-                        'Vous avez : 📂 ${authStateService.armoireCount ?? 0} armoires | 🗄️ ${authStateService.casierCount ?? 0} casiers',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[800],
+                  
+                  // Cards de statistiques
+                  SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          'Armoires', 
+                          '${authStateService.armoireCount ?? 0}', 
+                          Icons.inventory_2, 
+                          Colors.blue[600]!
                         ),
-                      );
-                    },
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          'Casiers', 
+                          '${authStateService.casierCount ?? 0}', 
+                          Icons.folder, 
+                          Colors.green[600]!
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 20),
+                  
+                  // Bouton admin si nécessaire
                   if (userRole == 'admin')
                     Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
+                      padding: const EdgeInsets.only(top: 16.0),
                       child: ElevatedButton.icon(
                         onPressed: () {
                           _navigateToScreen(context, const EntrepriseDetailScreen());
@@ -784,7 +848,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           backgroundColor: Colors.blueGrey[700],
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                           elevation: 4,
@@ -797,232 +861,171 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            SizedBox(height: 20),
+
+            // Section Armoires
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Armoires', 
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue[900])),
+                  SizedBox(height: 16),
+                  _buildActionCard('Armoires', Icons.inventory_2, Colors.orange[600]!, () {
+                    final authStateService = context.read<AuthStateService>();
+                    final entrepriseId = authStateService.entrepriseId;
+                    final userId = authStateService.userId;
+                    
+                    if (entrepriseId != null && userId != null) {
+                      _navigateToScreen(
+                        context,
+                        ArmoiresScreen(
+                          entrepriseId: entrepriseId,
+                          userId: int.parse(userId),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Erreur: Informations d\'entreprise manquantes'),
+                        ),
+                      );
+                    }
+                  }),
+                ],
+              ),
+            ),
+
             SizedBox(height: 30),
 
-            InkWell(
-              onTap: () {
-                final authStateService = context.read<AuthStateService>();
-                final entrepriseId = authStateService.entrepriseId;
-                final userId = authStateService.userId;
-                
-                if (entrepriseId != null && userId != null) {
-                  _navigateToScreen(
-                    context,
-                    ArmoiresScreen(
-                      entrepriseId: entrepriseId,
-                      userId: int.parse(userId),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Erreur: Informations d\'entreprise manquantes'),
-                    ),
-                  );
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Vos Armoires',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[900],
+            // Section Recherche Améliorée
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.search, color: Colors.blue[600], size: 24),
+                          SizedBox(width: 8),
+                          Text('Recherche Rapide', 
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      TextField(
+                        controller: _quickSearchController,
+                        decoration: InputDecoration(
+                          hintText: 'Rechercher un document...',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
                         ),
-                        Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-
-                    // TODO: Afficher ici les armoires récentes ou un aperçu si nécessaire
-                    // Pour l'instant, cette section est un raccourci vers ArmoiresScreen
-                  ],
+                        onSubmitted: (text) => _performQuickSearch(),
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _showMultiSelectFilters,
+                              icon: Icon(Icons.tune),
+                              label: Text('Filtres'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue[50],
+                                foregroundColor: Colors.blue[700],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _performQuickSearch,
+                              icon: Icon(Icons.search),
+                              label: Text('Rechercher'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue[600],
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Affichage des résultats sous la barre de recherche
+                      _buildQuickResultsList(),
+                    ],
+                  ),
                 ),
               ),
             ),
 
             SizedBox(height: 30),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            // Section Accès Rapide Modernisée
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Recherche Rapide',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
-                  ),
+                  Text('Accès Rapide', 
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue[900])),
                   SizedBox(height: 16),
-                  TextField(
-                    controller: _quickSearchController,
-                    decoration: InputDecoration(
-                      hintText: 'Nom du fichier ou mot-clé',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onSubmitted: (text) => _performQuickSearch(),
+                  _buildQuickAccessCard(
+                    'Favoris', 
+                    Icons.star, 
+                    Colors.amber[600]!, 
+                    'Vos documents favoris',
+                    () => _navigateToScreen(context, const FavorisScreen())
                   ),
-                  SizedBox(height: 12),
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _showMultiSelectFilters,
-                        icon: Icon(Icons.filter_list),
-                        label: Text('Filtrer'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[100],
-                          foregroundColor: Colors.blue[900],
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: _performQuickSearch,
-                        icon: Icon(Icons.search),
-                        label: Text('Rechercher'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[600],
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
+                  _buildQuickAccessCard(
+                    'Récents', 
+                    Icons.history, 
+                    Colors.blue[600]!, 
+                    'Documents récemment consultés',
+                    () => print('Tapped on Documents récemment consultés')
                   ),
-                  // Affichage des résultats sous la barre de recherche
-                  _buildQuickResultsList(),
+                  _buildQuickAccessCard(
+                    'Sauvegardes', 
+                    Icons.backup, 
+                    Colors.orange[600]!, 
+                    'Gérer vos sauvegardes',
+                    () => Navigator.pushNamed(context, '/backups')
+                  ),
+                  _buildQuickAccessCard(
+                    'Versions', 
+                    Icons.history, 
+                    Colors.purple[600]!, 
+                    'Historique des versions',
+                    () => Navigator.pushNamed(context, '/versions')
+                  ),
+                  _buildQuickAccessCard(
+                    'Restaurations', 
+                    Icons.restore, 
+                    Colors.teal[600]!, 
+                    'Restaurer des versions',
+                    () => Navigator.pushNamed(context, '/restorations')
+                  ),
                 ],
               ),
             ),
-
+            
+            // Espacement final pour éviter que le contenu soit coupé
             SizedBox(height: 30),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Accès Rapide',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
-                  ),
-                  SizedBox(height: 16),
-
-                  Column(
-                    children: [
-                      Card(
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 8.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          leading: Icon(Icons.star, size: 28, color: Colors.amber[700]),
-                          title: Text('Documents favoris', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            _navigateToScreen(context, const FavorisScreen());
-                          },
-                        ),
-                      ),
-                      Card(
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 8.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          leading: Icon(Icons.history, size: 28, color: Colors.blue[700]),
-                          title: Text('Documents récemment consultés', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            print('Tapped on Documents récemment consultés');
-                          },
-                        ),
-                      ),
-                      Card(
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 8.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          leading: Icon(Icons.recent_actors, size: 28, color: Colors.green[700]),
-                          title: Text('Derniers documents', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            print('Tapped on Derniers documents');
-                          },
-                        ),
-                      ),
-                      Card(
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 8.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          leading: Icon(Icons.backup, size: 28, color: Colors.orange[700]),
-                          title: Text('Sauvegardes', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            Navigator.pushNamed(context, '/backups');
-                          },
-                        ),
-                      ),
-                      Card(
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 8.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          leading: Icon(Icons.history, size: 28, color: Colors.purple[700]),
-                          title: Text('Versions', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            Navigator.pushNamed(context, '/versions');
-                          },
-                        ),
-                      ),
-                      Card(
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 8.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          leading: Icon(Icons.restore, size: 28, color: Colors.teal[700]),
-                          title: Text('Restaurations', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 18.0, color: Colors.grey[600]),
-                          onTap: () {
-                            Navigator.pushNamed(context, '/restorations');
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -1087,43 +1090,5 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null) {
       print('Nouvelle armoire à créer: Nom - ${result['nom']}, Description - ${result['description']}');
     }
-  }
-
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: color,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 } 

@@ -101,129 +101,533 @@ class _FavorisScreenState extends State<FavorisScreen> {
     }).toList();
   }
 
+  // Widgets helpers pour un design moderne
+  Widget _buildModernCard({
+    required Widget child,
+    Color? color,
+    EdgeInsets? padding,
+  }) {
+    return Card(
+      elevation: 4,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: padding ?? EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: color != null ? LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ) : null,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildDocumentCard(Document document) {
+    IconData iconData;
+    Color iconColor;
+    
+    if (document.type.contains('pdf')) {
+      iconData = Icons.picture_as_pdf;
+      iconColor = Colors.red;
+    } else if (document.type.contains('image')) {
+      iconData = Icons.image;
+      iconColor = Colors.green;
+    } else if (document.type.contains('document')) {
+      iconData = Icons.description;
+      iconColor = Colors.blue;
+    } else if (document.type.contains('spreadsheet')) {
+      iconData = Icons.table_chart;
+      iconColor = Colors.orange;
+    } else if (document.type.contains('presentation')) {
+      iconData = Icons.slideshow;
+      iconColor = Colors.purple;
+    } else if (document.type.contains('archive')) {
+      iconData = Icons.archive;
+      iconColor = Colors.brown;
+    } else {
+      iconData = Icons.insert_drive_file;
+      iconColor = Colors.grey;
+    }
+
+    return _buildModernCard(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(iconData, color: iconColor, size: 24),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      document.nomOriginal ?? document.nom.replaceAll('.enc', ''),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      document.description ?? 'Pas de description',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (document.dateCreation != null) ...[
+                      SizedBox(height: 4),
+                      Text(
+                        'Créé le ${document.dateCreation!.toString().substring(0, 10)}',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'telecharger':
+                      _telechargerDocument(document);
+                      break;
+                    case 'modifier':
+                      _modifierDocument(document);
+                      break;
+                    case 'supprimer':
+                      _supprimerDocument(document);
+                      break;
+                    case 'assigner_tag':
+                      _assignTagToFile(document);
+                      break;
+                    case 'favori':
+                      _toggleFavori(document);
+                      break;
+                    case 'ouvrir_nouvel_onglet':
+                      _openDocument(document);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'telecharger',
+                    child: Row(
+                      children: [
+                        Icon(Icons.download, color: Colors.blue[600]),
+                        SizedBox(width: 8),
+                        Text('Télécharger'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'modifier',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, color: Colors.orange[600]),
+                        SizedBox(width: 8),
+                        Text('Renommer'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'assigner_tag',
+                    child: Row(
+                      children: [
+                        Icon(Icons.label, color: Colors.green[600]),
+                        SizedBox(width: 8),
+                        Text('Assigner un tag'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'favori',
+                    child: Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber[600]),
+                        SizedBox(width: 8),
+                        Text('Retirer des favoris'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'ouvrir_nouvel_onglet',
+                    child: Row(
+                      children: [
+                        Icon(Icons.open_in_new, color: Colors.purple[600]),
+                        SizedBox(width: 8),
+                        Text('Ouvrir'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'supprimer',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red[600]),
+                        SizedBox(width: 8),
+                        Text('Supprimer', style: TextStyle(color: Colors.red[600])),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _openDocument(document),
+                  icon: Icon(Icons.visibility, size: 16),
+                  label: Text('Voir'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _telechargerDocument(document),
+                  icon: Icon(Icons.download, size: 16),
+                  label: Text('Télécharger'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernSearchBar() {
+    return _buildModernCard(
+      color: Colors.blue[50],
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Rechercher dans vos favoris...',
+          hintStyle: TextStyle(color: Colors.grey[500]),
+          prefixIcon: Icon(Icons.search, color: Colors.blue[600]),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: Colors.grey[600]),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.blue[200]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.blue[200]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        onChanged: (value) {
+          setState(() => _searchQuery = value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    if (_selectedType == null && _selectedDateRange == null) {
+      return SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (_selectedType != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.blue[300]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.filter_list, size: 16, color: Colors.blue[700]),
+                  SizedBox(width: 4),
+                  Text(
+                    'Type: $_selectedType',
+                    style: TextStyle(
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedType = null),
+                    child: Icon(Icons.close, size: 16, color: Colors.blue[700]),
+                  ),
+                ],
+              ),
+            ),
+          if (_selectedDateRange != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.green[300]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.date_range, size: 16, color: Colors.green[700]),
+                  SizedBox(width: 4),
+                  Text(
+                    'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
+                    style: TextStyle(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedDateRange = null),
+                    child: Icon(Icons.close, size: 16, color: Colors.green[700]),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _openFilters() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateSB) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Filtres',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Type de document',
-                  prefixIcon: Icon(Icons.description),
-                ),
-                items: _documentTypes.map((type) => DropdownMenuItem(
-                  value: type,
-                  child: Text(type),
-                )).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedType = value);
-                  setStateSB(() {});
-                },
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.date_range),
-                          SizedBox(width: 8),
-                          Text('Période d\'ajout', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _selectedDateRange == null 
-                          ? 'Non sélectionnée' 
-                          : 'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
-                        style: TextStyle(
-                          color: _selectedDateRange == null ? Colors.grey : null,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final picked = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime.now(),
-                            helpText: 'Sélectionner une période',
-                            cancelText: 'Annuler',
-                            confirmText: 'OK',
-                            saveText: 'Enregistrer',
-                            errorFormatText: 'Format invalide',
-                            errorInvalidText: 'Date invalide',
-                            errorInvalidRangeText: 'Plage de dates invalide',
-                            fieldStartHintText: 'Début',
-                            fieldEndHintText: 'Fin',
-                            fieldStartLabelText: 'Date de début',
-                            fieldEndLabelText: 'Date de fin',
-                          );
-                          if (picked != null) {
-                            setState(() => _selectedDateRange = picked);
-                            setStateSB(() {});
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_selectedDateRange == null ? 'Sélectionner une période' : 'Modifier la période'),
-                      ),
-                    ],
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: StatefulBuilder(
+          builder: (context, setStateSB) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _selectedType = null;
-                        _selectedDateRange = null;
-                      });
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Icon(Icons.filter_list, color: Colors.blue[600]),
+                    SizedBox(width: 8),
+                    Text(
+                      'Filtres',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                _buildModernCard(
+                  color: Colors.blue[50],
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedType,
+                    decoration: InputDecoration(
+                      labelText: 'Type de document',
+                      prefixIcon: Icon(Icons.description, color: Colors.blue[600]),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: _documentTypes.map((type) => DropdownMenuItem(
+                      value: type,
+                      child: Text(type),
+                    )).toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedType = value);
                       setStateSB(() {});
                     },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Réinitialiser'),
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.check),
-                    label: const Text('Appliquer'),
+                ),
+                SizedBox(height: 16),
+                _buildModernCard(
+                  color: Colors.green[50],
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.date_range, color: Colors.green[600]),
+                            SizedBox(width: 8),
+                            Text(
+                              'Période d\'ajout',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          _selectedDateRange == null 
+                            ? 'Non sélectionnée' 
+                            : 'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
+                          style: TextStyle(
+                            color: _selectedDateRange == null ? Colors.grey : Colors.green[700],
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final picked = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now(),
+                              helpText: 'Sélectionner une période',
+                              cancelText: 'Annuler',
+                              confirmText: 'OK',
+                              saveText: 'Enregistrer',
+                              errorFormatText: 'Format invalide',
+                              errorInvalidText: 'Date invalide',
+                              errorInvalidRangeText: 'Plage de dates invalide',
+                              fieldStartHintText: 'Début',
+                              fieldEndHintText: 'Fin',
+                              fieldStartLabelText: 'Date de début',
+                              fieldEndLabelText: 'Date de fin',
+                            );
+                            if (picked != null) {
+                              setState(() => _selectedDateRange = picked);
+                              setStateSB(() {});
+                            }
+                          },
+                          icon: Icon(Icons.calendar_today, size: 16),
+                          label: Text(_selectedDateRange == null ? 'Sélectionner une période' : 'Modifier la période'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green[600],
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
+                ),
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _selectedType = null;
+                            _selectedDateRange = null;
+                          });
+                          setStateSB(() {});
+                        },
+                        icon: Icon(Icons.refresh, size: 16),
+                        label: Text('Réinitialiser'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey[600],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.check, size: 16),
+                        label: Text('Appliquer'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[600],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -318,23 +722,37 @@ class _FavorisScreenState extends State<FavorisScreen> {
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Modifier le document'),
+        title: Row(
+          children: [
+            Icon(Icons.edit, color: Colors.orange[600]),
+            SizedBox(width: 8),
+            Text('Modifier le document'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nomController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nom du document',
                 hintText: 'Entrez le nouveau nom',
+                prefixIcon: Icon(Icons.description, color: Colors.blue[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TextField(
               controller: descriptionController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Description (facultatif)',
                 hintText: 'Entrez la nouvelle description',
+                prefixIcon: Icon(Icons.info, color: Colors.green[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               maxLines: 3,
             ),
@@ -343,7 +761,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text('Annuler'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -355,7 +773,11 @@ class _FavorisScreenState extends State<FavorisScreen> {
                 });
               }
             },
-            child: const Text('Enregistrer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange[600],
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Enregistrer'),
           ),
         ],
       ),
@@ -400,17 +822,26 @@ class _FavorisScreenState extends State<FavorisScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer le document'),
+        title: Row(
+          children: [
+            Icon(Icons.delete, color: Colors.red[600]),
+            SizedBox(width: 8),
+            Text('Supprimer le document'),
+          ],
+        ),
         content: Text('Êtes-vous sûr de vouloir supprimer "${document.nomOriginal ?? document.nom.replaceAll('.enc', '')}" ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text('Annuler'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[600],
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Supprimer'),
           ),
         ],
       ),
@@ -479,66 +910,76 @@ class _FavorisScreenState extends State<FavorisScreen> {
           if (isLoading) loadTags();
           final filteredTags = tags.where((tag) => tag['name'].toLowerCase().contains(search.toLowerCase())).toList();
           return AlertDialog(
-            title: const Text('Assigner un tag'),
+            title: Row(
+              children: [
+                Icon(Icons.label, color: Colors.green[600]),
+                SizedBox(width: 8),
+                Text('Assigner un tag'),
+              ],
+            ),
             content: SizedBox(
               width: 400,
               child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator())
                   : error != null
-                      ? Text(error!, style: const TextStyle(color: Colors.red))
+                      ? Text(error!, style: TextStyle(color: Colors.red))
                       : SingleChildScrollView(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TextField(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Rechercher un tag',
+                                  prefixIcon: Icon(Icons.search, color: Colors.blue[600]),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                                 onChanged: (value) => setStateSB(() => search = value),
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               if (suggestedTags.isNotEmpty) ...[
-                                const Text(
+                                Text(
                                   'Tags suggérés',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue[700]),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
                                   children: suggestedTags.map<Widget>((tag) => ActionChip(
-                                    avatar: const Icon(Icons.auto_awesome, size: 16, color: Colors.blue),
+                                    avatar: Icon(Icons.auto_awesome, size: 16, color: Colors.blue),
                                     label: Text(tag['name']),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: Colors.blue[50],
                                     onPressed: () => Navigator.pop(context, tag['name']),
                                     tooltip: 'Cliquez pour assigner ce tag suggéré',
                                   )).toList(),
                                 ),
-                                const Divider(height: 24),
+                                Divider(height: 24),
                               ],
                               if (popularTags.isNotEmpty) ...[
-                                const Text(
+                                Text(
                                   'Tags populaires',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green[700]),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
                                   children: popularTags.map<Widget>((tag) => ActionChip(
-                                    avatar: const Icon(Icons.trending_up, size: 16, color: Colors.green),
+                                    avatar: Icon(Icons.trending_up, size: 16, color: Colors.green),
                                     label: Text(tag),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: Colors.green[50],
                                     onPressed: () => Navigator.pop(context, tag),
                                     tooltip: 'Cliquez pour assigner ce tag populaire',
                                   )).toList(),
                                 ),
-                                const Divider(height: 24),
+                                Divider(height: 24),
                               ],
-                              const Text(
+                              Text(
                                 'Tous les tags',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey[700]),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               SizedBox(
                                 height: 180,
                                 child: ListView(
@@ -546,7 +987,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
                                     title: Text(tag['name']),
                                     onTap: () => setStateSB(() => selectedTag = tag['name']),
                                     selected: selectedTag == tag['name'],
-                                    trailing: selectedTag == tag['name'] ? const Icon(Icons.check, color: Colors.blue) : null,
+                                    trailing: selectedTag == tag['name'] ? Icon(Icons.check, color: Colors.blue) : null,
                                   )).toList(),
                                 ),
                               ),
@@ -555,10 +996,17 @@ class _FavorisScreenState extends State<FavorisScreen> {
                         ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler'),
+              ),
               ElevatedButton(
                 onPressed: selectedTag == null ? null : () => Navigator.pop(context, selectedTag),
-                child: const Text('Assigner'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[600],
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Assigner'),
               ),
             ],
           );
@@ -605,22 +1053,54 @@ class _FavorisScreenState extends State<FavorisScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Center(
+          child: _buildModernCard(
+            child: Column(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Chargement de vos favoris...'),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favoris'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.amber[900]!, Colors.amber[700]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.star, color: Colors.white, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Mes Favoris',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(Icons.filter_list, color: Colors.white),
             onPressed: _openFilters,
             tooltip: 'Filtres',
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadFavoris,
             tooltip: 'Rafraîchir',
           ),
@@ -629,168 +1109,55 @@ class _FavorisScreenState extends State<FavorisScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher dans les favoris...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-              },
-            ),
+            padding: EdgeInsets.all(20),
+            child: _buildModernSearchBar(),
           ),
-          if (_selectedType != null || _selectedDateRange != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 8,
-                children: [
-                  if (_selectedType != null)
-                    Chip(
-                      label: Text('Type: $_selectedType'),
-                      onDeleted: () => setState(() => _selectedType = null),
-                    ),
-                  if (_selectedDateRange != null)
-                    Chip(
-                      label: Text(
-                        'Du ${_selectedDateRange!.start.toString().substring(0,10)} au ${_selectedDateRange!.end.toString().substring(0,10)}',
-                      ),
-                      onDeleted: () => setState(() => _selectedDateRange = null),
-                    ),
-                ],
-              ),
-            ),
+          _buildFilterChips(),
+          SizedBox(height: 8),
           Expanded(
             child: _filteredFavoris.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _searchQuery.isNotEmpty ? Icons.search_off : Icons.star_border,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Aucun résultat trouvé'
-                              : 'Aucun document favori',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                    child: _buildModernCard(
+                      color: Colors.grey[50],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _searchQuery.isNotEmpty ? Icons.search_off : Icons.star_border,
+                            size: 64,
+                            color: Colors.grey[400],
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Essayez avec d\'autres termes de recherche'
-                              : 'Ajoutez des documents à vos favoris',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
+                          SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Aucun résultat trouvé'
+                                : 'Aucun document favori',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Essayez avec d\'autres termes de recherche'
+                                : 'Ajoutez des documents à vos favoris',
+                            style: TextStyle(color: Colors.grey[500]),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(20),
                     itemCount: _filteredFavoris.length,
                     itemBuilder: (context, index) {
                       final document = _filteredFavoris[index];
-                      final authState = context.watch<AuthStateService>();
-                      final token = authState.token;
-                      final userId = authState.userId;
-                      final entrepriseId = authState.entrepriseId;
-
-                      return ListTile(
-                        leading: Icon(
-                          document.type.contains('pdf') ? Icons.picture_as_pdf : Icons.insert_drive_file,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        title: Text(document.nomOriginal ?? document.nom.replaceAll('.enc', '')),
-                        subtitle: Text(
-                          document.description ?? 'Pas de description',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'telecharger':
-                                _telechargerDocument(document);
-                                break;
-                              case 'modifier':
-                                _modifierDocument(document);
-                                break;
-                              case 'supprimer':
-                                _supprimerDocument(document);
-                                break;
-                              case 'assigner_tag':
-                                _assignTagToFile(document);
-                                break;
-                              case 'favori':
-                                _toggleFavori(document);
-                                break;
-                              case 'ouvrir_nouvel_onglet':
-                                _openDocument(document);
-                                break;
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'telecharger',
-                              child: Row(
-                                children: [Icon(Icons.download), SizedBox(width: 8), Text('Télécharger')],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'modifier',
-                              child: Row(
-                                children: [Icon(Icons.edit), SizedBox(width: 8), Text('Renommer')],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'supprimer',
-                              child: Row(
-                                children: [Icon(Icons.delete, color: Colors.red), SizedBox(width: 8), Text('Supprimer', style: TextStyle(color: Colors.red))],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'assigner_tag',
-                              child: Row(
-                                children: [Icon(Icons.label, color: Colors.blue), SizedBox(width: 8), Text('Assigner un tag')],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'favori',
-                              child: Row(
-                                children: [Icon(Icons.star_border), SizedBox(width: 8), Text('Ajouter/Retirer des favoris')],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'ouvrir_nouvel_onglet',
-                              child: Row(
-                                children: [Icon(Icons.open_in_new), SizedBox(width: 8), Text('Ouvrir dans un nouvel onglet')],
-                              ),
-                            ),
-                          ],
-                        ),
-                        onTap: () => _openDocument(document),
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 16),
+                        child: _buildDocumentCard(document),
                       );
                     },
                   ),

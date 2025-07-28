@@ -6,6 +6,7 @@ import 'package:arkiva/screens/upload_screen.dart';
 import 'package:arkiva/screens/scan_screen.dart';
 import 'package:arkiva/services/casier_service.dart';
 import 'package:arkiva/services/auth_state_service.dart';
+import 'package:arkiva/services/responsive_service.dart';
 import 'package:arkiva/widgets/deplacement_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -333,10 +334,11 @@ class _CasiersScreenState extends State<CasiersScreen> {
                     print('Casier: \\${casier.casierId} - \\${casier.nom}');
                   }
                   return GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 3 casiers par ligne
-                      childAspectRatio: 0.9, // Réduire le rapport d'aspect pour diminuer la largeur relative
+                    padding: ResponsiveService.getScreenPadding(context),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 4 : 
+                                     MediaQuery.of(context).size.width > 800 ? 3 : 2,
+                      childAspectRatio: 1.0,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                     ),

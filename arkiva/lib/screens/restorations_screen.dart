@@ -42,6 +42,221 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
     _loadRestores();
   }
 
+  // Widgets helpers pour un design moderne
+  Widget _buildModernCard({
+    required Widget child,
+    Color? color,
+    EdgeInsets? padding,
+  }) {
+    return Card(
+      elevation: 4,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: padding ?? EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: color != null ? LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ) : null,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildRestoreCard(Restore restore) {
+    return _buildModernCard(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getRestoreColor(restore.type).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getRestoreIcon(restore.type),
+                  color: _getRestoreColor(restore.type),
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: restore.isFromBackup ? Colors.green[100] : Colors.orange[100],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: restore.isFromBackup ? Colors.green[300]! : Colors.orange[300]!,
+                            ),
+                          ),
+                          child: Text(
+                            restore.isFromBackup ? 'Sauvegarde' : 'Version',
+                            style: TextStyle(
+                              color: restore.isFromBackup ? Colors.green[700] : Colors.orange[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          restore.formattedDate,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${restore.typeDisplay} - ${restore.sourceId}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                                         Container(
+                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                       decoration: BoxDecoration(
+                         color: _getRestoreColor(restore.type).withOpacity(0.1),
+                         borderRadius: BorderRadius.circular(12),
+                         border: Border.all(color: _getRestoreColor(restore.type).withOpacity(0.3)),
+                       ),
+                       child: Text(
+                         restore.sourceType,
+                         style: TextStyle(
+                           color: _getRestoreColor(restore.type),
+                           fontSize: 12,
+                           fontWeight: FontWeight.bold,
+                         ),
+                       ),
+                     ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'details':
+                      _showRestoreDetails(restore);
+                      break;
+                    case 'delete':
+                      _deleteRestore(restore);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'details',
+                    child: Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.blue[600]),
+                        SizedBox(width: 8),
+                        Text('Détails'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red[600]),
+                        SizedBox(width: 8),
+                        Text('Supprimer', style: TextStyle(color: Colors.red[600])),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showRestoreDetails(restore),
+                  icon: Icon(Icons.info, size: 16),
+                  label: Text('Détails'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _deleteRestore(restore),
+                  icon: Icon(Icons.delete, size: 16),
+                  label: Text('Supprimer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getRestoreColor(String type) {
+    switch (type) {
+      case 'fichier':
+        return Colors.blue;
+      case 'dossier':
+        return Colors.orange;
+      case 'casier':
+        return Colors.green;
+      case 'armoire':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getRestoreIcon(String type) {
+    switch (type) {
+      case 'fichier':
+        return Icons.description;
+      case 'dossier':
+        return Icons.folder;
+      case 'casier':
+        return Icons.inventory_2;
+      case 'armoire':
+        return Icons.warehouse;
+      default:
+        return Icons.restore;
+    }
+  }
+
   Future<void> _loadRestores() async {
     setState(() {
       _isLoading = true;
@@ -161,12 +376,54 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
       final type = await showDialog<String>(
         context: context,
         builder: (context) => SimpleDialog(
-          title: const Text('Choisir le type'),
+          title: Row(
+            children: [
+              Icon(Icons.history, color: Colors.orange[600]),
+              SizedBox(width: 8),
+              Text('Choisir le type'),
+            ],
+          ),
           children: [
-            SimpleDialogOption(child: Text('Fichier'), onPressed: () => Navigator.pop(context, 'fichier')),
-            SimpleDialogOption(child: Text('Dossier'), onPressed: () => Navigator.pop(context, 'dossier')),
-            SimpleDialogOption(child: Text('Casier'), onPressed: () => Navigator.pop(context, 'casier')),
-            SimpleDialogOption(child: Text('Armoire'), onPressed: () => Navigator.pop(context, 'armoire')),
+            SimpleDialogOption(
+              child: Row(
+                children: [
+                  Icon(Icons.description, color: Colors.blue[600]),
+                  SizedBox(width: 8),
+                  Text('Fichier'),
+                ],
+              ),
+              onPressed: () => Navigator.pop(context, 'fichier'),
+            ),
+            SimpleDialogOption(
+              child: Row(
+                children: [
+                  Icon(Icons.folder, color: Colors.orange[600]),
+                  SizedBox(width: 8),
+                  Text('Dossier'),
+                ],
+              ),
+              onPressed: () => Navigator.pop(context, 'dossier'),
+            ),
+            SimpleDialogOption(
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2, color: Colors.green[600]),
+                  SizedBox(width: 8),
+                  Text('Casier'),
+                ],
+              ),
+              onPressed: () => Navigator.pop(context, 'casier'),
+            ),
+            SimpleDialogOption(
+              child: Row(
+                children: [
+                  Icon(Icons.warehouse, color: Colors.purple[600]),
+                  SizedBox(width: 8),
+                  Text('Armoire'),
+                ],
+              ),
+              onPressed: () => Navigator.pop(context, 'armoire'),
+            ),
           ],
         ),
       );
@@ -262,17 +519,26 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer la restauration'),
+        title: Row(
+          children: [
+            Icon(Icons.delete, color: Colors.red[600]),
+            SizedBox(width: 8),
+            Text('Supprimer la restauration'),
+          ],
+        ),
         content: Text('Êtes-vous sûr de vouloir supprimer cette restauration ? Cette action est irréversible.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text('Annuler'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[600],
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Supprimer'),
           ),
         ],
       ),
@@ -312,51 +578,56 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
   Widget _buildStatisticsCard() {
     final stats = _statistics;
     
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '📊 Statistiques',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+    return _buildModernCard(
+      color: Colors.cyan[50],
+      padding: EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics, color: Colors.cyan[600]),
+              SizedBox(width: 8),
+              Text(
+                'Statistiques',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.cyan[700],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    'Total',
-                    stats['total']?.toString() ?? '0',
-                    Icons.restore,
-                    Colors.blue,
-                  ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  'Total',
+                  stats['total']?.toString() ?? '0',
+                  Icons.restore,
+                  Colors.cyan[600]!,
                 ),
-                Expanded(
-                  child: _buildStatItem(
-                    'Sauvegardes',
-                    stats['fromBackup']?.toString() ?? '0',
-                    Icons.backup,
-                    Colors.green,
-                  ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Sauvegardes',
+                  stats['fromBackup']?.toString() ?? '0',
+                  Icons.backup,
+                  Colors.green[600]!,
                 ),
-                Expanded(
-                  child: _buildStatItem(
-                    'Versions',
-                    stats['fromVersion']?.toString() ?? '0',
-                    Icons.history,
-                    Colors.orange,
-                  ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Versions',
+                  stats['fromVersion']?.toString() ?? '0',
+                  Icons.history,
+                  Colors.orange[600]!,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -364,20 +635,28 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
   Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 4),
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Colors.grey,
+            color: Colors.grey[600],
           ),
         ),
       ],
@@ -385,72 +664,83 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
   }
 
   Widget _buildFilterChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: _filterOptions.map((filter) {
-          final isSelected = _selectedFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(filter),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedFilter = filter;
-                });
-              },
-            ),
-          );
-        }).toList(),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _filterOptions.map((filter) {
+            final isSelected = _selectedFilter == filter;
+            return Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(filter),
+                selected: isSelected,
+                selectedColor: Colors.cyan[100],
+                checkmarkColor: Colors.cyan[700],
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedFilter = filter;
+                  });
+                },
+                backgroundColor: Colors.grey[100],
+                side: BorderSide(color: Colors.grey[300]!),
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.cyan[700] : Colors.grey[700],
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
 
   Widget _buildRestoreList() {
     if (_filteredRestores.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.restore_outlined,
-              size: 64,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Aucune restauration trouvée',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey,
+      return Center(
+        child: _buildModernCard(
+          color: Colors.grey[50],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.restore_outlined,
+                size: 64,
+                color: Colors.grey[400],
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Les restaurations apparaîtront ici',
-              style: TextStyle(
-                color: Colors.grey,
+              SizedBox(height: 16),
+              Text(
+                'Aucune restauration trouvée',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+              SizedBox(height: 8),
+              Text(
+                'Les restaurations apparaîtront ici',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(20),
       itemCount: _filteredRestores.length,
       itemBuilder: (context, index) {
         final restore = _filteredRestores[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: RestoreCard(
-            restore: restore,
-            onViewDetails: () => _showRestoreDetails(restore),
-            onDelete: () => _deleteRestore(restore),
-          ),
+          padding: EdgeInsets.only(bottom: 16),
+          child: _buildRestoreCard(restore),
         );
       },
     );
@@ -458,31 +748,43 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
 
   Widget _buildErrorWidget() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur lors du chargement',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _error ?? 'Une erreur inconnue s\'est produite',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadRestores,
-            child: const Text('Réessayer'),
-          ),
-        ],
+      child: _buildModernCard(
+        color: Colors.red[50],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red[400],
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Erreur lors du chargement',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red[700],
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              _error ?? 'Une erreur inconnue s\'est produite',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadRestores,
+              icon: Icon(Icons.refresh, size: 16),
+              label: Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -491,24 +793,56 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🔄 Restaurations'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.cyan[900]!, Colors.cyan[700]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.restore, color: Colors.white, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Restaurations',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadRestores,
             tooltip: 'Actualiser',
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: _buildModernCard(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Chargement des restaurations...'),
+                  ],
+                ),
+              ),
+            )
           : _error != null
               ? _buildErrorWidget()
               : Column(
                   children: [
                     _buildStatisticsCard(),
                     _buildFilterChips(),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Expanded(
                       child: _buildRestoreList(),
                     ),
@@ -519,22 +853,24 @@ class _RestorationsScreenState extends State<RestorationsScreen> {
         children: [
           FloatingActionButton.extended(
             onPressed: _showRestoreBackupDialog,
-            icon: const Icon(Icons.backup),
-            label: const Text('Restaurer sauvegarde'),
+            icon: Icon(Icons.backup, color: Colors.white),
+            label: Text('Restaurer sauvegarde', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.green[600],
             heroTag: 'restore_backup',
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           FloatingActionButton.extended(
             onPressed: _showRestoreVersionDialog,
-            icon: const Icon(Icons.history),
-            label: const Text('Restaurer version'),
+            icon: Icon(Icons.history, color: Colors.white),
+            label: Text('Restaurer version', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.orange[600],
             heroTag: 'restore_version',
           ),
         ],
       ),
     );
   }
-} 
+}
 
 class SelectBackupDialog extends StatefulWidget {
   final List<Backup> backups;
@@ -557,23 +893,32 @@ class _SelectBackupDialogState extends State<SelectBackupDialog> {
              b.formattedDate.toLowerCase().contains(s);
     }).toList();
     return AlertDialog(
-      title: const Text('Sélectionner une sauvegarde'),
+      title: Row(
+        children: [
+          Icon(Icons.backup, color: Colors.green[600]),
+          SizedBox(width: 8),
+          Text('Sélectionner une sauvegarde'),
+        ],
+      ),
       content: SizedBox(
         width: 400,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Recherche rapide',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(Icons.search, color: Colors.green[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onChanged: (v) => setState(() => _search = v),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Expanded(
               child: filtered.isEmpty
-                  ? const Text('Aucune sauvegarde trouvée')
+                  ? Text('Aucune sauvegarde trouvée')
                   : ListView.builder(
                       itemCount: filtered.length,
                       itemBuilder: (context, i) {
@@ -583,7 +928,7 @@ class _SelectBackupDialogState extends State<SelectBackupDialog> {
                           subtitle: Text(b.formattedDate),
                           selected: _selected == b,
                           onTap: () => setState(() => _selected = b),
-                          trailing: _selected == b ? const Icon(Icons.check, color: Colors.blue) : null,
+                          trailing: _selected == b ? Icon(Icons.check, color: Colors.green[600]) : null,
                         );
                       },
                     ),
@@ -594,16 +939,20 @@ class _SelectBackupDialogState extends State<SelectBackupDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text('Annuler'),
         ),
         ElevatedButton(
           onPressed: _selected != null ? () => Navigator.pop(context, _selected) : null,
-          child: const Text('Sélectionner'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[600],
+            foregroundColor: Colors.white,
+          ),
+          child: Text('Sélectionner'),
         ),
       ],
     );
   }
-} 
+}
 
 class SelectVersionDialog extends StatefulWidget {
   final List<Version> versions;
@@ -628,23 +977,32 @@ class _SelectVersionDialogState extends State<SelectVersionDialog> {
              v.formattedDate.toLowerCase().contains(s);
     }).toList();
     return AlertDialog(
-      title: const Text('Sélectionner une version'),
+      title: Row(
+        children: [
+          Icon(Icons.history, color: Colors.orange[600]),
+          SizedBox(width: 8),
+          Text('Sélectionner une version'),
+        ],
+      ),
       content: SizedBox(
         width: 400,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Recherche rapide',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(Icons.search, color: Colors.orange[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onChanged: (v) => setState(() => _search = v),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Expanded(
               child: filtered.isEmpty
-                  ? const Text('Aucune version trouvée')
+                  ? Text('Aucune version trouvée')
                   : ListView.builder(
                       itemCount: filtered.length,
                       itemBuilder: (context, i) {
@@ -654,7 +1012,7 @@ class _SelectVersionDialogState extends State<SelectVersionDialog> {
                           subtitle: Text(v.formattedDate + (v.description != null ? '\n${v.description}' : '')),
                           selected: _selected == v,
                           onTap: () => setState(() => _selected = v),
-                          trailing: _selected == v ? const Icon(Icons.check, color: Colors.blue) : null,
+                          trailing: _selected == v ? Icon(Icons.check, color: Colors.orange[600]) : null,
                         );
                       },
                     ),
@@ -665,11 +1023,15 @@ class _SelectVersionDialogState extends State<SelectVersionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text('Annuler'),
         ),
         ElevatedButton(
           onPressed: _selected != null ? () => Navigator.pop(context, _selected) : null,
-          child: const Text('Sélectionner'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange[600],
+            foregroundColor: Colors.white,
+          ),
+          child: Text('Sélectionner'),
         ),
       ],
     );

@@ -32,6 +32,263 @@ class _VersionsScreenState extends State<VersionsScreen> {
     _loadVersions();
   }
 
+  // Widgets helpers pour un design moderne
+  Widget _buildModernCard({
+    required Widget child,
+    Color? color,
+    EdgeInsets? padding,
+  }) {
+    return Card(
+      elevation: 4,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: padding ?? EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: color != null ? LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ) : null,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildVersionCard(Version version) {
+    return _buildModernCard(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getVersionColor(version.type).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getVersionIcon(version.type),
+                  color: _getVersionColor(version.type),
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue[300]!),
+                          ),
+                          child: Text(
+                            'v${version.versionNumber}',
+                            style: TextStyle(
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          version.formattedDate,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    if (version.description != null && version.description!.isNotEmpty)
+                      Text(
+                        version.description!,
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    SizedBox(height: 4),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getVersionColor(version.type).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _getVersionColor(version.type).withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        version.formattedSize,
+                        style: TextStyle(
+                          color: _getVersionColor(version.type),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'restore':
+                      _restoreVersion(version);
+                      break;
+                    case 'view':
+                      _viewVersionContent(version);
+                      break;
+                    case 'download':
+                      _downloadVersion(version);
+                      break;
+                    case 'delete':
+                      _deleteVersion(version);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'restore',
+                    child: Row(
+                      children: [
+                        Icon(Icons.restore, color: Colors.green[600]),
+                        SizedBox(width: 8),
+                        Text('Restaurer'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'view',
+                    child: Row(
+                      children: [
+                        Icon(Icons.visibility, color: Colors.blue[600]),
+                        SizedBox(width: 8),
+                        Text('Voir le contenu'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'download',
+                    child: Row(
+                      children: [
+                        Icon(Icons.download, color: Colors.orange[600]),
+                        SizedBox(width: 8),
+                        Text('Télécharger'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red[600]),
+                        SizedBox(width: 8),
+                        Text('Supprimer', style: TextStyle(color: Colors.red[600])),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _restoreVersion(version),
+                  icon: Icon(Icons.restore, size: 16),
+                  label: Text('Restaurer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _viewVersionContent(version),
+                  icon: Icon(Icons.visibility, size: 16),
+                  label: Text('Voir'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _downloadVersion(version),
+                  icon: Icon(Icons.download, size: 16),
+                  label: Text('Télécharger'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getVersionColor(String type) {
+    switch (type) {
+      case 'fichier':
+        return Colors.blue;
+      case 'dossier':
+        return Colors.orange;
+      case 'casier':
+        return Colors.green;
+      case 'armoire':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getVersionIcon(String type) {
+    switch (type) {
+      case 'fichier':
+        return Icons.description;
+      case 'dossier':
+        return Icons.folder;
+      case 'casier':
+        return Icons.inventory_2;
+      case 'armoire':
+        return Icons.warehouse;
+      default:
+        return Icons.history;
+    }
+  }
+
   Future<void> _loadVersions() async {
     if (_selectedCibleId == null) {
       setState(() {
@@ -182,17 +439,35 @@ class _VersionsScreenState extends State<VersionsScreen> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Contenu de la version ${version.versionNumber}'),
+            title: Row(
+              children: [
+                Icon(Icons.visibility, color: Colors.blue[600]),
+                SizedBox(width: 8),
+                Text('Contenu de la version ${version.versionNumber}'),
+              ],
+            ),
             content: SingleChildScrollView(
-              child: Text(
-                content.toString(),
-                style: const TextStyle(fontFamily: 'monospace'),
+              child: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Text(
+                  content.toString(),
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: Colors.grey[800],
+                  ),
+                ),
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Fermer'),
+                child: Text('Fermer'),
               ),
             ],
           ),
@@ -209,17 +484,26 @@ class _VersionsScreenState extends State<VersionsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer la version'),
+        title: Row(
+          children: [
+            Icon(Icons.delete, color: Colors.red[600]),
+            SizedBox(width: 8),
+            Text('Supprimer la version'),
+          ],
+        ),
         content: Text('Êtes-vous sûr de vouloir supprimer la version ${version.versionNumber} ? Cette action est irréversible.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text('Annuler'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[600],
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Supprimer'),
           ),
         ],
       ),
@@ -267,27 +551,63 @@ class _VersionsScreenState extends State<VersionsScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Confirmer la restauration'),
-          content: Text(
-            'Êtes-vous sûr de vouloir restaurer cette version ?\n\n'
-            'Type: ${version.typeDisplay}\n'
-            'Version: v${version.versionNumber}\n'
-            'Date: ${version.formattedDate}\n'
-            'Description: ${version.description ?? 'Aucune'}\n\n'
-            '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
+          title: Row(
+            children: [
+              Icon(Icons.restore, color: Colors.green[600]),
+              SizedBox(width: 8),
+              Text('Confirmer la restauration'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Êtes-vous sûr de vouloir restaurer cette version ?\n\n',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              _buildInfoRow('Type', version.typeDisplay),
+              _buildInfoRow('Version', 'v${version.versionNumber}'),
+              _buildInfoRow('Date', version.formattedDate),
+              _buildInfoRow('Description', version.description ?? 'Aucune'),
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange[600], size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '⚠️ Cette action va créer un nouvel élément et ne remplacera pas l\'existant.',
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text('Annuler'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.green[600],
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Restaurer'),
+              child: Text('Restaurer'),
             ),
           ],
         ),
@@ -324,19 +644,68 @@ class _VersionsScreenState extends State<VersionsScreen> {
     }
   }
 
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('📝 Versions'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal[900]!, Colors.teal[700]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.history, color: Colors.white, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Versions',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add, color: Colors.white),
             onPressed: _createVersion,
             tooltip: 'Créer une version',
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadVersions,
             tooltip: 'Actualiser',
           ),
@@ -347,7 +716,17 @@ class _VersionsScreenState extends State<VersionsScreen> {
           _buildFilterSection(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: _buildModernCard(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Chargement des versions...'),
+                        ],
+                      ),
+                    ),
+                  )
                 : _error != null
                     ? _buildErrorWidget()
                     : _versions.isEmpty
@@ -356,56 +735,81 @@ class _VersionsScreenState extends State<VersionsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _createVersion,
-        child: const Icon(Icons.add),
+        icon: Icon(Icons.add, color: Colors.white),
+        label: Text('Créer', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.teal[600],
         tooltip: 'Créer une version',
       ),
     );
   }
 
   Widget _buildFilterSection() {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Sélectionner la cible',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _selectedType,
-              decoration: const InputDecoration(
-                labelText: 'Type',
-                prefixIcon: Icon(Icons.category),
+    return _buildModernCard(
+      color: Colors.teal[50],
+      padding: EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.filter_list, color: Colors.teal[600]),
+              SizedBox(width: 8),
+              Text(
+                'Sélectionner la cible',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.teal[700],
+                ),
               ),
-              items: _availableTypes.map((type) => DropdownMenuItem(
-                value: type,
-                child: Text(_getTypeDisplayName(type)),
-              )).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value!;
-                  _selectedCibleId = null;
-                  _versions = [];
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _showTargetSelectionDialog(),
-                icon: const Icon(Icons.search),
-                label: const Text('Sélectionner une cible'),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedType,
+                  decoration: InputDecoration(
+                    labelText: 'Type',
+                    prefixIcon: Icon(Icons.category, color: Colors.teal[600]),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: _availableTypes.map((type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(_getTypeDisplayName(type)),
+                  )).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedType = value!;
+                      _selectedCibleId = null;
+                      _versions = [];
+                    });
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+              SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showTargetSelectionDialog(),
+                  icon: Icon(Icons.search, size: 16),
+                  label: Text('Sélectionner une cible'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -441,54 +845,78 @@ class _VersionsScreenState extends State<VersionsScreen> {
 
   Widget _buildErrorWidget() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur lors du chargement',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _error!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadVersions,
-            child: const Text('Réessayer'),
-          ),
-        ],
+      child: _buildModernCard(
+        color: Colors.red[50],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+            SizedBox(height: 16),
+            Text(
+              'Erreur lors du chargement',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red[700],
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              _error!,
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadVersions,
+              icon: Icon(Icons.refresh, size: 16),
+              label: Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyWidget() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.history, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text(
-            'Aucune version',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Créez votre première version',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _createVersion,
-            icon: const Icon(Icons.add),
-            label: const Text('Créer une version'),
-          ),
-        ],
+      child: _buildModernCard(
+        color: Colors.teal[50],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 64, color: Colors.teal[400]),
+            SizedBox(height: 16),
+            Text(
+              'Aucune version',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[700],
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Créez votre première version',
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _createVersion,
+              icon: Icon(Icons.add, size: 16),
+              label: Text('Créer une version'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal[600],
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -497,117 +925,17 @@ class _VersionsScreenState extends State<VersionsScreen> {
     return RefreshIndicator(
       onRefresh: _loadVersions,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(20),
         itemCount: _versions.length,
         itemBuilder: (context, index) {
           final version = _versions[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: _getVersionIcon(version.type),
-              title: Text('v${version.versionNumber} - ${version.formattedDate}'),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (version.description != null && version.description!.isNotEmpty)
-                    Text(version.description!),
-                  Text('Taille: ${version.formattedSize}'),
-                ],
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'restore':
-                      _restoreVersion(version);
-                      break;
-                    case 'view':
-                      _viewVersionContent(version);
-                      break;
-                    case 'download':
-                      _downloadVersion(version);
-                      break;
-                    case 'delete':
-                      _deleteVersion(version);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'restore',
-                    child: Row(
-                      children: [
-                        Icon(Icons.restore, color: Colors.green),
-                        SizedBox(width: 8),
-                        Text('Restaurer', style: TextStyle(color: Colors.green)),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'view',
-                    child: Row(
-                      children: [
-                        Icon(Icons.visibility),
-                        SizedBox(width: 8),
-                        Text('Voir le contenu'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'download',
-                    child: Row(
-                      children: [
-                        Icon(Icons.download),
-                        SizedBox(width: 8),
-                        Text('Télécharger'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Supprimer', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          return Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: _buildVersionCard(version),
           );
         },
       ),
     );
-  }
-
-  Widget _getVersionIcon(String type) {
-    IconData iconData;
-    Color iconColor;
-
-    switch (type) {
-      case 'fichier':
-        iconData = Icons.description;
-        iconColor = Colors.blue;
-        break;
-      case 'dossier':
-        iconData = Icons.folder;
-        iconColor = Colors.orange;
-        break;
-      case 'casier':
-        iconData = Icons.inventory_2;
-        iconColor = Colors.green;
-        break;
-      case 'armoire':
-        iconData = Icons.warehouse;
-        iconColor = Colors.purple;
-        break;
-      default:
-        iconData = Icons.history;
-        iconColor = Colors.grey;
-    }
-
-    return Icon(iconData, color: iconColor, size: 32);
   }
 }
 
@@ -766,7 +1094,13 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Créer une version'),
+      title: Row(
+        children: [
+          Icon(Icons.history, color: Colors.teal[600]),
+          SizedBox(width: 8),
+          Text('Créer une version'),
+        ],
+      ),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -774,9 +1108,12 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
           children: [
             DropdownButtonFormField<String>(
               value: _selectedType,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Type de version',
-                prefixIcon: Icon(Icons.category),
+                prefixIcon: Icon(Icons.category, color: Colors.teal[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               items: const [
                 DropdownMenuItem(value: 'fichier', child: Text('Fichier')),
@@ -798,14 +1135,17 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
                 });
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             
             if (_selectedType == 'armoire' || _selectedType == 'casier' || _selectedType == 'dossier' || _selectedType == 'fichier')
               DropdownButtonFormField<String>(
                 value: _selectedArmoire,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Sélectionner une armoire',
-                  prefixIcon: Icon(Icons.warehouse),
+                  prefixIcon: Icon(Icons.warehouse, color: Colors.purple[600]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 items: _armoires.map((armoire) => DropdownMenuItem(
                   value: armoire['armoire_id'].toString(),
@@ -829,12 +1169,15 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
             
             if (_selectedType == 'casier' || _selectedType == 'dossier' || _selectedType == 'fichier')
               if (_selectedArmoire != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedCasier,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Sélectionner un casier',
-                    prefixIcon: Icon(Icons.inventory_2),
+                    prefixIcon: Icon(Icons.inventory_2, color: Colors.green[600]),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   items: _casiers.map((casier) => DropdownMenuItem(
                     value: casier['cassier_id'].toString(),
@@ -857,12 +1200,15 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
             
             if (_selectedType == 'dossier' || _selectedType == 'fichier')
               if (_selectedCasier != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedDossier,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Sélectionner un dossier',
-                    prefixIcon: Icon(Icons.folder),
+                    prefixIcon: Icon(Icons.folder, color: Colors.orange[600]),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   items: _dossiers.map((dossier) => DropdownMenuItem(
                     value: dossier['dossier_id'].toString(),
@@ -883,12 +1229,15 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
             
             if (_selectedType == 'fichier')
               if (_selectedDossier != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedFichier,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Sélectionner un fichier',
-                    prefixIcon: Icon(Icons.description),
+                    prefixIcon: Icon(Icons.description, color: Colors.blue[600]),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   items: _fichiers.map((fichier) => DropdownMenuItem(
                     value: fichier['id'].toString(),
@@ -903,7 +1252,7 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
               ],
             
             if (_isLoading)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Center(child: CircularProgressIndicator()),
               ),
@@ -913,7 +1262,7 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text('Annuler'),
         ),
         ElevatedButton(
           onPressed: _selectedCibleId != null
@@ -924,7 +1273,11 @@ class _CreateVersionDialogState extends State<_CreateVersionDialog> {
                   });
                 }
               : null,
-          child: const Text('Créer'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.teal[600],
+            foregroundColor: Colors.white,
+          ),
+          child: Text('Créer'),
         ),
       ],
     );

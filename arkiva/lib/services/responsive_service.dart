@@ -109,12 +109,21 @@ class ResponsiveService {
     ScrollPhysics? physics,
   }) {
     int crossAxisCount;
+    double aspectRatio;
+    double spacing;
+    
     if (isMobile(context)) {
       crossAxisCount = mobileCrossAxisCount;
+      aspectRatio = childAspectRatio * 0.9;
+      spacing = crossAxisSpacing * 0.8;
     } else if (isTablet(context)) {
       crossAxisCount = tabletCrossAxisCount;
+      aspectRatio = childAspectRatio * 1.0;
+      spacing = crossAxisSpacing * 1.0;
     } else {
       crossAxisCount = desktopCrossAxisCount;
+      aspectRatio = childAspectRatio * 1.2;
+      spacing = crossAxisSpacing * 1.2;
     }
 
     return GridView.builder(
@@ -122,12 +131,46 @@ class ResponsiveService {
       physics: physics ?? (shrinkWrap ? NeverScrollableScrollPhysics() : null),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: childAspectRatio,
-        crossAxisSpacing: crossAxisSpacing,
-        mainAxisSpacing: mainAxisSpacing,
+        childAspectRatio: aspectRatio,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
       ),
       itemCount: children.length,
       itemBuilder: (context, index) => children[index],
+    );
+  }
+
+  static SliverGridDelegateWithFixedCrossAxisCount getResponsiveGridDelegate(BuildContext context, {
+    int mobileCrossAxisCount = 1,
+    int tabletCrossAxisCount = 2,
+    int desktopCrossAxisCount = 3,
+    double childAspectRatio = 1.0,
+    double crossAxisSpacing = 16.0,
+    double mainAxisSpacing = 16.0,
+  }) {
+    int crossAxisCount;
+    double aspectRatio;
+    double spacing;
+    
+    if (isMobile(context)) {
+      crossAxisCount = mobileCrossAxisCount;
+      aspectRatio = childAspectRatio * 0.9;
+      spacing = crossAxisSpacing * 0.8;
+    } else if (isTablet(context)) {
+      crossAxisCount = tabletCrossAxisCount;
+      aspectRatio = childAspectRatio * 1.0;
+      spacing = crossAxisSpacing * 1.0;
+    } else {
+      crossAxisCount = desktopCrossAxisCount;
+      aspectRatio = childAspectRatio * 1.2;
+      spacing = crossAxisSpacing * 1.2;
+    }
+
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: aspectRatio,
+      crossAxisSpacing: spacing,
+      mainAxisSpacing: spacing,
     );
   }
 

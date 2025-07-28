@@ -61,6 +61,31 @@ class AdminService {
     }
   }
 
+  // Créer un nouvel utilisateur
+  Future<void> createUser(String token, int entrepriseId, String email, String password, String username, String role) async {
+    print('🔄 Création d\'un nouvel utilisateur...');
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/register'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'username': username,
+        'role': role,
+        'entreprise_id': entrepriseId,
+      }),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      final errorData = jsonDecode(response.body);
+      throw Exception('Échec de la création de l\'utilisateur: ${errorData['message'] ?? response.body}');
+    }
+  }
+
   // Modifier les informations d'un utilisateur
   Future<void> updateUser(String token, int userId, Map<String, dynamic> userData) async {
     print('🔄 Mise à jour des informations de l\'utilisateur...');

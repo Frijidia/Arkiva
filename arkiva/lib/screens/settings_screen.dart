@@ -56,6 +56,133 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     super.dispose();
   }
 
+  // Widget helper pour les cartes de paramètres
+  Widget _buildSettingsCard(String title, IconData icon, Color color, List<Widget> children) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.05), color.withOpacity(0.02)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget helper pour les champs de formulaire modernes
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword,
+        keyboardType: keyboardType,
+        validator: validator,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.blue[600]),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+        ),
+      ),
+    );
+  }
+
+  // Widget helper pour les boutons modernes
+  Widget _buildModernButton({
+    required String text,
+    required VoidCallback onPressed,
+    required Color color,
+    bool isLoading = false,
+    IconData? icon,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: EdgeInsets.symmetric(vertical: 16),
+          elevation: 2,
+        ),
+        child: isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 20),
+                    SizedBox(width: 8),
+                  ],
+                  Text(text, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                ],
+              ),
+      ),
+    );
+  }
+
   Future<void> _loadAdminData() async {
     setState(() => _isLoadingAdmin = true);
     try {
@@ -111,57 +238,40 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Future<void> _createUser() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoadingCreate = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      final authStateService = Provider.of<AuthStateService>(context, listen: false);
+    setState(() => _isLoadingCreate = true);
+    try {
+      final authStateService = context.read<AuthStateService>();
       final token = authStateService.token;
       final entrepriseId = authStateService.entrepriseId;
 
-      if (token == null || entrepriseId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur: non authentifié ou entreprise introuvable.')),
-        );
-        setState(() {
-          _isLoadingCreate = false;
-        });
-        return;
-      }
-
-      final userData = {
-        'email': _emailController.text,
-        'password': _passwordController.text,
-        'username': _usernameController.text,
-        'role': _selectedRole,
-      };
-
-      try {
-        await AuthService().createUser(
-          entrepriseId,
-          userData,
+      if (token != null && entrepriseId != null) {
+        await _adminService.createUser(
           token,
+          entrepriseId,
+          _emailController.text,
+          _passwordController.text,
+          _usernameController.text,
+          _selectedRole!,
         );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Utilisateur créé avec succès !')),
-        );
-        _formKey.currentState!.reset();
-        setState(() {
-          _selectedRole = 'lecteur';
-        });
-        await _loadAdminData(); // Recharger les données admin
+        // Réinitialiser le formulaire
+        _emailController.clear();
+        _passwordController.clear();
+        _usernameController.clear();
+        setState(() => _selectedRole = 'lecteur');
 
-      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Échec de la création de l\'utilisateur: ${e.toString()}')),
+          const SnackBar(content: Text('Utilisateur créé avec succès')),
         );
-      } finally {
-        setState(() {
-          _isLoadingCreate = false;
-        });
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoadingCreate = false);
     }
   }
 
@@ -186,15 +296,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'method': 'email'}),
       );
       if (response.statusCode == 200) {
         setState(() {
-          _2faMessage = 'Un code a été envoyé à votre email.';
+          _2faMessage = 'Code envoyé par email. Vérifiez votre boîte de réception.';
         });
       } else {
         setState(() {
-          _2faMessage = 'Erreur: ${jsonDecode(response.body)['message'] ?? 'Erreur lors de l\'activation de la 2FA'}';
+          _2faMessage = 'Erreur: ${jsonDecode(response.body)['message'] ?? 'Erreur lors de l\'activation'}';
         });
       }
     } catch (e) {
@@ -260,9 +369,34 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Paramètres'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[900]!, Colors.blue[700]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.settings, color: Colors.white, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Paramètres',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         bottom: isAdmin ? TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(
               icon: Icon(Icons.person_add),
@@ -280,9 +414,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         children: [
           // Onglet Créer Utilisateur + 2FA
           SingleChildScrollView(
+            padding: EdgeInsets.all(20),
             child: Column(
               children: [
                 _build2FASection(),
+                SizedBox(height: 20),
                 _buildCreateUserTab(),
               ],
             ),
@@ -295,197 +431,255 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildNonAdminView() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.admin_panel_settings,
-            size: 64,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Accès restreint',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+    return Container(
+      padding: EdgeInsets.all(20),
+      child: Center(
+        child: Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            padding: EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.grey[50]!, Colors.grey[100]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    size: 64,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Accès restreint',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Seuls les administrateurs peuvent accéder aux paramètres d\'administration.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Seuls les administrateurs peuvent accéder aux paramètres d\'administration.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildCreateUserTab() {
     return _isLoadingCreate
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Créer un nouvel utilisateur',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _emailController,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer l\'email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _passwordController,
-                            decoration: const InputDecoration(
-                              labelText: 'Mot de passe',
-                              border: OutlineInputBorder(),
-                            ),
-                            obscureText: true,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer le mot de passe';
-                              }
-                              if (value.length < 6) {
-                                return 'Le mot de passe doit contenir au moins 6 caractères';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _usernameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nom d\'utilisateur',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer le nom d\'utilisateur';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Rôle',
-                              border: OutlineInputBorder(),
-                            ),
-                            value: _selectedRole,
-                            items: _roles.map((String role) {
-                              return DropdownMenuItem<String>(
-                                value: role,
-                                child: Text(role.capitalize()),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _selectedRole = newValue;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez sélectionner un rôle';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoadingCreate ? null : _createUser,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: _isLoadingCreate
-                                  ? const CircularProgressIndicator()
-                                  : const Text('Créer l\'utilisateur'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+        ? Center(
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                padding: EdgeInsets.all(40),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Création de l\'utilisateur...'),
+                  ],
+                ),
               ),
             ),
+          )
+        : _buildSettingsCard(
+            'Créer un nouvel utilisateur',
+            Icons.person_add,
+            Colors.green[600]!,
+            [
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildModernTextField(
+                      controller: _emailController,
+                      label: 'Email',
+                      icon: Icons.email,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer l\'email';
+                        }
+                        return null;
+                      },
+                    ),
+                    _buildModernTextField(
+                      controller: _passwordController,
+                      label: 'Mot de passe',
+                      icon: Icons.lock,
+                      isPassword: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer le mot de passe';
+                        }
+                        if (value.length < 6) {
+                          return 'Le mot de passe doit contenir au moins 6 caractères';
+                        }
+                        return null;
+                      },
+                    ),
+                    _buildModernTextField(
+                      controller: _usernameController,
+                      label: 'Nom d\'utilisateur',
+                      icon: Icons.person,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer le nom d\'utilisateur';
+                        }
+                        return null;
+                      },
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(bottom: 16),
+                      child: DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'Rôle',
+                          prefixIcon: Icon(Icons.admin_panel_settings, color: Colors.blue[600]),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        value: _selectedRole,
+                        items: _roles.map((String role) {
+                          return DropdownMenuItem<String>(
+                            value: role,
+                            child: Text(role.capitalize()),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedRole = newValue;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez sélectionner un rôle';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    _buildModernButton(
+                      text: 'Créer l\'utilisateur',
+                      onPressed: _createUser,
+                      color: Colors.green[600]!,
+                      isLoading: _isLoadingCreate,
+                      icon: Icons.person_add,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
   }
 
   Widget _build2FASection() {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 24),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Sécurité : Double authentification (2FA)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return _buildSettingsCard(
+      'Sécurité : Double authentification (2FA)',
+      Icons.security,
+      Colors.orange[600]!,
+      [
+        if (!_is2FAEnabled) ...[
+          _buildModernButton(
+            text: 'Activer la 2FA par email',
+            onPressed: _enable2FA,
+            color: Colors.orange[600]!,
+            isLoading: _is2FALoading,
+            icon: Icons.lock,
+          ),
+          SizedBox(height: 16),
+          _buildModernTextField(
+            controller: _code2FAController,
+            label: 'Code reçu par email',
+            icon: Icons.code,
+          ),
+          SizedBox(height: 8),
+          _buildModernButton(
+            text: 'Vérifier le code',
+            onPressed: _verify2FA,
+            color: Colors.blue[600]!,
+            isLoading: _is2FALoading,
+            icon: Icons.verified,
+          ),
+        ] else ...[
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green[200]!),
             ),
-            const SizedBox(height: 12),
-            if (!_is2FAEnabled) ...[
-              ElevatedButton.icon(
-                onPressed: _is2FALoading ? null : _enable2FA,
-                icon: const Icon(Icons.lock),
-                label: const Text('Activer la 2FA par email'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _code2FAController,
-                decoration: const InputDecoration(
-                  labelText: 'Code reçu par email',
-                  border: OutlineInputBorder(),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'La double authentification est activée sur votre compte.',
+                  style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w500),
                 ),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: _is2FALoading ? null : _verify2FA,
-                child: _is2FALoading ? const CircularProgressIndicator() : const Text('Vérifier le code'),
-              ),
-            ] else ...[
-              const Text('La double authentification est activée sur votre compte.', style: TextStyle(color: Colors.green)),
-            ],
-            if (_2faMessage != null) ...[
-              const SizedBox(height: 8),
-              Text(_2faMessage!, style: TextStyle(color: Colors.blue)),
-            ],
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+        ],
+        if (_2faMessage != null) ...[
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info, color: Colors.blue[600], size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _2faMessage!,
+                    style: TextStyle(color: Colors.blue[700]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
